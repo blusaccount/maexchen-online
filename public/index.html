@@ -132,8 +132,37 @@
     </div>
     <div id="chat-messages"></div>
     <div id="chat-input-row">
+        <button id="btn-draw" title="Notiz zeichnen">✏️</button>
         <input type="text" id="chat-input" placeholder="Nachricht..." maxlength="100" autocomplete="off">
         <button id="btn-send">↑</button>
+    </div>
+</div>
+
+<!-- Drawing Note Overlay -->
+<div id="draw-note-overlay" style="display:none;">
+    <div id="draw-note-panel">
+        <div class="draw-note-title">Notiz zeichnen</div>
+        <div class="draw-note-canvas-container">
+            <div class="draw-note-grid" id="draw-note-grid"></div>
+        </div>
+        <div class="draw-note-palette" id="draw-note-palette"></div>
+        <div class="draw-note-recipient">
+            <label>Senden an:</label>
+            <select id="draw-note-target"></select>
+        </div>
+        <div class="draw-note-buttons">
+            <button class="btn btn-small" id="btn-note-clear">Löschen</button>
+            <button class="btn btn-small btn-secondary" id="btn-note-cancel">Abbrechen</button>
+            <button class="btn btn-small btn-primary" id="btn-note-send">Senden</button>
+        </div>
+    </div>
+</div>
+
+<!-- Received Drawing Display -->
+<div id="received-drawing" style="display:none;">
+    <div class="received-drawing-content">
+        <div class="received-from"></div>
+        <canvas id="received-canvas"></canvas>
     </div>
 </div>
 

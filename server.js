@@ -434,6 +434,48 @@ io.on('connection', (socket) => {
         console.log(`[Chat ${room.code}] ${player.name}: ${sanitizedText}`);
     });
 
+    // --- Drawing Note ---
+    socket.on('drawing-note', ({ dataURL, target }) => {
+        const room = getRoom(socket.id);
+        if (!room) return;
+
+        const player = room.players.find(p => p.socketId === socket.id);
+        if (!player) return;
+
+        // Validate dataURL (basic check)
+        if (!dataURL || typeof dataURL !== 'string' || !dataURL.startsWith('data:image/')) {
+            return;
+        }
+
+        // Limit dataURL size (max ~50KB)
+        if (dataURL.length > 70000) return;
+
+        if (target === 'all') {
+            // Send to all players except sender
+            room.players.forEach(p => {
+                if (p.socketId !== socket.id) {
+                    io.to(p.socketId).emit('drawing-note', {
+                        from: player.name,
+                        dataURL: dataURL,
+                        target: 'all'
+                    });
+                }
+            });
+        } else {
+            // Send to specific player
+            const targetPlayer = room.players.find(p => p.name === target);
+            if (targetPlayer && targetPlayer.socketId !== socket.id) {
+                io.to(targetPlayer.socketId).emit('drawing-note', {
+                    from: player.name,
+                    dataURL: dataURL,
+                    target: targetPlayer.name
+                });
+            }
+        }
+
+        console.log(`[Drawing ${room.code}] ${player.name} -> ${target}`);
+    });
+
     // --- Leave Room ---
     socket.on('leave-room', () => {
         const room = getRoom(socket.id);

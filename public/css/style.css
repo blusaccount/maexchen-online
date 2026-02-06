@@ -1133,6 +1133,174 @@ h3 { font-size: 1.3rem; color: var(--text-dim); letter-spacing: 2px; text-transf
     margin-top: 10px;
 }
 
+/* ===== Drawing Note Panel ===== */
+#draw-note-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 900;
+}
+
+#draw-note-panel {
+    background: var(--surface);
+    border: 2px solid var(--accent);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    box-shadow: 0 0 30px rgba(0,255,136,0.3);
+}
+
+.draw-note-title {
+    font-size: 1.2rem;
+    color: var(--accent);
+    letter-spacing: 2px;
+}
+
+.draw-note-canvas-container {
+    background: rgba(0,0,0,0.8);
+    border: 1px solid var(--accent);
+    padding: 4px;
+}
+
+.draw-note-grid {
+    display: grid;
+    grid-template-columns: repeat(16, 1fr);
+    gap: 1px;
+    background: rgba(255,255,255,0.1);
+    width: 240px;
+    height: 240px;
+}
+
+.note-cell {
+    background: rgba(0,0,0,0.8);
+    cursor: crosshair;
+}
+
+.draw-note-palette {
+    display: flex;
+    gap: 6px;
+}
+
+.note-swatch {
+    width: 28px;
+    height: 28px;
+    border: 2px solid rgba(255,255,255,0.3);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.1s;
+}
+
+.note-swatch:hover {
+    transform: scale(1.1);
+}
+
+.note-swatch.selected {
+    border-color: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+}
+
+.note-swatch.eraser {
+    background: repeating-linear-gradient(45deg, #333, #333 3px, #555 3px, #555 6px);
+    color: #ff3366;
+    font-size: 0.8rem;
+}
+
+.draw-note-recipient {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-dim);
+}
+
+.draw-note-recipient select {
+    background: var(--bg);
+    border: 1px solid var(--accent);
+    color: var(--text);
+    padding: 6px 12px;
+    font-family: inherit;
+}
+
+.draw-note-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+/* ===== Received Drawing Popup ===== */
+#received-drawing {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 850;
+    cursor: pointer;
+    animation: fadeIn 0.3s ease;
+}
+
+.received-drawing-content {
+    background: var(--surface);
+    border: 3px solid var(--accent);
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 0 50px rgba(0,255,136,0.4);
+    animation: popIn 0.3s ease;
+}
+
+.received-from {
+    color: var(--accent);
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+    letter-spacing: 1px;
+}
+
+#received-canvas {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    border: 1px solid var(--accent);
+}
+
+@keyframes popIn {
+    from { transform: scale(0.5); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+/* Chat drawing button */
+#btn-draw {
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s;
+}
+
+#btn-draw:hover {
+    background: rgba(0,255,136,0.2);
+}
+
+/* Chat drawing image */
+.chat-drawing {
+    max-width: 80px;
+    height: auto;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    border: 1px solid var(--accent);
+    margin-top: 5px;
+}
+
+.drawing-message {
+    padding: 8px;
+}
+
 /* ===== Player Sidebar (In-Game) ===== */
 #player-sidebar {
     position: fixed;

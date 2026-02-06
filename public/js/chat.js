@@ -7,10 +7,30 @@
 
     let chatVisible = false;
 
+    // Drawing note state
+    const NOTE_SIZE = 16;
+    const NOTE_COLORS = [
+        null,       // Eraser
+        '#00ff88', // Green
+        '#00aaff', // Blue
+        '#ff3366', // Red
+        '#ffdd00', // Yellow
+        '#ffffff', // White
+        '#000000'  // Black
+    ];
+    let notePixels = createEmptyNoteGrid();
+    let noteSelectedColor = 1;
+    let noteIsDrawing = false;
+
+    function createEmptyNoteGrid() {
+        return Array(NOTE_SIZE).fill(null).map(() => Array(NOTE_SIZE).fill(null));
+    }
+
     // Initialize chat
     function initChat() {
         const sendBtn = $('btn-send');
         const chatInput = $('chat-input');
+        const drawBtn = $('btn-draw');
 
         if (sendBtn) {
             sendBtn.addEventListener('click', sendMessage);
@@ -25,11 +45,307 @@
             });
         }
 
+        if (drawBtn) {
+            drawBtn.addEventListener('click', openDrawingPanel);
+        }
+
         // Listen for chat broadcasts
         socket.on('chat-broadcast', handleChatBroadcast);
 
         // Listen for system messages
         socket.on('system-message', handleSystemMessage);
+
+        // Listen for drawing notes
+        socket.on('drawing-note', handleDrawingNote);
+
+        // Setup drawing panel controls
+        setupDrawingPanel();
+    }
+
+    // Open drawing panel
+    function openDrawingPanel() {
+        const overlay = $('draw-note-overlay');
+        if (!overlay) return;
+
+        // Reset canvas
+        notePixels = createEmptyNoteGrid();
+        noteSelectedColor = 1;
+
+        // Create grid
+        createNoteGrid();
+
+        // Create palette
+        createNotePalette();
+
+        // Populate recipient dropdown
+        populateRecipients();
+
+        overlay.style.display = 'flex';
+    }
+
+    // Create the drawing grid
+    function createNoteGrid() {
+        const grid = $('draw-note-grid');
+        if (!grid) return;
+
+        grid.innerHTML = '';
+
+        for (let y = 0; y < NOTE_SIZE; y++) {
+            for (let x = 0; x < NOTE_SIZE; x++) {
+                const cell = document.createElement('div');
+                cell.className = 'note-cell';
+                cell.dataset.x = x;
+                cell.dataset.y = y;
+                grid.appendChild(cell);
+            }
+        }
+
+        // Mouse events
+        grid.addEventListener('mousedown', (e) => {
+            if (e.target.classList.contains('note-cell')) {
+                noteIsDrawing = true;
+                paintNoteCell(e.target);
+            }
+        });
+
+        grid.addEventListener('mousemove', (e) => {
+            if (noteIsDrawing && e.target.classList.contains('note-cell')) {
+                paintNoteCell(e.target);
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            noteIsDrawing = false;
+        });
+
+        // Touch events
+        grid.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const cell = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (cell && cell.classList.contains('note-cell')) {
+                noteIsDrawing = true;
+                paintNoteCell(cell);
+            }
+        });
+
+        grid.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const cell = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (noteIsDrawing && cell && cell.classList.contains('note-cell')) {
+                paintNoteCell(cell);
+            }
+        });
+
+        grid.addEventListener('touchend', () => {
+            noteIsDrawing = false;
+        });
+    }
+
+    // Create color palette
+    function createNotePalette() {
+        const palette = $('draw-note-palette');
+        if (!palette) return;
+
+        palette.innerHTML = '';
+
+        NOTE_COLORS.forEach((color, i) => {
+            const swatch = document.createElement('div');
+            swatch.className = 'note-swatch' + (i === noteSelectedColor ? ' selected' : '');
+            if (i === 0) {
+                swatch.innerHTML = '✕';
+                swatch.classList.add('eraser');
+            } else {
+                swatch.style.backgroundColor = color;
+            }
+            swatch.dataset.index = i;
+            palette.appendChild(swatch);
+
+            swatch.addEventListener('click', () => {
+                noteSelectedColor = i;
+                palette.querySelectorAll('.note-swatch').forEach(s => s.classList.remove('selected'));
+                swatch.classList.add('selected');
+            });
+        });
+    }
+
+    // Paint a cell
+    function paintNoteCell(cell) {
+        const x = parseInt(cell.dataset.x);
+        const y = parseInt(cell.dataset.y);
+        const color = NOTE_COLORS[noteSelectedColor];
+
+        notePixels[y][x] = color;
+        cell.style.backgroundColor = color || '';
+    }
+
+    // Populate recipient dropdown
+    function populateRecipients() {
+        const select = $('draw-note-target');
+        if (!select) return;
+
+        select.innerHTML = '<option value="all">Alle Spieler</option>';
+
+        // Add each player except self
+        if (state.gamePlayers && state.gamePlayers.length > 0) {
+            state.gamePlayers.forEach(p => {
+                if (p.name !== state.playerName) {
+                    const opt = document.createElement('option');
+                    opt.value = p.name;
+                    opt.textContent = p.name;
+                    select.appendChild(opt);
+                }
+            });
+        }
+    }
+
+    // Setup drawing panel controls
+    function setupDrawingPanel() {
+        const clearBtn = $('btn-note-clear');
+        const cancelBtn = $('btn-note-cancel');
+        const sendBtn = $('btn-note-send');
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                notePixels = createEmptyNoteGrid();
+                const cells = document.querySelectorAll('.note-cell');
+                cells.forEach(cell => cell.style.backgroundColor = '');
+            });
+        }
+
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', closeDrawingPanel);
+        }
+
+        if (sendBtn) {
+            sendBtn.addEventListener('click', sendDrawingNote);
+        }
+    }
+
+    // Close drawing panel
+    function closeDrawingPanel() {
+        const overlay = $('draw-note-overlay');
+        if (overlay) overlay.style.display = 'none';
+    }
+
+    // Send drawing note
+    function sendDrawingNote() {
+        const select = $('draw-note-target');
+        const target = select ? select.value : 'all';
+
+        // Check if anything was drawn
+        const hasDrawing = notePixels.some(row => row.some(cell => cell !== null));
+        if (!hasDrawing) {
+            closeDrawingPanel();
+            return;
+        }
+
+        // Render to data URL
+        const dataURL = renderNoteToDataURL();
+
+        socket.emit('drawing-note', {
+            pixels: notePixels,
+            dataURL: dataURL,
+            target: target
+        });
+
+        // Show in own chat
+        displayDrawingInChat(state.playerName, dataURL, target);
+
+        closeDrawingPanel();
+        playNoteSentSound();
+    }
+
+    // Render note pixels to data URL
+    function renderNoteToDataURL() {
+        const canvas = document.createElement('canvas');
+        const size = 128;
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+
+        const pixelSize = size / NOTE_SIZE;
+
+        for (let y = 0; y < NOTE_SIZE; y++) {
+            for (let x = 0; x < NOTE_SIZE; x++) {
+                if (notePixels[y][x]) {
+                    ctx.fillStyle = notePixels[y][x];
+                    ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                }
+            }
+        }
+
+        return canvas.toDataURL();
+    }
+
+    // Handle incoming drawing note
+    function handleDrawingNote({ from, dataURL, target }) {
+        // Check if this is for us
+        if (target !== 'all' && target !== state.playerName) return;
+
+        // Show popup
+        showReceivedDrawing(from, dataURL);
+
+        // Also show in chat
+        displayDrawingInChat(from, dataURL, target === 'all' ? 'all' : 'dir');
+    }
+
+    // Show received drawing as popup
+    function showReceivedDrawing(from, dataURL) {
+        const container = $('received-drawing');
+        if (!container) return;
+
+        const fromEl = container.querySelector('.received-from');
+        const canvas = $('received-canvas');
+
+        if (fromEl) fromEl.textContent = `${from} sendet:`;
+
+        if (canvas) {
+            const img = new Image();
+            img.onload = () => {
+                canvas.width = 128;
+                canvas.height = 128;
+                const ctx = canvas.getContext('2d');
+                ctx.imageSmoothingEnabled = false;
+                ctx.drawImage(img, 0, 0, 128, 128);
+            };
+            img.src = dataURL;
+        }
+
+        container.style.display = 'flex';
+        playNoteReceivedSound();
+
+        // Auto-hide after 4 seconds
+        setTimeout(() => {
+            container.style.display = 'none';
+        }, 4000);
+
+        // Click to dismiss
+        container.onclick = () => {
+            container.style.display = 'none';
+        };
+    }
+
+    // Display drawing in chat
+    function displayDrawingInChat(sender, dataURL, targetInfo) {
+        const messagesContainer = $('chat-messages');
+        if (!messagesContainer) return;
+
+        const msgEl = document.createElement('div');
+        msgEl.className = 'chat-message drawing-message';
+
+        const targetText = targetInfo === 'all' ? '(an alle)' :
+                          targetInfo === 'dir' ? '(an dich)' :
+                          `(an ${targetInfo})`;
+
+        msgEl.innerHTML = `
+            <div class="sender">${escapeHtml(sender)} ${targetText}</div>
+            <img src="${dataURL}" class="chat-drawing" alt="Zeichnung">
+        `;
+
+        messagesContainer.appendChild(msgEl);
+        scrollToBottom();
     }
 
     // Show chat panel
@@ -148,6 +464,47 @@
         return div.innerHTML;
     }
 
+    // Sound effects
+    function playNoteSentSound() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            [400, 600, 800].forEach((freq, i) => {
+                setTimeout(() => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.1);
+                }, i * 60);
+            });
+        } catch (e) {}
+    }
+
+    function playNoteReceivedSound() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            [600, 800, 1000, 800].forEach((freq, i) => {
+                setTimeout(() => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.15);
+                }, i * 80);
+            });
+        } catch (e) {}
+    }
+
     // Initialize on load
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initChat);
@@ -163,6 +520,7 @@
         displayMessage,
         addLocalMessage,
         clearMessages,
-        scrollToBottom
+        scrollToBottom,
+        openDrawingPanel
     };
 })();
