@@ -18,7 +18,8 @@ import ffmpegPath from 'ffmpeg-static';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const isWindows = process.platform === 'win32';
-const ytDlpPath = join(__dirname, isWindows ? '../../yt-dlp.exe' : '../../yt-dlp');
+// Pfad zum Hauptverzeichnis (stricthotel/)
+const ytDlpPath = join(__dirname, isWindows ? '../../../yt-dlp.exe' : '../../../yt-dlp');
 
 let ytDlp = null;
 
