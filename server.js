@@ -676,5 +676,5 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`Mäxchen Server: http://localhost:${PORT}`);
+    console.log(`StrictHotel Server: http://localhost:${PORT}`);
 });

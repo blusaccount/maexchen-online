@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alien Arcade - Minigame Collection</title>
+    <title>StrictHotel - Minigame Collection</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
@@ -95,12 +95,70 @@
             margin-top: 15px;
             display: inline-block;
         }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .menu-container {
+                padding: 20px 15px;
+            }
+
+            .arcade-title {
+                font-size: 2rem;
+                letter-spacing: 2px;
+            }
+
+            .arcade-subtitle {
+                font-size: 1rem;
+                margin-bottom: 40px;
+            }
+
+            .game-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .game-card {
+                padding: 20px;
+            }
+
+            .game-icon {
+                font-size: 3rem;
+            }
+
+            .game-title {
+                font-size: 1.3rem;
+            }
+
+            .game-desc {
+                font-size: 0.85rem;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .arcade-title {
+                font-size: 1.6rem;
+            }
+
+            .arcade-subtitle {
+                font-size: 0.85rem;
+                margin-bottom: 30px;
+            }
+
+            .game-icon {
+                font-size: 2.5rem;
+                margin-bottom: 10px;
+            }
+
+            .game-title {
+                font-size: 1.1rem;
+            }
+        }
     </style>
 </head>
 <body>
 
 <div class="menu-container">
-    <div class="arcade-title">ALIEN ARCADE</div>
+    <div class="arcade-title">STRICT HOTEL</div>
     <div class="arcade-subtitle">Minigame Collection</div>
 
     <div class="game-grid">

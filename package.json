@@ -1,13 +1,13 @@
 {
-  "name": "maexchen-online",
+  "name": "stricthotel",
   "version": "1.0.0",
-  "description": "Mäxchen / Lügen - Online Multiplayer Würfelspiel",
+  "description": "StrictHotel - Minigame Collection",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js"
   },
-  "keywords": ["maexchen", "luegen", "dice", "game", "multiplayer"],
+  "keywords": ["stricthotel", "minigames", "maexchen", "dice", "game", "multiplayer"],
   "author": "",
   "license": "MIT",
   "dependencies": {

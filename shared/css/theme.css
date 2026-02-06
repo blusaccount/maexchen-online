@@ -1490,50 +1490,301 @@ h3 { font-size: 1.3rem; color: var(--text-dim); letter-spacing: 2px; text-transf
     100% { text-shadow: 0 0 50px var(--gold), 0 0 100px var(--gold), 0 0 150px var(--gold); }
 }
 
-/* ===== Responsive ===== */
-@media (max-width: 480px) {
-    .title-maexchen { font-size: 2.2rem; }
-    h2 { font-size: 1.4rem; }
-    .room-code { font-size: 2rem; letter-spacing: 6px; }
-    .announce-grid { grid-template-columns: repeat(4, 1fr); }
-    .announce-btn.maexchen { grid-column: span 4; }
-    #dice-container { height: 250px; }
+/* ===== Responsive - Tablet ===== */
+@media (max-width: 768px) {
+    body {
+        font-size: 16px;
+    }
 
+    #app {
+        padding: 15px;
+        padding-top: 60px; /* Space for home button */
+    }
+
+    .title-maexchen {
+        font-size: 2.5rem;
+    }
+
+    /* Hide sidebar on tablet, use lives-bar instead */
+    #player-sidebar {
+        display: none;
+    }
+
+    .lives-bar {
+        display: flex !important;
+    }
+
+    #dice-container {
+        height: 50vh;
+        min-height: 250px;
+        max-height: 400px;
+    }
+
+    .btn {
+        padding: 14px 28px;
+        font-size: 1rem;
+        min-width: 140px;
+    }
+}
+
+/* ===== Responsive - Mobile ===== */
+@media (max-width: 480px) {
+    body {
+        font-size: 14px;
+    }
+
+    #app {
+        padding: 10px;
+        padding-top: 55px;
+    }
+
+    .title-maexchen {
+        font-size: 1.8rem;
+        letter-spacing: 2px;
+    }
+
+    h2 { font-size: 1.3rem; }
+    h3 { font-size: 1rem; }
+
+    .subtitle {
+        font-size: 0.75rem;
+    }
+
+    .room-code {
+        font-size: 1.8rem;
+        letter-spacing: 5px;
+        padding: 10px 20px;
+    }
+
+    /* Buttons */
+    .btn {
+        padding: 12px 20px;
+        font-size: 0.9rem;
+        min-width: 120px;
+    }
+
+    .btn-small {
+        padding: 6px 12px;
+        font-size: 0.75rem;
+    }
+
+    /* Forms */
+    .form-group input {
+        padding: 10px 14px;
+        font-size: 1rem;
+    }
+
+    .join-row input {
+        width: 100px;
+        font-size: 1.1rem;
+        letter-spacing: 3px;
+    }
+
+    /* Dice */
+    #dice-container {
+        height: 40vh;
+        min-height: 200px;
+        max-height: 300px;
+    }
+
+    .dice-result {
+        font-size: 1.3rem;
+        padding: 10px 16px;
+    }
+
+    .dice-result.maexchen {
+        font-size: 1.6rem;
+    }
+
+    /* Announce Grid */
+    .announce-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4px;
+        max-width: 100%;
+    }
+
+    .announce-btn {
+        padding: 8px 2px;
+        font-size: 0.8rem;
+    }
+
+    .announce-btn.maexchen {
+        grid-column: span 4;
+        font-size: 1rem;
+        padding: 10px;
+    }
+
+    /* Previous announcement */
+    .previous-announcement {
+        padding: 10px 16px;
+        font-size: 1.1rem;
+    }
+
+    /* Lives bar */
+    .lives-bar {
+        gap: 6px;
+        padding: 5px;
+    }
+
+    .player-life {
+        padding: 8px 10px;
+        font-size: 0.85rem;
+        gap: 5px;
+    }
+
+    /* Chat */
     #chat-panel {
-        width: calc(100% - 40px);
-        right: 20px;
-        left: 20px;
-        max-height: 200px;
+        width: calc(100% - 20px);
+        right: 10px;
+        left: 10px;
+        bottom: 10px;
+        max-height: 180px;
     }
 
     #chat-messages {
-        max-height: 100px;
+        max-height: 80px;
+        padding: 6px;
+        gap: 5px;
     }
 
+    .chat-message {
+        font-size: 0.75rem;
+        padding: 4px 8px;
+    }
+
+    #chat-input-row {
+        padding: 6px;
+        gap: 6px;
+    }
+
+    #chat-input {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+
+    #btn-send {
+        padding: 6px 10px;
+    }
+
+    /* Emote bar */
     #emote-bar {
         bottom: auto;
         top: 10px;
-        left: 10px;
-        padding: 6px;
+        left: auto;
+        right: 10px;
+        padding: 5px;
         gap: 4px;
     }
 
     .emote-btn {
-        width: 40px;
-        height: 40px;
-        font-size: 1.4rem;
+        width: 36px;
+        height: 36px;
+        font-size: 1.2rem;
     }
 
+    /* Home button */
+    #home-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1.1rem;
+        top: 10px;
+        left: 10px;
+    }
+
+    /* Announcement popup */
     .announcement-display {
-        padding: 20px 30px;
+        padding: 20px 25px;
+        width: calc(100% - 40px);
+        max-width: 300px;
+    }
+
+    .announcement-display .player-name {
+        font-size: 1.1rem;
     }
 
     .announcement-display .announced-value {
-        font-size: 2.5rem;
+        font-size: 2.2rem;
     }
 
     .announcement-display .announced-value.maexchen {
-        font-size: 3rem;
+        font-size: 2.8rem;
+    }
+
+    /* Character creator */
+    .pixel-grid {
+        width: min(280px, 85vw);
+        height: min(280px, 85vw);
+    }
+
+    .color-palette {
+        max-width: 300px;
+    }
+
+    .color-swatch {
+        width: 28px;
+        height: 28px;
+    }
+
+    .creator-title {
+        font-size: 1.4rem;
+    }
+
+    /* Lobbies */
+    .lobbies-section,
+    .online-section {
+        max-width: 100%;
+    }
+
+    .lobby-card {
+        padding: 12px;
+    }
+
+    .lobby-host {
+        font-size: 0.9rem;
+    }
+
+    /* Victory */
+    .winner-crown {
+        font-size: 5rem;
+    }
+
+    .winner-name {
+        font-size: 2rem;
+    }
+
+    /* Player list */
+    .player-list {
+        max-width: 100%;
+    }
+
+    .player-item {
+        padding: 10px 14px;
+        font-size: 1rem;
+    }
+}
+
+/* ===== Very small screens ===== */
+@media (max-width: 360px) {
+    .title-maexchen {
+        font-size: 1.5rem;
+    }
+
+    .room-code {
+        font-size: 1.5rem;
+        letter-spacing: 4px;
+    }
+
+    .announce-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .announce-btn.maexchen {
+        grid-column: span 3;
+    }
+
+    #dice-container {
+        height: 35vh;
+        min-height: 180px;
     }
 }
 
