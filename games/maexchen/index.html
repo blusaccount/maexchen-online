@@ -11,6 +11,9 @@
 </head>
 <body>
 
+<!-- Home Button (always visible) -->
+<a href="/" id="home-btn" title="Zurück zum Hauptmenü">🏠</a>
+
 <div id="app">
 
     <!-- ===== START SCREEN ===== -->
@@ -38,6 +41,20 @@
             <span id="current-avatar-placeholder">🎨</span>
             <span>Charakter erstellen</span>
         </button>
+
+        <!-- Open Lobbies -->
+        <div id="open-lobbies" class="lobbies-section">
+            <h3>Offene Räume</h3>
+            <div id="lobby-list" class="lobby-list">
+                <p class="no-lobbies">Keine offenen Räume</p>
+            </div>
+        </div>
+
+        <!-- Online Players -->
+        <div id="online-players" class="online-section">
+            <h3>Online: <span id="online-count">0</span></h3>
+            <div id="online-list" class="online-list"></div>
+        </div>
     </div>
 
     <!-- ===== WAITING ROOM ===== -->

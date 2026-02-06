@@ -1536,3 +1536,158 @@ h3 { font-size: 1.3rem; color: var(--text-dim); letter-spacing: 2px; text-transf
         font-size: 3rem;
     }
 }
+
+/* ===== Home Button ===== */
+#home-btn {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    width: 45px;
+    height: 45px;
+    background: var(--surface);
+    border: 2px solid var(--accent);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    text-decoration: none;
+    z-index: 100;
+    transition: all 0.2s;
+}
+
+#home-btn:hover {
+    background: rgba(0,255,136,0.2);
+    transform: scale(1.1);
+    box-shadow: 0 0 15px var(--accent);
+}
+
+/* ===== Open Lobbies Section ===== */
+.lobbies-section {
+    margin-top: 40px;
+    width: 100%;
+    max-width: 400px;
+}
+
+.lobbies-section h3 {
+    margin-bottom: 15px;
+}
+
+.lobby-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.no-lobbies {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    text-align: center;
+    padding: 20px;
+}
+
+.lobby-card {
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    padding: 15px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.lobby-card:hover {
+    background: rgba(0,255,136,0.1);
+    border-color: var(--accent-glow);
+}
+
+.lobby-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.lobby-host {
+    font-size: 1rem;
+    color: var(--accent);
+}
+
+.lobby-code {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+}
+
+.lobby-players {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+.lobby-player-count {
+    font-size: 0.9rem;
+    color: var(--gold);
+}
+
+.lobby-avatars {
+    display: flex;
+    gap: -5px;
+}
+
+.lobby-avatar {
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--accent);
+    background: var(--bg);
+}
+
+.lobby-avatar img {
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+}
+
+/* ===== Online Players Section ===== */
+.online-section {
+    margin-top: 30px;
+    width: 100%;
+    max-width: 400px;
+}
+
+.online-section h3 {
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+}
+
+#online-count {
+    color: var(--gold);
+}
+
+.online-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+}
+
+.online-player {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0,255,136,0.1);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+}
+
+.online-avatar {
+    width: 20px;
+    height: 20px;
+}
+
+.online-avatar img {
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+}

@@ -5,8 +5,21 @@
 (function() {
     const { socket, $, showScreen, state } = window.MaexchenApp;
 
+    // Get current game type from URL path
+    const gameType = window.location.pathname.split('/')[2] || 'maexchen';
+
+    // Request lobbies on load
+    socket.emit('get-lobbies', gameType);
+
+    // Periodically refresh lobbies
+    setInterval(() => {
+        if ($('screen-start')?.classList.contains('active')) {
+            socket.emit('get-lobbies', gameType);
+        }
+    }, 5000);
+
     // --- Create Room ---
-    $('btn-create').addEventListener('click', () => {
+    $('btn-create')?.addEventListener('click', () => {
         const name = $('input-name').value.trim();
         if (!name) {
             $('start-error').textContent = 'Bitte gib einen Namen ein!';
@@ -15,20 +28,23 @@
         state.playerName = name;
         $('start-error').textContent = '';
 
+        // Register as online player
+        registerPlayer(name);
+
         // Check if character exists, if not show creator
         if (window.MaexchenCreator && !window.MaexchenCreator.hasCharacter()) {
             window.MaexchenCreator.showCreator(() => {
                 const character = window.MaexchenCreator.getCharacter();
-                socket.emit('create-room', { playerName: name, character });
+                socket.emit('create-room', { playerName: name, character, gameType });
             });
         } else {
             const character = window.MaexchenCreator ? window.MaexchenCreator.getCharacter() : null;
-            socket.emit('create-room', { playerName: name, character });
+            socket.emit('create-room', { playerName: name, character, gameType });
         }
     });
 
     // --- Join Room ---
-    $('btn-join').addEventListener('click', () => {
+    $('btn-join')?.addEventListener('click', () => {
         const name = $('input-name').value.trim();
         const code = $('input-code').value.trim().toUpperCase();
 
@@ -44,6 +60,9 @@
         state.playerName = name;
         $('start-error').textContent = '';
 
+        // Register as online player
+        registerPlayer(name);
+
         // Check if character exists, if not show creator
         if (window.MaexchenCreator && !window.MaexchenCreator.hasCharacter()) {
             window.MaexchenCreator.showCreator(() => {
@@ -56,8 +75,39 @@
         }
     });
 
+    // Join lobby by clicking on it
+    function joinLobby(code) {
+        const name = $('input-name').value.trim();
+        if (!name) {
+            $('start-error').textContent = 'Bitte gib zuerst einen Namen ein!';
+            $('input-name').focus();
+            return;
+        }
+
+        state.playerName = name;
+        registerPlayer(name);
+
+        if (window.MaexchenCreator && !window.MaexchenCreator.hasCharacter()) {
+            window.MaexchenCreator.showCreator(() => {
+                const character = window.MaexchenCreator.getCharacter();
+                socket.emit('join-room', { code, playerName: name, character });
+            });
+        } else {
+            const character = window.MaexchenCreator ? window.MaexchenCreator.getCharacter() : null;
+            socket.emit('join-room', { code, playerName: name, character });
+        }
+    }
+
+    // Register player as online
+    function registerPlayer(name) {
+        const character = window.MaexchenCreator?.hasCharacter()
+            ? window.MaexchenCreator.getCharacter()
+            : null;
+        socket.emit('register-player', { name, character, game: gameType });
+    }
+
     // Edit character button
-    $('btn-edit-character').addEventListener('click', () => {
+    $('btn-edit-character')?.addEventListener('click', () => {
         if (window.MaexchenCreator) {
             window.MaexchenCreator.showCreator(() => {
                 updateCharacterPreview();
@@ -90,7 +140,7 @@
     setTimeout(updateCharacterPreview, 100);
 
     // Enter key handlers
-    $('input-name').addEventListener('keydown', (e) => {
+    $('input-name')?.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             const code = $('input-code').value.trim();
             if (code.length === 4) {
@@ -101,8 +151,20 @@
         }
     });
 
-    $('input-code').addEventListener('keydown', (e) => {
+    $('input-code')?.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') $('btn-join').click();
+    });
+
+    // --- Online Players Update ---
+    socket.on('online-players', (players) => {
+        renderOnlinePlayers(players);
+    });
+
+    // --- Lobbies Update ---
+    socket.on('lobbies-update', ({ gameType: gt, lobbies }) => {
+        if (gt === gameType) {
+            renderLobbies(lobbies);
+        }
     });
 
     // --- Room Created ---
@@ -152,7 +214,7 @@
     });
 
     // --- Start Game ---
-    $('btn-start-game').addEventListener('click', () => {
+    $('btn-start-game')?.addEventListener('click', () => {
         socket.emit('start-game');
     });
 
@@ -160,6 +222,73 @@
     socket.on('player-left', ({ playerName }) => {
         console.log(`${playerName} hat den Raum verlassen`);
     });
+
+    // Render online players
+    function renderOnlinePlayers(players) {
+        const list = $('online-list');
+        const count = $('online-count');
+        if (!list) return;
+
+        if (count) count.textContent = players.length;
+
+        if (players.length === 0) {
+            list.innerHTML = '<span class="no-players">Niemand online</span>';
+            return;
+        }
+
+        list.innerHTML = players.map(p => {
+            const avatarHtml = p.character?.dataURL
+                ? `<img src="${p.character.dataURL}" alt="">`
+                : '👽';
+            return `
+                <div class="online-player">
+                    <span class="online-avatar">${avatarHtml}</span>
+                    <span>${p.name}</span>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Render open lobbies
+    function renderLobbies(lobbies) {
+        const list = $('lobby-list');
+        if (!list) return;
+
+        if (lobbies.length === 0) {
+            list.innerHTML = '<p class="no-lobbies">Keine offenen Räume</p>';
+            return;
+        }
+
+        list.innerHTML = lobbies.map(lobby => {
+            const avatars = lobby.players.slice(0, 4).map(p => {
+                if (p.character?.dataURL) {
+                    return `<div class="lobby-avatar"><img src="${p.character.dataURL}" alt=""></div>`;
+                }
+                return `<div class="lobby-avatar">👽</div>`;
+            }).join('');
+
+            return `
+                <div class="lobby-card" data-code="${lobby.code}">
+                    <div class="lobby-info">
+                        <div class="lobby-host">${lobby.hostName}'s Raum</div>
+                        <div class="lobby-code">${lobby.code}</div>
+                    </div>
+                    <div class="lobby-players">
+                        <div class="lobby-avatars">${avatars}</div>
+                        <span class="lobby-player-count">${lobby.playerCount}/6</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Add click handlers
+        list.querySelectorAll('.lobby-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const code = card.dataset.code;
+                joinLobby(code);
+            });
+        });
+    }
 
     function renderPlayerList(players) {
         const list = $('player-list');

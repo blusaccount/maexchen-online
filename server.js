@@ -54,6 +54,42 @@ function isMaexchen(val) {
 
 const rooms = new Map();
 
+// Track all online players globally
+const onlinePlayers = new Map(); // socketId -> { name, character, game }
+
+// Broadcast online players to all clients
+function broadcastOnlinePlayers() {
+    const players = Array.from(onlinePlayers.values());
+    io.emit('online-players', players);
+}
+
+// Get open lobbies for a specific game
+function getOpenLobbies(gameType) {
+    const lobbies = [];
+    for (const [code, room] of rooms) {
+        // Only show rooms that haven't started and match the game type
+        if (!room.game && room.gameType === gameType) {
+            lobbies.push({
+                code: code,
+                hostName: room.players.find(p => p.socketId === room.hostId)?.name || 'Unknown',
+                playerCount: room.players.length,
+                maxPlayers: 6,
+                players: room.players.map(p => ({
+                    name: p.name,
+                    character: p.character
+                }))
+            });
+        }
+    }
+    return lobbies;
+}
+
+// Broadcast lobbies to clients in a specific game
+function broadcastLobbies(gameType) {
+    const lobbies = getOpenLobbies(gameType);
+    io.emit('lobbies-update', { gameType, lobbies });
+}
+
 function generateRoomCode() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let code;
@@ -124,16 +160,34 @@ function sendTurnStart(room) {
 io.on('connection', (socket) => {
     console.log(`Connected: ${socket.id}`);
 
+    // Send current online players to new connection
+    socket.emit('online-players', Array.from(onlinePlayers.values()));
+
+    // --- Register Player (when they enter their name) ---
+    socket.on('register-player', ({ name, character, game }) => {
+        onlinePlayers.set(socket.id, { name, character, game });
+        broadcastOnlinePlayers();
+        console.log(`Registered: ${name} for ${game}`);
+    });
+
+    // --- Request Lobbies ---
+    socket.on('get-lobbies', (gameType) => {
+        const lobbies = getOpenLobbies(gameType);
+        socket.emit('lobbies-update', { gameType, lobbies });
+    });
+
     // --- Create Room ---
     socket.on('create-room', (data) => {
         // Support both old (string) and new (object) format
         const playerName = typeof data === 'string' ? data : data.playerName;
         const character = typeof data === 'object' ? data.character : null;
+        const gameType = typeof data === 'object' ? data.gameType : 'maexchen';
 
         const code = generateRoomCode();
         const room = {
             code,
             hostId: socket.id,
+            gameType: gameType,
             players: [{
                 socketId: socket.id,
                 name: playerName || 'Spieler 1',
@@ -146,6 +200,7 @@ io.on('connection', (socket) => {
 
         socket.emit('room-created', { code });
         broadcastRoomState(room);
+        broadcastLobbies(gameType); // Notify others about new lobby
         console.log(`Room ${code} created by ${playerName}`);
     });
 
@@ -179,6 +234,7 @@ io.on('connection', (socket) => {
 
         socket.emit('room-joined', { code });
         broadcastRoomState(room);
+        broadcastLobbies(room.gameType); // Update lobby list
         console.log(`${playerName} joined room ${code}`);
     });
 
@@ -215,6 +271,7 @@ io.on('connection', (socket) => {
         });
 
         sendTurnStart(room);
+        broadcastLobbies(room.gameType); // Remove from open lobbies
         console.log(`Game started in ${room.code}`);
     });
 
@@ -547,8 +604,14 @@ io.on('connection', (socket) => {
 
     // --- Disconnect ---
     socket.on('disconnect', () => {
+        // Remove from online players
+        onlinePlayers.delete(socket.id);
+        broadcastOnlinePlayers();
+
         const room = getRoom(socket.id);
         if (!room) return;
+
+        const gameType = room.gameType;
 
         const playerIndex = room.players.findIndex(p => p.socketId === socket.id);
         if (playerIndex === -1) return;
@@ -592,6 +655,7 @@ io.on('connection', (socket) => {
 
         if (room.players.length === 0) {
             rooms.delete(room.code);
+            broadcastLobbies(gameType);
             console.log(`Room ${room.code} deleted`);
             return;
         }
@@ -602,6 +666,7 @@ io.on('connection', (socket) => {
         }
 
         broadcastRoomState(room);
+        broadcastLobbies(gameType);
         io.to(room.code).emit('player-left', { playerName });
         console.log(`${playerName} left ${room.code}`);
     });
