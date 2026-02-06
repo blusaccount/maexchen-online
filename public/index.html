@@ -3,181 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mäxchen Online</title>
+    <title>Alien Arcade - Minigame Collection</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/shared/css/theme.css">
+    <style>
+        .menu-container {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .arcade-title {
+            font-size: 3rem;
+            color: var(--accent);
+            text-shadow: 0 0 30px var(--accent);
+            margin-bottom: 10px;
+            letter-spacing: 4px;
+        }
+
+        .arcade-subtitle {
+            color: var(--text-dim);
+            font-size: 1.2rem;
+            margin-bottom: 60px;
+        }
+
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .game-card {
+            background: var(--surface);
+            border: 2px solid var(--accent);
+            padding: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: block;
+        }
+
+        .game-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(0,255,136,0.3);
+            border-color: var(--accent-glow);
+        }
+
+        .game-icon {
+            font-size: 4rem;
+            margin-bottom: 15px;
+        }
+
+        .game-title {
+            font-size: 1.5rem;
+            color: var(--accent);
+            margin-bottom: 10px;
+        }
+
+        .game-desc {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .game-players {
+            margin-top: 15px;
+            font-size: 0.8rem;
+            color: var(--gold);
+        }
+
+        .game-card.coming-soon {
+            opacity: 0.5;
+            cursor: not-allowed;
+            border-style: dashed;
+        }
+
+        .game-card.coming-soon:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .coming-soon-badge {
+            background: var(--danger);
+            color: white;
+            padding: 4px 12px;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            margin-top: 15px;
+            display: inline-block;
+        }
+    </style>
 </head>
 <body>
 
-<div id="app">
+<div class="menu-container">
+    <div class="arcade-title">ALIEN ARCADE</div>
+    <div class="arcade-subtitle">Minigame Collection</div>
 
-    <!-- ===== START SCREEN ===== -->
-    <div id="screen-start" class="screen active">
-        <div class="title-maexchen" id="main-title">Mäxchen</div>
-        <p class="subtitle">Online Multiplayer</p>
-
-        <div class="form-group">
-            <input type="text" id="input-name" maxlength="12" placeholder="Dein Name..." autocomplete="off">
-        </div>
-
-        <button class="btn btn-primary" id="btn-create">Raum erstellen</button>
-
-        <h3>- oder -</h3>
-
-        <div class="join-row">
-            <input type="text" id="input-code" maxlength="4" placeholder="CODE" autocomplete="off">
-            <button class="btn btn-secondary" id="btn-join">Beitreten</button>
-        </div>
-
-        <div class="error-text" id="start-error"></div>
-
-        <button class="btn btn-secondary" id="btn-edit-character" style="margin-top: 20px; min-width: 160px; padding: 10px 20px; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; gap: 10px;">
-            <img id="current-avatar" src="" alt="" style="width: 24px; height: 24px; image-rendering: pixelated; display: none;">
-            <span id="current-avatar-placeholder">🎨</span>
-            <span>Charakter erstellen</span>
-        </button>
-    </div>
-
-    <!-- ===== WAITING ROOM ===== -->
-    <div id="screen-waiting" class="screen">
-        <div class="title-maexchen" style="font-size:2rem;">Mäxchen</div>
-        <p class="subtitle">Warteraum</p>
-
-        <h3>Raum-Code:</h3>
-        <div class="room-code" id="room-code-display"></div>
-
-        <h3>Spieler:</h3>
-        <div class="player-list" id="player-list"></div>
-
-        <button class="btn btn-success" id="btn-start-game" style="display:none;">Spiel starten</button>
-        <p class="subtitle" id="waiting-hint">Warte auf weitere Spieler...</p>
-    </div>
-
-    <!-- ===== GAME SCREEN ===== -->
-    <div id="screen-game" class="screen">
-        <div class="title-maexchen" style="font-size:1.8rem; margin-bottom: 10px;">Mäxchen</div>
-        <div class="lives-bar" id="lives-bar"></div>
-
-        <div id="prev-announce-box" class="previous-announcement" style="display:none;"></div>
-
-        <!-- Dice Container - visible for all players -->
-        <div id="dice-container"></div>
-        <div id="dice-result" class="dice-result" style="display:none;"></div>
-
-        <!-- Status text when waiting -->
-        <div id="waiting-text" class="waiting-text" style="display:none;"></div>
-
-        <!-- Active player controls -->
-        <div id="active-player-area" style="display:none;">
-            <!-- Roll Section -->
-            <div id="roll-section" class="action-row">
-                <button class="btn btn-primary" id="btn-roll">Würfeln</button>
+    <div class="game-grid">
+        <a href="/games/maexchen/" class="game-card">
+            <div class="game-icon">🎲</div>
+            <div class="game-title">Mäxchen</div>
+            <div class="game-desc">
+                Das klassische Bluff-Würfelspiel.
+                Würfle, lüge und durchschaue die anderen!
             </div>
+            <div class="game-players">2-6 Spieler</div>
+        </a>
 
-            <!-- Challenge Section (when can challenge) -->
-            <div id="challenge-section" class="action-row" style="display:none;">
-                <button class="btn btn-danger" id="btn-challenge">Anzweifeln!</button>
+        <div class="game-card coming-soon">
+            <div class="game-icon">🃏</div>
+            <div class="game-title">???</div>
+            <div class="game-desc">
+                Ein weiteres Minigame kommt bald...
             </div>
+            <div class="coming-soon-badge">COMING SOON</div>
+        </div>
 
-            <!-- Mäxchen Actions (when Mäxchen announced) -->
-            <div id="maexchen-actions" class="action-row" style="display:none;">
-                <button class="btn btn-danger" id="btn-challenge-m">Anzweifeln!</button>
-                <button class="btn btn-secondary" id="btn-believe">Glauben (-2 Leben)</button>
+        <div class="game-card coming-soon">
+            <div class="game-icon">🎯</div>
+            <div class="game-title">???</div>
+            <div class="game-desc">
+                Noch mehr Spaß in Entwicklung...
             </div>
-
-            <!-- Announce Grid -->
-            <div id="announce-section" class="announce-section" style="display:none;">
-                <h3>Was sagst du an?</h3>
-                <div id="announce-grid" class="announce-grid"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ===== REVEAL SCREEN ===== -->
-    <div id="screen-reveal" class="screen">
-        <div class="title-maexchen" style="font-size:1.8rem; margin-bottom: 10px;">Mäxchen</div>
-        <div class="lives-bar" id="reveal-lives-bar"></div>
-        <div class="reveal-area">
-            <h2 id="reveal-title"></h2>
-            <div class="info-box">
-                <div id="reveal-dice-result"></div>
-                <div id="reveal-announced"></div>
-            </div>
-            <div id="reveal-result" class="result-text"></div>
-            <div id="reveal-life-lost" class="life-lost-text"></div>
-            <div id="reveal-elimination" class="life-lost-text" style="display:none;"></div>
-        </div>
-        <button class="btn btn-primary" id="btn-continue">Weiter</button>
-    </div>
-
-    <!-- ===== GAME OVER ===== -->
-    <div id="screen-gameover" class="screen">
-        <div class="title-maexchen" style="font-size:1.8rem; margin-bottom: 10px;">Mäxchen</div>
-        <div class="winner-crown">👑</div>
-        <h2>Spiel vorbei!</h2>
-        <div class="winner-name" id="winner-name"></div>
-        <p class="subtitle">hat gewonnen!</p>
-        <button class="btn btn-gold" id="btn-restart">Neue Runde</button>
-    </div>
-
-</div>
-
-<!-- Chat Panel -->
-<div id="chat-panel" style="display:none;">
-    <div id="chat-header">
-        <span>Transmission</span>
-        <button id="btn-mute" title="TTS stumm schalten">🔊</button>
-    </div>
-    <div id="chat-messages"></div>
-    <div id="chat-input-row">
-        <button id="btn-draw" title="Notiz zeichnen">✏️</button>
-        <input type="text" id="chat-input" placeholder="Nachricht..." maxlength="100" autocomplete="off">
-        <button id="btn-send">↑</button>
-    </div>
-</div>
-
-<!-- Drawing Note Overlay -->
-<div id="draw-note-overlay" style="display:none;">
-    <div id="draw-note-panel">
-        <div class="draw-note-title">Notiz zeichnen</div>
-        <div class="draw-note-canvas-container">
-            <div class="draw-note-grid" id="draw-note-grid"></div>
-        </div>
-        <div class="draw-note-palette" id="draw-note-palette"></div>
-        <div class="draw-note-recipient">
-            <label>Senden an:</label>
-            <select id="draw-note-target"></select>
-        </div>
-        <div class="draw-note-buttons">
-            <button class="btn btn-small" id="btn-note-clear">Löschen</button>
-            <button class="btn btn-small btn-secondary" id="btn-note-cancel">Abbrechen</button>
-            <button class="btn btn-small btn-primary" id="btn-note-send">Senden</button>
+            <div class="coming-soon-badge">COMING SOON</div>
         </div>
     </div>
 </div>
-
-<!-- Received Drawing Display -->
-<div id="received-drawing" style="display:none;">
-    <div class="received-drawing-content">
-        <div class="received-from"></div>
-        <canvas id="received-canvas"></canvas>
-    </div>
-</div>
-
-<script src="/socket.io/socket.io.js"></script>
-<script src="/js/main.js"></script>
-<script src="/js/lobby.js"></script>
-<script src="/js/game.js"></script>
-<script src="/js/dice.js"></script>
-<script src="/js/tts.js"></script>
-<script src="/js/chat.js"></script>
-<script src="/js/reactions.js"></script>
-<script src="/js/ambient.js"></script>
-<script src="/js/avatars.js"></script>
-<script src="/js/emotes.js"></script>
-<script src="/js/creator.js"></script>
 
 </body>
 </html>

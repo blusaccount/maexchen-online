@@ -9,6 +9,8 @@ const io = new Server(server);
 
 // Static files
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/shared', express.static(path.join(__dirname, 'shared')));
+app.use('/games', express.static(path.join(__dirname, 'games')));
 
 // ============== GAME CONSTANTS ==============
 
