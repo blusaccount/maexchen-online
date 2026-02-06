@@ -45,5 +45,31 @@ socket.on('error', ({ message }) => {
     if (errorEl) errorEl.textContent = message;
 });
 
+// Title click - return to start
+$('main-title').addEventListener('click', () => {
+    if (state.roomCode) {
+        socket.emit('leave-room');
+    }
+    // Reset state
+    state.roomCode = null;
+    state.isHost = false;
+    state.gamePlayers = [];
+    state.myPlayerIndex = -1;
+    state.currentPlayerIndex = -1;
+
+    // Hide chat
+    if (window.MaexchenChat) {
+        window.MaexchenChat.hideChat();
+    }
+
+    // Stop ambient sounds
+    if (window.MaexchenAmbient) {
+        window.MaexchenAmbient.stop();
+    }
+
+    // Show start screen
+    showScreen('start');
+});
+
 // Export for global access
 window.MaexchenApp = { socket, $, showScreen, state };

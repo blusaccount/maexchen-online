@@ -434,6 +434,73 @@ io.on('connection', (socket) => {
         console.log(`[Chat ${room.code}] ${player.name}: ${sanitizedText}`);
     });
 
+    // --- Leave Room ---
+    socket.on('leave-room', () => {
+        const room = getRoom(socket.id);
+        if (!room) return;
+
+        const playerIndex = room.players.findIndex(p => p.socketId === socket.id);
+        if (playerIndex === -1) return;
+
+        const playerName = room.players[playerIndex].name;
+        console.log(`${playerName} left ${room.code}`);
+
+        // Leave socket room
+        socket.leave(room.code);
+
+        // If game running, eliminate player
+        if (room.game) {
+            const gamePlayer = room.game.players.find(p => p.socketId === socket.id);
+            if (gamePlayer && gamePlayer.lives > 0) {
+                gamePlayer.lives = 0;
+
+                io.to(room.code).emit('player-disconnected', {
+                    playerName,
+                    players: room.game.players.map(p => ({ name: p.name, lives: p.lives }))
+                });
+
+                // If it was their turn, advance
+                if (room.game.players[room.game.currentIndex].socketId === socket.id) {
+                    room.game.currentIndex = nextAlivePlayerIndex(room.game, room.game.currentIndex);
+                    room.game.previousAnnouncement = null;
+                    room.game.isFirstTurn = true;
+                }
+
+                // Check game over
+                const alive = getAlivePlayers(room.game);
+                if (alive.length <= 1) {
+                    io.to(room.code).emit('game-over', {
+                        winnerName: alive[0]?.name || 'Niemand',
+                        players: room.game.players.map(p => ({ name: p.name, lives: p.lives }))
+                    });
+                    room.game = null;
+                } else {
+                    sendTurnStart(room);
+                }
+            }
+        }
+
+        // Remove from room
+        room.players.splice(playerIndex, 1);
+
+        if (room.players.length === 0) {
+            rooms.delete(room.code);
+        } else {
+            // Reassign host if needed
+            if (room.hostId === socket.id) {
+                room.hostId = room.players[0].socketId;
+            }
+            io.to(room.code).emit('room-update', {
+                players: room.players.map(p => ({
+                    name: p.name,
+                    isHost: p.socketId === room.hostId,
+                    character: p.character
+                })),
+                hostId: room.hostId
+            });
+        }
+    });
+
     // --- Disconnect ---
     socket.on('disconnect', () => {
         const room = getRoom(socket.id);
