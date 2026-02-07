@@ -189,7 +189,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
         socket.emit('online-players', Array.from(onlinePlayers.values()));
 
         // --- Register Player (when they enter their name) ---
-        socket.on('register-player', (data) => { try {
+        socket.on('register-player', async (data) => { try {
             if (!checkRateLimit(socket.id)) return;
             if (!data || typeof data !== 'object') return;
 
@@ -202,7 +202,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
             broadcastOnlinePlayers(io);
 
             // Send currency balance to the player
-            socket.emit('balance-update', { balance: getBalance(name) });
+            socket.emit('balance-update', { balance: await getBalance(name) });
 
             console.log(`Registered: ${name} for ${game}`);
         } catch (err) { console.error('register-player error:', err.message); } });
@@ -233,11 +233,11 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
         } catch (err) { console.error('get-player-character error:', err.message); } });
 
         // --- Get Currency Balance ---
-        socket.on('get-balance', () => { try {
+        socket.on('get-balance', async () => { try {
             if (!checkRateLimit(socket.id)) return;
             const player = onlinePlayers.get(socket.id);
             if (!player) return;
-            socket.emit('balance-update', { balance: getBalance(player.name) });
+            socket.emit('balance-update', { balance: await getBalance(player.name) });
         } catch (err) { console.error('get-balance error:', err.message); } });
 
         // --- Stock Game: Buy ---
@@ -279,14 +279,14 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
                 return;
             }
 
-            const result = buyStock(player.name, quote.symbol, quote.price, amount);
+            const result = await buyStock(player.name, quote.symbol, quote.price, amount);
             if (!result.ok) {
                 socket.emit('stock-error', { error: result.error });
                 return;
             }
 
             socket.emit('balance-update', { balance: result.newBalance });
-            const snapshot = getPortfolioSnapshot(player.name, quotes);
+            const snapshot = await getPortfolioSnapshot(player.name, quotes);
             socket.emit('stock-portfolio', snapshot);
         } catch (err) { console.error('stock-buy error:', err.message); } });
 
@@ -328,14 +328,14 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
                 return;
             }
 
-            const result = sellStock(player.name, quote.symbol, quote.price, amount);
+            const result = await sellStock(player.name, quote.symbol, quote.price, amount);
             if (!result.ok) {
                 socket.emit('stock-error', { error: result.error });
                 return;
             }
 
             socket.emit('balance-update', { balance: result.newBalance });
-            const snapshot = getPortfolioSnapshot(player.name, quotes);
+            const snapshot = await getPortfolioSnapshot(player.name, quotes);
             socket.emit('stock-portfolio', snapshot);
         } catch (err) { console.error('stock-sell error:', err.message); } });
 
@@ -346,7 +346,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
             if (!player) return;
 
             const quotes = _fetchTickerQuotes ? await _fetchTickerQuotes() : [];
-            const snapshot = getPortfolioSnapshot(player.name, quotes);
+            const snapshot = await getPortfolioSnapshot(player.name, quotes);
             socket.emit('stock-portfolio', snapshot);
         } catch (err) { console.error('stock-get-portfolio error:', err.message); } });
 
@@ -357,12 +357,12 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
             if (!player) return;
 
             const quotes = _fetchTickerQuotes ? await _fetchTickerQuotes() : [];
-            const playerNames = getAllPortfolioPlayerNames();
+            const playerNames = await getAllPortfolioPlayerNames();
             const leaderboard = [];
 
             for (const name of playerNames) {
-                const snap = getPortfolioSnapshot(name, quotes);
-                const cash = getBalance(name);
+                const snap = await getPortfolioSnapshot(name, quotes);
+                const cash = await getBalance(name);
                 leaderboard.push({
                     name,
                     portfolioValue: snap.totalValue,
@@ -707,7 +707,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
         } catch (err) { console.error('join-room error:', err.message); socket.emit('error', { message: 'Fehler beim Beitreten.' }); } });
 
         // --- Place Bet ---
-        socket.on('place-bet', (data) => { try {
+        socket.on('place-bet', async (data) => { try {
             if (!checkRateLimit(socket.id)) return;
             if (!data || typeof data !== 'object') return;
 
@@ -734,7 +734,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
                 }
             }
 
-            const balance = getBalance(player.name);
+            const balance = await getBalance(player.name);
             if (amount > balance) {
                 socket.emit('error', { message: 'Nicht genug Coins!' });
                 return;
@@ -761,7 +761,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
         } catch (err) { console.error('place-bet error:', err.message); } });
 
         // --- Start Game ---
-        socket.on('start-game', () => { try {
+        socket.on('start-game', async () => { try {
             if (!checkRateLimit(socket.id)) return;
             const room = getRoom(socket.id);
             if (!room) return;
@@ -781,7 +781,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
                 for (const p of room.players) {
                     const bet = room.bets[p.socketId] || 0;
                     if (bet > 0) {
-                        const result = deductBalance(p.name, bet);
+                        const result = await deductBalance(p.name, bet, 'maexchen_bet', { roomCode: room.code });
                         if (result === null) {
                             // Player can no longer afford their bet, reset to 0
                             room.bets[p.socketId] = 0;
@@ -815,7 +815,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
             // Send updated balances to all players after bet deduction
             if (pot > 0) {
                 for (const p of room.players) {
-                    io.to(p.socketId).emit('balance-update', { balance: getBalance(p.name) });
+                    io.to(p.socketId).emit('balance-update', { balance: await getBalance(p.name) });
                 }
             }
 
@@ -907,7 +907,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
         } catch (err) { console.error('announce error:', err.message); } });
 
         // --- Challenge ---
-        socket.on('challenge', () => { try {
+        socket.on('challenge', async () => { try {
             if (!checkRateLimit(socket.id)) return;
             const room = getRoom(socket.id);
             if (!room || !room.game) return;
@@ -949,9 +949,9 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
 
                 // Award pot to winner
                 if (pot > 0 && alive[0]) {
-                    addBalance(alive[0].name, pot);
+                    await addBalance(alive[0].name, pot, 'maexchen_pot_win', { roomCode: room.code });
                     for (const p of room.players) {
-                        io.to(p.socketId).emit('balance-update', { balance: getBalance(p.name) });
+                        io.to(p.socketId).emit('balance-update', { balance: await getBalance(p.name) });
                     }
                 }
 
@@ -974,7 +974,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
         } catch (err) { console.error('challenge error:', err.message); } });
 
         // --- Believe Mäxchen ---
-        socket.on('believe-maexchen', () => { try {
+        socket.on('believe-maexchen', async () => { try {
             if (!checkRateLimit(socket.id)) return;
             const room = getRoom(socket.id);
             if (!room || !room.game) return;
@@ -1004,9 +1004,9 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
 
                 // Award pot to winner
                 if (pot > 0 && alive[0]) {
-                    addBalance(alive[0].name, pot);
+                    await addBalance(alive[0].name, pot, 'maexchen_pot_win', { roomCode: room.code });
                     for (const p of room.players) {
-                        io.to(p.socketId).emit('balance-update', { balance: getBalance(p.name) });
+                        io.to(p.socketId).emit('balance-update', { balance: await getBalance(p.name) });
                     }
                 }
 
@@ -1201,7 +1201,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
             socket.emit('brain-leaderboard', getBrainLeaderboardSorted());
         } catch (err) { console.error('brain-get-leaderboard error:', err.message); } });
 
-        socket.on('brain-submit-score', (data) => { try {
+        socket.on('brain-submit-score', async (data) => { try {
             if (!checkRateLimit(socket.id)) return;
             if (!data || typeof data.playerName !== 'string') return;
             const name = sanitizeName(data.playerName);
@@ -1230,15 +1230,15 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
 
             // Award coins
             if (coins > 0) {
-                addBalance(name, coins);
-                socket.emit('balance-update', { balance: getBalance(name) });
+                await addBalance(name, coins, 'brain_reward');
+                socket.emit('balance-update', { balance: await getBalance(name) });
             }
 
             // Broadcast updated leaderboard
             io.emit('brain-leaderboard', getBrainLeaderboardSorted());
         } catch (err) { console.error('brain-submit-score error:', err.message); } });
 
-        socket.on('brain-training-score', (data) => { try {
+        socket.on('brain-training-score', async (data) => { try {
             if (!checkRateLimit(socket.id)) return;
             if (!data || typeof data.playerName !== 'string') return;
             const name = sanitizeName(data.playerName);
@@ -1249,23 +1249,23 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
 
             // Award coins for free training
             if (coins > 0) {
-                addBalance(name, coins);
-                socket.emit('balance-update', { balance: getBalance(name) });
+                await addBalance(name, coins, 'brain_reward');
+                socket.emit('balance-update', { balance: await getBalance(name) });
             }
         } catch (err) { console.error('brain-training-score error:', err.message); } });
 
         // --- Leave Room ---
-        socket.on('leave-room', () => { try {
+        socket.on('leave-room', async () => { try {
             if (!checkRateLimit(socket.id)) return;
             const room = getRoom(socket.id);
             if (!room) return;
 
             socket.leave(room.code);
-            removePlayerFromRoom(io, socket.id, room);
+            await removePlayerFromRoom(io, socket.id, room);
         } catch (err) { console.error('leave-room error:', err.message); } });
 
         // --- Disconnect ---
-        socket.on('disconnect', () => { try {
+        socket.on('disconnect', async () => { try {
             // Cleanup rate limiter
             rateLimiters.delete(socket.id);
 
@@ -1278,7 +1278,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
 
             const room = getRoom(socket.id);
             if (room) {
-                removePlayerFromRoom(io, socket.id, room);
+                await removePlayerFromRoom(io, socket.id, room);
             }
         } catch (err) { console.error('disconnect error:', err.message); } });
     });

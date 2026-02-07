@@ -83,3 +83,78 @@
 ## Open Items
 - Balances are in-memory only (no persistence across server restarts)
 - CSS could be split into modules (theme.css is now ~2300 lines)
+
+---
+
+# HANDOFF - Persistence Direction (Wallet + Leaderboards)
+
+## What Was Done
+
+- Added `docs/persistence-plan.md` with a fresh-start persistence strategy tailored for Render free tier.
+- Documented a recommended Postgres schema for:
+  - `players` (wallet balance)
+  - `stock_positions` (portfolio holdings)
+  - `wallet_ledger` (auditable balance changes)
+- Added a rollout checklist and post-deploy verification steps.
+
+## Why
+
+- Current wallet and stock leaderboard data are in-memory and are lost on process restart.
+- Since there are no users yet, a clean cutover can be done without migration complexity.
+
+## Files Changed
+
+- `docs/persistence-plan.md`
+- `HANDOFF.md`
+
+## Verification
+
+- Document review only.
+
+## Update - Free-tier cost clarification
+
+- Clarified in `docs/persistence-plan.md` that this persistence approach can be implemented with $0 using common free tiers (Render free + Neon/Supabase free Postgres).
+- Added caveats about free-tier limits and scaling later without schema redesign.
+
+---
+
+# HANDOFF - Neon Persistence Implementation (Wallet + Stocks)
+
+## What Was Done
+
+- Added Postgres connectivity module in `server/db.js` with pooled queries and transaction helper.
+- Added SQL schema file `server/sql/persistence.sql` for `players`, `stock_positions`, and `wallet_ledger`.
+- Refactored `server/currency.js` to async DB-backed balance operations with ledger writes.
+- Refactored `server/stock-game.js` to async DB-backed portfolio operations with transactional buy/sell.
+- Updated socket handlers to await async persistence calls for:
+  - registration/get-balance
+  - stock buy/sell/portfolio/leaderboard
+  - Mäxchen betting and pot payouts
+  - StrictBrain coin rewards
+  - leave/disconnect room cleanup path
+- Updated room manager pot payout path to async balance updates.
+- Added `pg` dependency in `package.json`.
+
+## Important Notes
+
+- A local fallback remains for dev if `DATABASE_URL` is not configured.
+- `npm i pg` failed in this execution environment with `403 Forbidden` from npm registry, so lockfile refresh could not be completed here.
+
+## Files Changed
+
+- `server/db.js`
+- `server/sql/persistence.sql`
+- `server/currency.js`
+- `server/stock-game.js`
+- `server/socket-handlers.js`
+- `server/room-manager.js`
+- `package.json`
+
+## Verification
+
+- `node --check server/socket-handlers.js`
+- `node --check server/room-manager.js`
+- `node --check server/currency.js`
+- `node --check server/stock-game.js`
+- `node --check server/db.js`
+- Local `node server.js` start check in this environment is blocked by missing installed dependencies (e.g. `yahoo-finance2`), so runtime validation here is limited to syntax checks.
