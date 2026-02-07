@@ -3,7 +3,7 @@
 This guide helps LLM agents work effectively in this repo. Keep it short, stay in scope, and follow local patterns.
 
 ## Quick repo map
-- Server runtime: [server/index.js](server/index.js)
+- Server runtime: [server.js](server.js)
 - Realtime events + validation: [server/socket-handlers.js](server/socket-handlers.js)
 - Room state + helpers: [server/room-manager.js](server/room-manager.js)
 - Shared client modules: [shared/js](shared/js)
@@ -12,7 +12,7 @@ This guide helps LLM agents work effectively in this repo. Keep it short, stay i
 - Game frontends: [games](games)
 
 ## Core flows (mental model)
-- Login/session gate in [server/index.js](server/index.js) protects most routes.
+- Login/session gate in [server.js](server.js) protects most routes.
 - Lobby -> room creation/join flows originate in [shared/js/lobby.js](shared/js/lobby.js).
 - Socket events are the source of truth for multiplayer behavior.
 - In-memory state lives in [server/room-manager.js](server/room-manager.js).

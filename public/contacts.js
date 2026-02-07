@@ -79,7 +79,30 @@
         if (modalName) modalName.textContent = data.name;
 
         if (modalAvatarWrap) {
-            if (data.character && data.character.dataURL) {
+            if (data.character && Array.isArray(data.character.pixels) && data.character.pixels.length > 0) {
+                // Render from pixel data for crisp display at 128px
+                modalAvatarWrap.innerHTML = '';
+                var canvas = document.createElement('canvas');
+                canvas.className = 'character-modal-avatar';
+                canvas.width = 128;
+                canvas.height = 128;
+                canvas.style.imageRendering = 'pixelated';
+                var ctx = canvas.getContext('2d');
+                ctx.imageSmoothingEnabled = false;
+                var gridSize = data.character.pixels.length;
+                var pixelSize = 128 / gridSize;
+                for (var y = 0; y < gridSize; y++) {
+                    var row = data.character.pixels[y];
+                    if (!Array.isArray(row)) continue;
+                    for (var x = 0; x < row.length; x++) {
+                        if (row[x]) {
+                            ctx.fillStyle = row[x];
+                            ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                        }
+                    }
+                }
+                modalAvatarWrap.appendChild(canvas);
+            } else if (data.character && data.character.dataURL) {
                 modalAvatarWrap.innerHTML = '<img class="character-modal-avatar" src="' + escapeAttr(data.character.dataURL) + '" alt="">';
             } else {
                 modalAvatarWrap.innerHTML = '<div class="character-modal-placeholder">👽</div>';

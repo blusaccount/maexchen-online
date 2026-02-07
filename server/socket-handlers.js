@@ -24,9 +24,9 @@ function sanitizeName(name) {
 
 function validateCharacter(character) {
     if (!character || typeof character !== 'object') return null;
-    // Limit character data size (~2KB JSON max)
+    // Limit character data size (~4KB JSON max, supports full 16x16 pixel grid + dataURL)
     const json = JSON.stringify(character);
-    if (json.length > 2048) return null;
+    if (json.length > 4096) return null;
     // Only allow expected keys
     const allowed = { pixels: true, dataURL: true };
     const clean = {};

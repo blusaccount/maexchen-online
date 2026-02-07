@@ -207,3 +207,79 @@
 
 - Confirmed markup updates for all professor slots in Strict Brain menu/training/versus/results screens.
 - Attempted to run server for visual verification, but startup is blocked in this environment due to a missing dependency (`yahoo-finance2`).
+# HANDOFF - Code Review Fixes (Round 1)
+
+## What Was Done
+
+### Bug Fixes & Cleanup across 7 files
+
+- **`userinput/switch.mp3`** — renamed from `switch.mp3.mp3` (double extension bug)
+- **`public/index.html`**, **`games/maexchen/index.html`**, **`games/watchparty/index.html`**, **`games/stocks/index.html`** — switch sound path fixed (`switch.mp3.mp3` -> `switch.mp3`), added `preload = 'auto'`, try/catch error handling, reduced timeout 300ms -> 250ms
+- **`public/nostalgiabait/index.html`** — replaced per-frame `getImageData()`/`putImageData()` pixel noise loop with pre-rendered 128x128 noise texture pattern (major canvas performance improvement)
+- **`server/socket-handlers.js`** — removed unused `ALLOWED_STOCK_SYMBOLS` Set (10 lines dead code)
+- **`public/index.html`** — refactored 60+ `!important` declarations to `body .selector` scoping for CSS specificity; removed dead `game-desc` and `game-players` HTML divs (4 each) and their CSS rules
+
+## Files Changed
+- `userinput/switch.mp3` (renamed from `switch.mp3.mp3`)
+- `public/index.html`
+- `games/maexchen/index.html`
+- `games/watchparty/index.html`
+- `games/stocks/index.html`
+- `public/nostalgiabait/index.html`
+- `server/socket-handlers.js`
+
+## Verification
+- All 31 tests pass (`npm test`)
+- Switch sound plays correctly on all game home buttons
+- Nostalgiabait noise overlay renders without per-frame ImageData calls
+
+---
+
+# HANDOFF - Strict Brain Code Review Fixes
+
+## What Was Done
+
+### Security Fix: Server-side coin calculation
+- Server no longer trusts client-sent `coins` values in `brain-submit-score` and `brain-training-score`
+- Added `calculateBrainCoins(brainAge)` and `calculateTrainingCoins(score)` server functions
+- Coin formula: brainAge <=25 -> 50SC, <=35 -> 30SC, <=45 -> 20SC, <=55 -> 10SC, >55 -> 5SC
+- Training coins: half of daily test coins, minimum 2SC
+
+### Bug Fix: Disconnect forfeit for brain versus
+- When a player disconnects during a versus game, opponent now receives win + 20 coins
+- Previously, generic `removePlayerFromRoom()` was called which knew nothing about brain versus forfeit logic
+
+### Bug Fix: Versus reaction score display
+- Changed from sending round count (1, 2, 3...) to running average reaction time in ms
+- Now shows meaningful live comparison between players
+
+### Bug Fix: Switch sound on home button
+- Added switch sound + 250ms delay to brain home button (consistent with all other games)
+
+### Bug Fix: Invalid German word in scramble
+- Replaced `'HAUSE'` (not a standalone word) with `'HAFEN'` in word scramble
+
+### Cleanup: Code deduplication
+- `SCRAMBLE_WORDS` array (51 words) defined once at top, was duplicated in single + versus
+- `GAME_NAMES` and `GAME_TAB_NAMES` (identical maps) merged into single `GAME_NAMES`
+- `scrambleWord()` function defined once at top, was duplicated in single + versus
+
+## Files Changed
+- `server/socket-handlers.js` — server coin calc, disconnect forfeit
+- `games/strictbrain/js/game.js` — reaction score, word fix, deduplication
+- `games/strictbrain/index.html` — switch sound on home button
+
+## Verification
+- All 31 tests pass (`npm test`)
+- Brain daily test: coins awarded match server-side calculation
+- Versus disconnect: opponent gets forfeit win + 20 coins
+- Home button: switch sound plays on click
+
+## Open Items
+
+### Resolved
+- ~~CSS could be split into modules (theme.css is now ~2500 lines)~~ — Won't fix. No bundler in project, splitting would add multiple HTTP requests. File is well-sectioned with comment headers. Strict Brain + Stocks already use inline CSS.
+- ~~`npm i pg` failed in Copilot environment~~ — Resolved. `pg` is in both `package.json` and `package-lock.json`.
+
+### Remaining
+- **~600 lines code duplication in `games/strictbrain/js/game.js`** — Each of 5 mini-games is fully duplicated for single-player and versus mode. Only difference: target DOM element IDs and score update callbacks. Works correctly but is a maintenance burden. Future refactor could parameterize game functions with `{ area, onScore, onFinish }` config objects.

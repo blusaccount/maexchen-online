@@ -364,9 +364,9 @@
         }
     }
 
-    // Get display for compact views (returns data URL)
+    // Get display for avatar views (returns data URL)
     function getAvatarDisplay() {
-        return renderToDataURL(32);
+        return renderToDataURL(96);
     }
 
     // Sound effects
