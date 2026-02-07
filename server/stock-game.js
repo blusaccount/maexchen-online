@@ -97,6 +97,14 @@ export function sellStock(playerName, symbol, price, amount) {
 }
 
 /**
+ * Return all player names that have a portfolio.
+ * @returns {string[]}
+ */
+export function getAllPortfolioPlayerNames() {
+    return Array.from(portfolios.keys());
+}
+
+/**
  * Build a snapshot of the player's portfolio with current prices.
  * @param {string} playerName
  * @param {Array<{symbol:string, price:number, name?:string}>} currentPrices

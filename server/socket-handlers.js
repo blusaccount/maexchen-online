@@ -12,7 +12,7 @@ import {
 } from './room-manager.js';
 
 import { getBalance, addBalance, deductBalance } from './currency.js';
-import { buyStock, sellStock, getPortfolioSnapshot } from './stock-game.js';
+import { buyStock, sellStock, getPortfolioSnapshot, getAllPortfolioPlayerNames } from './stock-game.js';
 
 // ============== INPUT VALIDATION ==============
 
@@ -320,6 +320,33 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
             const snapshot = getPortfolioSnapshot(player.name, quotes);
             socket.emit('stock-portfolio', snapshot);
         } catch (err) { console.error('stock-get-portfolio error:', err.message); } });
+
+        // --- Stock Game: Get All Players' Portfolios (Leaderboard) ---
+        socket.on('stock-get-leaderboard', async () => { try {
+            if (!checkRateLimit(socket.id)) return;
+            const player = onlinePlayers.get(socket.id);
+            if (!player) return;
+
+            const quotes = _fetchTickerQuotes ? await _fetchTickerQuotes() : [];
+            const playerNames = getAllPortfolioPlayerNames();
+            const leaderboard = [];
+
+            for (const name of playerNames) {
+                const snap = getPortfolioSnapshot(name, quotes);
+                const cash = getBalance(name);
+                leaderboard.push({
+                    name,
+                    portfolioValue: snap.totalValue,
+                    cash,
+                    netWorth: parseFloat((snap.totalValue + cash).toFixed(2)),
+                    holdings: snap.holdings,
+                });
+            }
+
+            // Sort by net worth descending
+            leaderboard.sort((a, b) => b.netWorth - a.netWorth);
+            socket.emit('stock-leaderboard', leaderboard);
+        } catch (err) { console.error('stock-get-leaderboard error:', err.message); } });
 
         // --- Pictochat Join ---
         socket.on('picto-join', () => { try {

@@ -443,17 +443,89 @@
         });
     }
 
+    // --- Leaderboard ---
+    var leaderboardContainer = $('leaderboard-container');
+    var refreshBtn = $('refresh-leaderboard');
+    var myName = localStorage.getItem(NAME_KEY) || '';
+
+    socket.on('stock-leaderboard', function (data) {
+        if (!Array.isArray(data)) return;
+        renderLeaderboard(data);
+    });
+
+    function renderLeaderboard(players) {
+        if (players.length === 0) {
+            leaderboardContainer.innerHTML = '<div class="no-holdings">No player portfolios yet.</div>';
+            return;
+        }
+
+        var html = '';
+        for (var i = 0; i < players.length; i++) {
+            var p = players[i];
+            var isMe = p.name === myName;
+            var holdingsHtml = '';
+
+            if (p.holdings && p.holdings.length > 0) {
+                holdingsHtml = '<table class="leaderboard-detail-table"><thead><tr>'
+                    + '<th>SYMBOL</th><th>SHARES</th><th>VALUE</th><th>G/L</th>'
+                    + '</tr></thead><tbody>';
+                for (var j = 0; j < p.holdings.length; j++) {
+                    var h = p.holdings[j];
+                    var cls = h.gainLoss >= 0 ? 'positive' : 'negative';
+                    holdingsHtml += '<tr>'
+                        + '<td style="font-weight:700;">' + escapeHtml(h.symbol) + '</td>'
+                        + '<td>' + h.shares.toFixed(4) + '</td>'
+                        + '<td>$' + h.marketValue.toFixed(2) + '</td>'
+                        + '<td class="' + cls + '">' + (h.gainLoss >= 0 ? '+' : '') + h.gainLoss.toFixed(2) + '</td>'
+                        + '</tr>';
+                }
+                holdingsHtml += '</tbody></table>';
+            } else {
+                holdingsHtml = '<div style="color:var(--ds-text-dim);font-size:7px;padding:4px 0;">No holdings</div>';
+            }
+
+            html += '<div class="leaderboard-card" data-idx="' + i + '">'
+                + '<div class="leaderboard-header">'
+                + '<span class="leaderboard-rank">#' + (i + 1) + '</span>'
+                + '<span class="leaderboard-name' + (isMe ? ' is-you' : '') + '">'
+                + escapeHtml(p.name) + (isMe ? ' (YOU)' : '') + '</span>'
+                + '<div class="leaderboard-stats">'
+                + '<div class="leaderboard-networth">$' + p.netWorth.toFixed(2) + '</div>'
+                + '<div class="leaderboard-breakdown">Portfolio: $' + p.portfolioValue.toFixed(2) + ' | Cash: $' + p.cash.toFixed(2) + '</div>'
+                + '</div>'
+                + '</div>'
+                + '<div class="leaderboard-detail">' + holdingsHtml + '</div>'
+                + '</div>';
+        }
+
+        leaderboardContainer.innerHTML = html;
+    }
+
+    // Event delegation for leaderboard card expand/collapse
+    leaderboardContainer.addEventListener('click', function (e) {
+        var card = e.target.closest('.leaderboard-card');
+        if (card) {
+            card.classList.toggle('expanded');
+        }
+    });
+
+    refreshBtn.addEventListener('click', function () {
+        socket.emit('stock-get-leaderboard');
+    });
+
     // --- Init ---
     renderMarket();
     fetchMarket();
     setInterval(function () {
         fetchMarket();
         socket.emit('stock-get-portfolio');
+        socket.emit('stock-get-leaderboard');
     }, 60 * 1000);
 
     socket.on('connect', function () {
         setTimeout(function () {
             socket.emit('stock-get-portfolio');
+            socket.emit('stock-get-leaderboard');
         }, 500);
     });
 })();
