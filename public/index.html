@@ -501,6 +501,50 @@
             color: var(--ds-text-dim);
         }
 
+        /* ===== Ambience Button ===== */
+        .ambience-control {
+            position: fixed;
+            bottom: 44px;
+            right: 12px;
+            z-index: 1000;
+        }
+
+        .ambience-mute {
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            color: var(--ds-text);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 14px;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0;
+            transition: all 0.15s;
+        }
+
+        .ambience-mute:hover {
+            background: var(--ds-highlight);
+            box-shadow: 3px 3px 0 var(--ds-border);
+        }
+
+        .ambience-mute.muted {
+            border-color: var(--ds-text-dim);
+            background: var(--ds-highlight);
+        }
+
+        .ambience-yt-container {
+            position: fixed;
+            top: -9999px;
+            left: -9999px;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
         /* Mobile responsive */
         @media (max-width: 768px) {
             .menu-container {
@@ -562,6 +606,18 @@
     </style>
 </head>
 <body>
+
+<!-- Hidden YouTube player for ambience audio -->
+<div class="ambience-yt-container">
+    <div id="ambience-yt-player"></div>
+</div>
+
+<!-- Ambience mute button -->
+<div class="ambience-control">
+    <button class="ambience-mute" id="ambience-mute" type="button" title="Toggle Ambience">
+        <span class="ambience-mute-icon">🎵</span>
+    </button>
+</div>
 
 <div class="menu-container">
     <div class="arcade-title">STRICT HOTEL</div>
@@ -704,6 +760,9 @@
 
 <!-- Stock Ticker -->
 <script src="/shared/js/stock-ticker.js"></script>
+
+<!-- Ambience Background Audio -->
+<script src="/ambience.js"></script>
 
 <!-- Switch Sound on Game Card Click -->
 <script>
