@@ -69,6 +69,25 @@
         <h3>Spieler:</h3>
         <div class="player-list" id="player-list"></div>
 
+        <!-- Betting Section -->
+        <div id="bet-section" class="bet-section">
+            <h3>💰 Einsatz</h3>
+            <p class="bet-balance">Dein Guthaben: <span id="bet-balance-display">0</span> StrictCoins</p>
+            <div class="bet-controls">
+                <button class="btn btn-small bet-preset" data-amount="0">Kein Einsatz</button>
+                <button class="btn btn-small bet-preset" data-amount="5">5</button>
+                <button class="btn btn-small bet-preset" data-amount="10">10</button>
+                <button class="btn btn-small bet-preset" data-amount="25">25</button>
+                <button class="btn btn-small bet-preset" data-amount="50">50</button>
+            </div>
+            <div class="bet-custom-row">
+                <input type="number" id="bet-input" min="0" max="9999" placeholder="Eigener Betrag" autocomplete="off">
+                <button class="btn btn-small btn-primary" id="btn-place-bet">Setzen</button>
+            </div>
+            <div id="bet-status" class="bet-status"></div>
+            <div id="bet-list" class="bet-list"></div>
+        </div>
+
         <button class="btn btn-success" id="btn-start-game" style="display:none;">Spiel starten</button>
         <p class="subtitle" id="waiting-hint">Warte auf weitere Spieler...</p>
     </div>
@@ -76,6 +95,7 @@
     <!-- ===== GAME SCREEN ===== -->
     <div id="screen-game" class="screen">
         <div class="title-maexchen" style="font-size:1.8rem; margin-bottom: 10px;">Mäxchen</div>
+        <div id="game-pot-display" class="pot-display" style="display:none;"></div>
         <div class="lives-bar" id="lives-bar"></div>
 
         <div id="prev-announce-box" class="previous-announcement" style="display:none;"></div>
@@ -137,6 +157,7 @@
         <h2>Spiel vorbei!</h2>
         <div class="winner-name" id="winner-name"></div>
         <p class="subtitle">hat gewonnen!</p>
+        <div id="gameover-pot-display" class="pot-display pot-winnings" style="display:none;"></div>
         <button class="btn btn-gold" id="btn-restart">Neue Runde</button>
     </div>
 

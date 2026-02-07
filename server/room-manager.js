@@ -1,4 +1,5 @@
 import { getAlivePlayers, nextAlivePlayerIndex } from './game-logic.js';
+import { addBalance, getBalance } from './currency.js';
 
 // ============== ROOM MANAGEMENT ==============
 
@@ -133,9 +134,19 @@ export function removePlayerFromRoom(io, socketId, room) {
 
                 const alive = getAlivePlayers(room.game);
                 if (alive.length <= 1) {
+                    const winnerName = alive[0]?.name || 'Niemand';
+                    const pot = room.game.pot || 0;
+                    if (pot > 0 && alive[0]) {
+                        addBalance(winnerName, pot);
+                        const winner = room.players.find(p => p.name === winnerName);
+                        if (winner) {
+                            io.to(winner.socketId).emit('balance-update', { balance: getBalance(winnerName) });
+                        }
+                    }
                     io.to(room.code).emit('game-over', {
-                        winnerName: alive[0]?.name || 'Niemand',
-                        players: room.game.players.map(p => ({ name: p.name, lives: p.lives }))
+                        winnerName,
+                        players: room.game.players.map(p => ({ name: p.name, lives: p.lives })),
+                        pot
                     });
                     room.game = null;
                 } else {

@@ -56,12 +56,25 @@
     let isFirstTurn = true;
     let hasRolled = false;
     let myRoll = null;
+    let currentPot = 0;
 
     // --- Game Started ---
-    socket.on('game-started', ({ players }) => {
+    socket.on('game-started', ({ players, pot }) => {
         state.gamePlayers = players;
         state.myPlayerIndex = players.findIndex(p => p.name === state.playerName);
+        currentPot = pot || 0;
         showScreen('game');
+
+        // Show pot display if there are bets
+        const potEl = $('game-pot-display');
+        if (potEl) {
+            if (currentPot > 0) {
+                potEl.textContent = `💰 Pot: ${currentPot} StrictCoins`;
+                potEl.style.display = 'block';
+            } else {
+                potEl.style.display = 'none';
+            }
+        }
 
         // Create player sidebar
         createPlayerSidebar();
@@ -217,7 +230,7 @@
     });
 
     // --- Game Over ---
-    socket.on('game-over', ({ winnerName, players }) => {
+    socket.on('game-over', ({ winnerName, players, pot }) => {
         // Stop transmissions
         if (window.MaexchenReactions) {
             window.MaexchenReactions.stopTransmissions();
@@ -235,6 +248,16 @@
 
         setTimeout(() => {
             $('winner-name').textContent = winnerName;
+            // Show pot winnings
+            const potEl = $('gameover-pot-display');
+            if (potEl) {
+                if (pot && pot > 0) {
+                    potEl.textContent = `💰 +${pot} StrictCoins gewonnen!`;
+                    potEl.style.display = 'block';
+                } else {
+                    potEl.style.display = 'none';
+                }
+            }
             showScreen('gameover');
             triggerCenteredReaction('win');
 
@@ -575,6 +598,87 @@
         const sidebar = document.getElementById('player-sidebar');
         if (sidebar) sidebar.remove();
     }
+
+    // ============================
+    // BETTING MODULE
+    // ============================
+
+    let myBalance = 0;
+    let myBet = 0;
+
+    // Update balance display
+    socket.on('balance-update', ({ balance }) => {
+        myBalance = balance;
+        const el = $('bet-balance-display');
+        if (el) el.textContent = balance;
+    });
+
+    // Request balance when entering waiting room
+    socket.on('room-created', () => {
+        socket.emit('get-balance');
+    });
+    socket.on('room-joined', () => {
+        socket.emit('get-balance');
+    });
+
+    // Bet preset buttons
+    document.querySelectorAll('.bet-preset').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const amount = parseInt(btn.dataset.amount, 10);
+            if (amount > myBalance) {
+                $('bet-status').textContent = 'Nicht genug StrictCoins!';
+                return;
+            }
+            myBet = amount;
+            socket.emit('place-bet', amount);
+            $('bet-status').textContent = amount > 0
+                ? `Einsatz: ${amount} StrictCoins`
+                : 'Kein Einsatz';
+            // Highlight active preset
+            document.querySelectorAll('.bet-preset').forEach(b => b.classList.remove('bet-active'));
+            btn.classList.add('bet-active');
+            $('bet-input').value = '';
+        });
+    });
+
+    // Custom bet button
+    $('btn-place-bet')?.addEventListener('click', () => {
+        const amount = parseInt($('bet-input').value, 10);
+        if (isNaN(amount) || amount < 0) {
+            $('bet-status').textContent = 'Ungültiger Betrag!';
+            return;
+        }
+        if (amount > myBalance) {
+            $('bet-status').textContent = 'Nicht genug StrictCoins!';
+            return;
+        }
+        myBet = amount;
+        socket.emit('place-bet', amount);
+        $('bet-status').textContent = amount > 0
+            ? `Einsatz: ${amount} StrictCoins`
+            : 'Kein Einsatz';
+        document.querySelectorAll('.bet-preset').forEach(b => b.classList.remove('bet-active'));
+    });
+
+    // Enter key for bet input
+    $('bet-input')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') $('btn-place-bet')?.click();
+    });
+
+    // Update bets display
+    socket.on('bets-update', ({ bets }) => {
+        const list = $('bet-list');
+        if (!list) return;
+        const entries = Object.entries(bets);
+        if (entries.length === 0) {
+            list.innerHTML = '';
+            return;
+        }
+        const total = entries.reduce((sum, [, v]) => sum + v, 0);
+        list.innerHTML = entries.map(([name, amount]) =>
+            `<div class="bet-entry"><span>${name}</span><span>${amount} 💰</span></div>`
+        ).join('') + `<div class="bet-total">Pot: ${total} StrictCoins</div>`;
+    });
 
     // Expose renderLives for reveal screen
     window.MaexchenGame = { renderLives, renderPlayerSidebar };

@@ -11,7 +11,7 @@ import {
     removePlayerFromRoom
 } from './room-manager.js';
 
-import { getBalance } from './currency.js';
+import { getBalance, addBalance, deductBalance } from './currency.js';
 import { buyStock, sellStock, getPortfolioSnapshot } from './stock-game.js';
 
 // ============== INPUT VALIDATION ==============
@@ -540,7 +540,8 @@ export function registerSocketHandlers(io, { fetchTickerQuotes } = {}) {
                     name: playerName,
                     character: character
                 }],
-                game: null
+                game: null,
+                bets: new Map()
             };
             rooms.set(code, room);
             socketToRoom.set(socket.id, code);
@@ -618,6 +619,40 @@ export function registerSocketHandlers(io, { fetchTickerQuotes } = {}) {
             console.log(`${playerName} joined room ${code}`);
         } catch (err) { console.error('join-room error:', err.message); socket.emit('error', { message: 'Fehler beim Beitreten.' }); } });
 
+        // --- Place Bet ---
+        socket.on('place-bet', (data) => { try {
+            if (!checkRateLimit(socket.id)) return;
+            const room = getRoom(socket.id);
+            if (!room) return;
+            if (room.game) return; // Can't bet during active game
+            if (room.gameType !== 'maexchen') return;
+
+            const player = room.players.find(p => p.socketId === socket.id);
+            if (!player) return;
+
+            const amount = typeof data === 'number' ? data : (data?.amount ?? 0);
+            if (typeof amount !== 'number' || !Number.isInteger(amount) || amount < 0) {
+                socket.emit('error', { message: 'Ungültiger Einsatz!' });
+                return;
+            }
+
+            if (amount > 0 && amount > getBalance(player.name)) {
+                socket.emit('error', { message: 'Nicht genug StrictCoins!' });
+                return;
+            }
+
+            if (amount === 0) {
+                room.bets.delete(player.name);
+            } else {
+                room.bets.set(player.name, amount);
+            }
+
+            // Broadcast updated bets to room
+            const betsObj = Object.fromEntries(room.bets);
+            io.to(room.code).emit('bets-update', { bets: betsObj });
+            console.log(`${player.name} bet ${amount} in ${room.code}`);
+        } catch (err) { console.error('place-bet error:', err.message); } });
+
         // --- Start Game ---
         socket.on('start-game', () => { try {
             if (!checkRateLimit(socket.id)) return;
@@ -644,11 +679,29 @@ export function registerSocketHandlers(io, { fetchTickerQuotes } = {}) {
                 previousAnnouncement: null,
                 isFirstTurn: true,
                 currentRoll: null,
-                hasRolled: false
+                hasRolled: false,
+                pot: 0
             };
 
+            // Deduct bets from player balances and calculate pot
+            if (room.bets && room.bets.size > 0) {
+                for (const [playerName, amount] of room.bets) {
+                    const result = deductBalance(playerName, amount);
+                    if (result !== null) {
+                        room.game.pot += amount;
+                        // Send updated balance to the betting player
+                        const p = room.players.find(pl => pl.name === playerName);
+                        if (p) {
+                            io.to(p.socketId).emit('balance-update', { balance: result });
+                        }
+                    }
+                }
+                room.bets.clear();
+            }
+
             io.to(room.code).emit('game-started', {
-                players: room.game.players.map(p => ({ name: p.name, lives: p.lives, character: p.character }))
+                players: room.game.players.map(p => ({ name: p.name, lives: p.lives, character: p.character })),
+                pot: room.game.pot
             });
 
             sendTurnStart(io, room);
@@ -776,9 +829,20 @@ export function registerSocketHandlers(io, { fetchTickerQuotes } = {}) {
 
             const alive = getAlivePlayers(game);
             if (alive.length <= 1) {
+                const winnerName = alive[0]?.name || 'Niemand';
+                const pot = game.pot || 0;
+                // Award pot to winner
+                if (pot > 0 && alive[0]) {
+                    addBalance(winnerName, pot);
+                    const winner = room.players.find(p => p.name === winnerName);
+                    if (winner) {
+                        io.to(winner.socketId).emit('balance-update', { balance: getBalance(winnerName) });
+                    }
+                }
                 io.to(room.code).emit('game-over', {
-                    winnerName: alive[0]?.name || 'Niemand',
-                    players: game.players.map(p => ({ name: p.name, lives: p.lives }))
+                    winnerName,
+                    players: game.players.map(p => ({ name: p.name, lives: p.lives })),
+                    pot
                 });
                 room.game = null;
                 return;
@@ -819,9 +883,20 @@ export function registerSocketHandlers(io, { fetchTickerQuotes } = {}) {
 
             const alive = getAlivePlayers(game);
             if (alive.length <= 1) {
+                const winnerName = alive[0]?.name || 'Niemand';
+                const pot = game.pot || 0;
+                // Award pot to winner
+                if (pot > 0 && alive[0]) {
+                    addBalance(winnerName, pot);
+                    const winner = room.players.find(p => p.name === winnerName);
+                    if (winner) {
+                        io.to(winner.socketId).emit('balance-update', { balance: getBalance(winnerName) });
+                    }
+                }
                 io.to(room.code).emit('game-over', {
-                    winnerName: alive[0]?.name || 'Niemand',
-                    players: game.players.map(p => ({ name: p.name, lives: p.lives }))
+                    winnerName,
+                    players: game.players.map(p => ({ name: p.name, lives: p.lives })),
+                    pot
                 });
                 room.game = null;
                 return;
