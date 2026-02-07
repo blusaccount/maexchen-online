@@ -19,15 +19,24 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 // Password protection
-const PASSWORD = 'STRICT';
+const PASSWORD = process.env.SITE_PASSWORD || 'STRICT';
+
+// Session secret validation
+if (!process.env.SESSION_SECRET && process.env.NODE_ENV === 'production') {
+    console.error('ERROR: SESSION_SECRET environment variable is required in production');
+    process.exit(1);
+}
 
 // Session middleware
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'strict-hotel-secret-key-change-in-production',
+    secret: process.env.SESSION_SECRET || 'strict-hotel-dev-secret-' + Math.random(),
     resave: false,
     saveUninitialized: false,
     cookie: {
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
     }
 }));
 
@@ -61,10 +70,6 @@ app.use((req, res, next) => {
     }
 
     // Redirect to login page
-    if (req.path === '/' || !req.path.endsWith('.html')) {
-        return res.redirect('/login.html');
-    }
-    
     res.redirect('/login.html');
 });
 
