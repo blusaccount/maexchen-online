@@ -53,6 +53,7 @@
     var sendTimer = null;
     var lastPoint = null;
     var shapeStart = null;
+    var shapeEnd = null;
     var strokeIdCounter = 0;
     var inProgress = {};
     var cursors = {};
@@ -291,10 +292,12 @@
     function startShape(point) {
         isDrawing = true;
         shapeStart = point;
+        shapeEnd = point;
     }
 
     function updateShape(point) {
         if (!shapeStart) return;
+        shapeEnd = point;
         clearCanvas(previewCtx);
         var shapeStroke = {
             tool: currentTool,
@@ -317,6 +320,7 @@
             end: point
         });
         shapeStart = null;
+        shapeEnd = null;
         isDrawing = false;
     }
 
@@ -450,10 +454,6 @@
             hideCursor();
             if (isDrawing && (currentTool === 'pen' || currentTool === 'eraser')) {
                 endStroke();
-            } else if (isDrawing) {
-                clearCanvas(previewCtx);
-                shapeStart = null;
-                isDrawing = false;
             }
         });
 
@@ -462,9 +462,14 @@
             if (isDrawing && (currentTool === 'pen' || currentTool === 'eraser')) {
                 endStroke();
             } else if (isDrawing) {
-                clearCanvas(previewCtx);
-                shapeStart = null;
-                isDrawing = false;
+                if (shapeEnd) {
+                    endShape(shapeEnd);
+                } else {
+                    clearCanvas(previewCtx);
+                    shapeStart = null;
+                    shapeEnd = null;
+                    isDrawing = false;
+                }
             }
         });
     }
