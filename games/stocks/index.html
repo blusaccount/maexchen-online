@@ -461,6 +461,74 @@
             margin: 12px 0;
         }
 
+        /* ===== Leaderboard ===== */
+        .leaderboard-card {
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .leaderboard-card:hover {
+            box-shadow: 3px 3px 0 var(--ds-border);
+        }
+        .leaderboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px;
+        }
+        .leaderboard-rank {
+            font-size: 10px;
+            font-weight: 700;
+            min-width: 24px;
+        }
+        .leaderboard-name {
+            font-size: 9px;
+            font-weight: 700;
+            flex: 1;
+            margin: 0 8px;
+        }
+        .leaderboard-name.is-you {
+            text-decoration: underline;
+        }
+        .leaderboard-stats {
+            text-align: right;
+            font-size: 8px;
+        }
+        .leaderboard-networth {
+            font-weight: 700;
+        }
+        .leaderboard-breakdown {
+            font-size: 7px;
+            color: var(--ds-text-dim);
+        }
+        .leaderboard-detail {
+            display: none;
+            padding: 0 10px 8px;
+            border-top: 1px dashed #ccc;
+        }
+        .leaderboard-card.expanded .leaderboard-detail {
+            display: block;
+        }
+        .leaderboard-detail-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 7px;
+        }
+        .leaderboard-detail-table th {
+            text-align: left;
+            color: var(--ds-text-dim);
+            font-size: 6px;
+            letter-spacing: 1px;
+            padding: 4px 6px;
+            border-bottom: 1px solid #ccc;
+        }
+        .leaderboard-detail-table td {
+            padding: 3px 6px;
+            border-bottom: 1px solid #eee;
+        }
+
         /* ===== Responsive ===== */
         @media (max-width: 600px) {
             .stock-page { padding: 10px 8px 32px; }
@@ -515,6 +583,17 @@
     <div class="section-title">YOUR HOLDINGS</div>
     <div id="holdings-container">
         <div class="no-holdings">No investments yet.</div>
+    </div>
+
+    <div class="pixel-divider"></div>
+
+    <!-- Leaderboard / Other Players -->
+    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>PLAYER PORTFOLIOS</span>
+        <button class="btn-sell-row" id="refresh-leaderboard" style="font-size:7px;">REFRESH</button>
+    </div>
+    <div id="leaderboard-container">
+        <div class="no-holdings">Loading player data...</div>
     </div>
 
     <div class="pixel-divider"></div>
