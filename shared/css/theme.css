@@ -37,7 +37,7 @@ body {
 body::before {
     content: '';
     position: fixed;
-    inset: 0;
+    inset: -60px;
     background:
         radial-gradient(1px 1px at 20px 30px, white, transparent),
         radial-gradient(1px 1px at 40px 70px, rgba(255,255,255,0.8), transparent),
@@ -71,6 +71,8 @@ body::before {
     background-size: 800px 400px;
     z-index: -2;
     animation: twinkle 8s ease-in-out infinite alternate;
+    transition: transform 0.3s ease-out;
+    transform: translate(var(--star-x, 0px), var(--star-y, 0px));
 }
 
 @keyframes twinkle {
