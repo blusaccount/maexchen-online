@@ -5,3 +5,4 @@ node_modules/
 .claude/
 yt-dlp
 yt-dlp.exe
+userinput/

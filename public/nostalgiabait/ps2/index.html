@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Playsphere 2 - Nostalgiabait</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/nostalgiabait/shared/player.css">
+    <style>
+        :root { --accent-color: #4488ff; }
+        .start-text { color: #4488ff; text-shadow: 0 0 20px rgba(68,136,255,0.5); }
+        .start-hint { color: #2a5599; }
+    </style>
+</head>
+<body>
+
+    <video id="boot-video" preload="auto" playsinline>
+        <source src="boot.mp4" type="video/mp4">
+    </video>
+
+    <div id="start-overlay">
+        <div class="start-icon">🎮</div>
+        <div class="start-text">CLICK TO START</div>
+        <div class="start-hint">Playsphere 2 Boot Sequence</div>
+    </div>
+
+    <div id="player-controls" class="player-controls">
+        <button id="btn-back" class="ctrl-btn">← BACK</button>
+        <button id="btn-replay" class="ctrl-btn">↻ REPLAY</button>
+    </div>
+
+    <div id="error-screen">
+        <div class="error-icon">⚠</div>
+        <div class="error-text">VIDEO NOT AVAILABLE</div>
+        <div class="error-sub">boot.mp4 not found</div>
+        <button class="ctrl-btn" onclick="location.href='/nostalgiabait/'" style="margin-top:20px">← BACK</button>
+    </div>
+
+    <script src="/nostalgiabait/shared/player.js"></script>
+</body>
+</html>
