@@ -62,6 +62,8 @@
         setupDrawingPanel();
     }
 
+    let noteGridInitialized = false;
+
     // Open drawing panel
     function openDrawingPanel() {
         const overlay = $('draw-note-overlay');
@@ -71,7 +73,7 @@
         notePixels = createEmptyNoteGrid();
         noteSelectedColor = 1;
 
-        // Create grid
+        // Create grid (initializes listeners only once)
         createNoteGrid();
 
         // Create palette
@@ -100,47 +102,52 @@
             }
         }
 
-        // Mouse events
-        grid.addEventListener('mousedown', (e) => {
-            if (e.target.classList.contains('note-cell')) {
-                noteIsDrawing = true;
-                paintNoteCell(e.target);
-            }
-        });
+        // Only add event listeners once to prevent accumulation
+        if (!noteGridInitialized) {
+            noteGridInitialized = true;
 
-        grid.addEventListener('mousemove', (e) => {
-            if (noteIsDrawing && e.target.classList.contains('note-cell')) {
-                paintNoteCell(e.target);
-            }
-        });
+            // Mouse events
+            grid.addEventListener('mousedown', (e) => {
+                if (e.target.classList.contains('note-cell')) {
+                    noteIsDrawing = true;
+                    paintNoteCell(e.target);
+                }
+            });
 
-        document.addEventListener('mouseup', () => {
-            noteIsDrawing = false;
-        });
+            grid.addEventListener('mousemove', (e) => {
+                if (noteIsDrawing && e.target.classList.contains('note-cell')) {
+                    paintNoteCell(e.target);
+                }
+            });
 
-        // Touch events
-        grid.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            const touch = e.touches[0];
-            const cell = document.elementFromPoint(touch.clientX, touch.clientY);
-            if (cell && cell.classList.contains('note-cell')) {
-                noteIsDrawing = true;
-                paintNoteCell(cell);
-            }
-        });
+            document.addEventListener('mouseup', () => {
+                noteIsDrawing = false;
+            });
 
-        grid.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            const touch = e.touches[0];
-            const cell = document.elementFromPoint(touch.clientX, touch.clientY);
-            if (noteIsDrawing && cell && cell.classList.contains('note-cell')) {
-                paintNoteCell(cell);
-            }
-        });
+            // Touch events
+            grid.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const cell = document.elementFromPoint(touch.clientX, touch.clientY);
+                if (cell && cell.classList.contains('note-cell')) {
+                    noteIsDrawing = true;
+                    paintNoteCell(cell);
+                }
+            });
 
-        grid.addEventListener('touchend', () => {
-            noteIsDrawing = false;
-        });
+            grid.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const cell = document.elementFromPoint(touch.clientX, touch.clientY);
+                if (noteIsDrawing && cell && cell.classList.contains('note-cell')) {
+                    paintNoteCell(cell);
+                }
+            });
+
+            grid.addEventListener('touchend', () => {
+                noteIsDrawing = false;
+            });
+        }
     }
 
     // Create color palette
@@ -464,43 +471,50 @@
         return div.innerHTML;
     }
 
+    // Shared AudioContext (reused across sound effects)
+    let sharedAudioCtx = null;
+    function getAudioCtx() {
+        if (!sharedAudioCtx || sharedAudioCtx.state === 'closed') {
+            sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        return sharedAudioCtx;
+    }
+
     // Sound effects
     function playNoteSentSound() {
         try {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const ctx = getAudioCtx();
             [400, 600, 800].forEach((freq, i) => {
-                setTimeout(() => {
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.type = 'sine';
-                    osc.frequency.value = freq;
-                    gain.gain.setValueAtTime(0.1, ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.start();
-                    osc.stop(ctx.currentTime + 0.1);
-                }, i * 60);
+                const startTime = ctx.currentTime + i * 0.06;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0.1, startTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.1);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(startTime);
+                osc.stop(startTime + 0.1);
             });
         } catch (e) {}
     }
 
     function playNoteReceivedSound() {
         try {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const ctx = getAudioCtx();
             [600, 800, 1000, 800].forEach((freq, i) => {
-                setTimeout(() => {
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.type = 'sine';
-                    osc.frequency.value = freq;
-                    gain.gain.setValueAtTime(0.12, ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.start();
-                    osc.stop(ctx.currentTime + 0.15);
-                }, i * 80);
+                const startTime = ctx.currentTime + i * 0.08;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0.12, startTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.15);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(startTime);
+                osc.stop(startTime + 0.15);
             });
         } catch (e) {}
     }

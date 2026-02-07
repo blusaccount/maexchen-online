@@ -31,6 +31,17 @@
         }
     }, 5000);
 
+    // Event delegation for lobby card clicks (single listener instead of per-card)
+    const lobbyList = $('lobby-list');
+    if (lobbyList) {
+        lobbyList.addEventListener('click', (e) => {
+            const card = e.target.closest('.lobby-card');
+            if (card && card.dataset.code) {
+                joinLobby(card.dataset.code);
+            }
+        });
+    }
+
     // --- Create Room ---
     $('btn-create')?.addEventListener('click', () => {
         const name = $('input-name').value.trim();
@@ -286,7 +297,7 @@
         list.innerHTML = lobbies.map(lobby => {
             const avatars = lobby.players.slice(0, 4).map(p => {
                 if (p.character?.dataURL) {
-                    return `<div class="lobby-avatar"><img src="${p.character.dataURL}" alt=""></div>`;
+                    return `<div class="lobby-avatar"><img src="${escapeHtml(p.character.dataURL)}" alt=""></div>`;
                 }
                 return `<div class="lobby-avatar">👽</div>`;
             }).join('');
@@ -309,13 +320,7 @@
             `;
         }).join('');
 
-        // Add click handlers
-        list.querySelectorAll('.lobby-card').forEach(card => {
-            card.addEventListener('click', () => {
-                const code = card.dataset.code;
-                joinLobby(code);
-            });
-        });
+        // Click handlers are managed via event delegation (see below)
     }
 
     function renderPlayerList(players) {
@@ -329,7 +334,7 @@
             // Get character display (pixel art dataURL)
             let avatarHtml = '<span class="player-avatar-placeholder">?</span>';
             if (p.character && p.character.dataURL) {
-                avatarHtml = `<img class="player-avatar-img" src="${p.character.dataURL}" alt="${p.name}">`;
+                avatarHtml = `<img class="player-avatar-img" src="${escapeHtml(p.character.dataURL)}" alt="${escapeHtml(p.name)}">`;
             }
 
             let badges = '';

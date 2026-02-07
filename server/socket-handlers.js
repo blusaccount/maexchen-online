@@ -153,6 +153,7 @@ function cleanupPictoForSocket(socketId) {
 // ============== STRICT BRAIN STATE ==============
 
 const brainLeaderboard = new Map(); // playerName -> brainAge (best daily test)
+const BRAIN_LEADERBOARD_MAX = 100;
 
 function getBrainLeaderboardSorted() {
     const entries = [];
@@ -969,7 +970,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
             game.previousAnnouncement = null;
             game.isFirstTurn = true;
 
-            setTimeout(() => { try { sendTurnStart(io, room); } catch (e) { console.error('sendTurnStart error:', e.message); } }, 3000);
+            setTimeout(() => { try { if (room.game) sendTurnStart(io, room); } catch (e) { console.error('sendTurnStart error:', e.message); } }, 3000);
         } catch (err) { console.error('challenge error:', err.message); } });
 
         // --- Believe Mäxchen ---
@@ -1024,7 +1025,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
             game.previousAnnouncement = null;
             game.isFirstTurn = true;
 
-            setTimeout(() => { try { sendTurnStart(io, room); } catch (e) { console.error('sendTurnStart error:', e.message); } }, 3000);
+            setTimeout(() => { try { if (room.game) sendTurnStart(io, room); } catch (e) { console.error('sendTurnStart error:', e.message); } }, 3000);
         } catch (err) { console.error('believe-maexchen error:', err.message); } });
 
         // --- Emote ---
@@ -1085,14 +1086,10 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
             if (typeof target !== 'string' || target.length > 20) return;
 
             if (target === 'all') {
-                room.players.forEach(p => {
-                    if (p.socketId !== socket.id) {
-                        io.to(p.socketId).emit('drawing-note', {
-                            from: player.name,
-                            dataURL: dataURL,
-                            target: 'all'
-                        });
-                    }
+                socket.to(room.code).emit('drawing-note', {
+                    from: player.name,
+                    dataURL: dataURL,
+                    target: 'all'
                 });
             } else {
                 const targetPlayer = room.players.find(p => p.name === target);
@@ -1220,6 +1217,15 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
             const current = brainLeaderboard.get(name);
             if (current === undefined || brainAge < current) {
                 brainLeaderboard.set(name, brainAge);
+            }
+
+            // Limit leaderboard size to prevent unbounded growth
+            if (brainLeaderboard.size > BRAIN_LEADERBOARD_MAX) {
+                const sorted = getBrainLeaderboardSorted();
+                const keepNames = new Set(sorted.map(e => e.name));
+                for (const [n] of brainLeaderboard) {
+                    if (!keepNames.has(n)) brainLeaderboard.delete(n);
+                }
             }
 
             // Award coins
