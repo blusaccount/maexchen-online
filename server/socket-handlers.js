@@ -163,13 +163,21 @@ export function cleanupRateLimiters() {
 
 const ALLOWED_STOCK_SYMBOLS = new Set([
     'AAPL', 'MSFT', 'NVDA', 'TSLA', 'AMZN', 'META', 'GOOGL', 'NFLX',
-    'URTH', 'QQQ', 'GDAXI', 'DIA', 'SPY', 'VGK', 'EEM'
+    'URTH', 'QQQ', 'GDAXI', 'DIA', 'SPY', 'VGK', 'EEM',
+    'IWM', 'VTI', 'ARKK', 'XLF', 'XLE', 'GLD', 'TLT',
+    'AMD', 'CRM', 'AVGO', 'ORCL', 'ADBE', 'DIS', 'PYPL', 'INTC',
+    'BA', 'V', 'JPM', 'WMT', 'KO', 'PEP', 'JNJ', 'PG', 'BRK-B',
+    'XOM', 'UNH',
+    'GC=F', 'SI=F', 'PL=F', 'HG=F', 'CL=F', 'BZ=F', 'NG=F',
+    'BTC-USD', 'ETH-USD', 'SOL-USD', 'BNB-USD', 'XRP-USD', 'ADA-USD', 'DOGE-USD'
 ]);
 
 let _fetchTickerQuotes = null;
+let _yahooFinance = null;
 
-export function registerSocketHandlers(io, { fetchTickerQuotes } = {}) {
+export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } = {}) {
     _fetchTickerQuotes = fetchTickerQuotes || null;
+    _yahooFinance = yahooFinance || null;
     io.on('connection', (socket) => {
         console.log(`Connected: ${socket.id}`);
 
@@ -211,8 +219,8 @@ export function registerSocketHandlers(io, { fetchTickerQuotes } = {}) {
             if (!data || typeof data !== 'object') return;
 
             const symbol = typeof data.symbol === 'string'
-                ? data.symbol.replace(/[^A-Z]/g, '').slice(0, 10) : '';
-            if (!ALLOWED_STOCK_SYMBOLS.has(symbol)) {
+                ? data.symbol.replace(/[^A-Z0-9.\-=]/g, '').slice(0, 12) : '';
+            if (!symbol) {
                 socket.emit('stock-error', { error: 'Invalid symbol' });
                 return;
             }
@@ -222,15 +230,27 @@ export function registerSocketHandlers(io, { fetchTickerQuotes } = {}) {
                 return;
             }
 
-            // Get current price from ticker cache
+            // Get current price from ticker cache or live lookup
             const quotes = _fetchTickerQuotes ? await _fetchTickerQuotes() : [];
-            const quote = quotes.find(q => q.symbol === symbol);
+            let quote = quotes.find(q => q.symbol === symbol);
+            if (!quote && _yahooFinance) {
+                try {
+                    const q = await _yahooFinance.quote(symbol);
+                    if (q && q.regularMarketPrice != null) {
+                        quote = {
+                            symbol: (q.symbol || symbol).replace('^', ''),
+                            name: q.shortName || q.longName || symbol,
+                            price: parseFloat(q.regularMarketPrice.toFixed(2)),
+                        };
+                    }
+                } catch (e) { /* symbol not found */ }
+            }
             if (!quote) {
                 socket.emit('stock-error', { error: 'Price unavailable' });
                 return;
             }
 
-            const result = buyStock(player.name, symbol, quote.price, amount);
+            const result = buyStock(player.name, quote.symbol, quote.price, amount);
             if (!result.ok) {
                 socket.emit('stock-error', { error: result.error });
                 return;
@@ -249,8 +269,8 @@ export function registerSocketHandlers(io, { fetchTickerQuotes } = {}) {
             if (!data || typeof data !== 'object') return;
 
             const symbol = typeof data.symbol === 'string'
-                ? data.symbol.replace(/[^A-Z]/g, '').slice(0, 10) : '';
-            if (!ALLOWED_STOCK_SYMBOLS.has(symbol)) {
+                ? data.symbol.replace(/[^A-Z0-9.\-=]/g, '').slice(0, 12) : '';
+            if (!symbol) {
                 socket.emit('stock-error', { error: 'Invalid symbol' });
                 return;
             }
@@ -261,13 +281,25 @@ export function registerSocketHandlers(io, { fetchTickerQuotes } = {}) {
             }
 
             const quotes = _fetchTickerQuotes ? await _fetchTickerQuotes() : [];
-            const quote = quotes.find(q => q.symbol === symbol);
+            let quote = quotes.find(q => q.symbol === symbol);
+            if (!quote && _yahooFinance) {
+                try {
+                    const q = await _yahooFinance.quote(symbol);
+                    if (q && q.regularMarketPrice != null) {
+                        quote = {
+                            symbol: (q.symbol || symbol).replace('^', ''),
+                            name: q.shortName || q.longName || symbol,
+                            price: parseFloat(q.regularMarketPrice.toFixed(2)),
+                        };
+                    }
+                } catch (e) { /* symbol not found */ }
+            }
             if (!quote) {
                 socket.emit('stock-error', { error: 'Price unavailable' });
                 return;
             }
 
-            const result = sellStock(player.name, symbol, quote.price, amount);
+            const result = sellStock(player.name, quote.symbol, quote.price, amount);
             if (!result.ok) {
                 socket.emit('stock-error', { error: result.error });
                 return;
