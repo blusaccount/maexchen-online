@@ -83,3 +83,114 @@
 ## Open Items
 - Balances are in-memory only (no persistence across server restarts)
 - CSS could be split into modules (theme.css is now ~2300 lines)
+
+---
+
+# HANDOFF - Persistence Direction (Wallet + Leaderboards)
+
+## What Was Done
+
+- Added `docs/persistence-plan.md` with a fresh-start persistence strategy tailored for Render free tier.
+- Documented a recommended Postgres schema for:
+  - `players` (wallet balance)
+  - `stock_positions` (portfolio holdings)
+  - `wallet_ledger` (auditable balance changes)
+- Added a rollout checklist and post-deploy verification steps.
+
+## Why
+
+- Current wallet and stock leaderboard data are in-memory and are lost on process restart.
+- Since there are no users yet, a clean cutover can be done without migration complexity.
+
+## Files Changed
+
+- `docs/persistence-plan.md`
+- `HANDOFF.md`
+
+## Verification
+
+- Document review only.
+
+## Update - Free-tier cost clarification
+
+- Clarified in `docs/persistence-plan.md` that this persistence approach can be implemented with $0 using common free tiers (Render free + Neon/Supabase free Postgres).
+- Added caveats about free-tier limits and scaling later without schema redesign.
+
+---
+
+# HANDOFF - Neon Persistence Implementation (Wallet + Stocks)
+
+## What Was Done
+
+- Added Postgres connectivity module in `server/db.js` with pooled queries and transaction helper.
+- Added SQL schema file `server/sql/persistence.sql` for `players`, `stock_positions`, and `wallet_ledger`.
+- Refactored `server/currency.js` to async DB-backed balance operations with ledger writes.
+- Refactored `server/stock-game.js` to async DB-backed portfolio operations with transactional buy/sell.
+- Updated socket handlers to await async persistence calls for:
+  - registration/get-balance
+  - stock buy/sell/portfolio/leaderboard
+  - Mäxchen betting and pot payouts
+  - StrictBrain coin rewards
+  - leave/disconnect room cleanup path
+- Updated room manager pot payout path to async balance updates.
+- Added `pg` dependency in `package.json`.
+
+## Important Notes
+
+- A local fallback remains for dev if `DATABASE_URL` is not configured.
+- `npm i pg` failed in this execution environment with `403 Forbidden` from npm registry, so lockfile refresh could not be completed here.
+
+## Files Changed
+
+- `server/db.js`
+- `server/sql/persistence.sql`
+- `server/currency.js`
+- `server/stock-game.js`
+- `server/socket-handlers.js`
+- `server/room-manager.js`
+- `package.json`
+
+## Verification
+
+- `node --check server/socket-handlers.js`
+- `node --check server/room-manager.js`
+- `node --check server/currency.js`
+- `node --check server/stock-game.js`
+- `node --check server/db.js`
+- Local `node server.js` start check in this environment is blocked by missing installed dependencies (e.g. `yahoo-finance2`), so runtime validation here is limited to syntax checks.
+
+---
+
+# HANDOFF - Persistence Review Follow-up Fixes
+
+## What Was Done
+
+- Updated `server/db.js` to statically import `pg` via ESM (`import { Pool } from 'pg'`) and key DB enablement only off `DATABASE_URL`.
+- Fixed wallet credit race safety in `server/currency.js`:
+  - `addBalance` now uses one atomic Postgres upsert (`balance = balance + delta`) and writes a ledger row from the returned player id.
+  - kept `deductBalance` as guarded atomic decrement (`balance >= amount`) with ledger write.
+- Simplified stock player bootstrap in `server/stock-game.js`:
+  - `getOrCreatePlayerId` now only ensures player existence and fetches id.
+  - removed balance reads/writes from this helper to avoid accidental balance interference.
+
+## Why
+
+- Dynamic runtime `require('pg')` in ESM can hide dependency/config issues that should fail fast in production.
+- Previous `addBalance` read-modify-write flow could lose updates under concurrency.
+- Player-id bootstrap should not touch balance state.
+
+## Files Changed
+
+- `server/db.js`
+- `server/currency.js`
+- `server/stock-game.js`
+- `PLANS.md`
+- `HANDOFF.md`
+
+## Verification
+
+- `node --check server/db.js`
+- `node --check server/currency.js`
+- `node --check server/stock-game.js`
+- `npm install --package-lock-only` (fails in this environment due npm registry 403 for `pg`)
+

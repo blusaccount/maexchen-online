@@ -98,7 +98,7 @@ export function sendTurnStart(io, room) {
 // ============== REMOVE PLAYER FROM ROOM ==============
 // Shared logic for leave-room and disconnect handlers
 
-export function removePlayerFromRoom(io, socketId, room) {
+export async function removePlayerFromRoom(io, socketId, room) {
     const playerIndex = room.players.findIndex(p => p.socketId === socketId);
     if (playerIndex === -1) return;
 
@@ -139,9 +139,10 @@ export function removePlayerFromRoom(io, socketId, room) {
 
                     // Award pot to winner
                     if (pot > 0 && alive[0]) {
-                        addBalance(alive[0].name, pot);
+                        await addBalance(alive[0].name, pot, 'maexchen_pot_win', { roomCode: room.code });
                         for (const p of room.players) {
-                            io.to(p.socketId).emit('balance-update', { balance: getBalance(p.name) });
+                            const balance = await getBalance(p.name);
+                            io.to(p.socketId).emit('balance-update', { balance });
                         }
                     }
 
