@@ -7,28 +7,46 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👽</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/shared/css/theme.css">
     <style>
+        /* ===== Inverted Nintendo DS Pixel Style ===== */
+        :root {
+            --ds-bg: #1a1a1a;
+            --ds-surface: #111111;
+            --ds-border: #cccccc;
+            --ds-text: #e8e8e8;
+            --ds-text-dim: #888888;
+            --ds-highlight: #333333;
+            --ds-radius: 0px;
+        }
+
+        body {
+            font-family: 'Press Start 2P', monospace !important;
+            font-size: 12px;
+            color: var(--ds-text);
+            image-rendering: pixelated;
+            line-height: 1.8;
+        }
+
         .menu-container {
             text-align: center;
-            padding: 40px;
-            max-width: 1100px;
+            padding: 16px 12px 40px;
+            max-width: 800px;
             margin: 0 auto;
         }
 
         .arcade-title {
-            font-size: 3rem;
-            color: var(--accent);
-            text-shadow: 0 0 30px var(--accent);
-            margin-bottom: 10px;
-            letter-spacing: 4px;
+            font-size: 20px;
+            color: var(--ds-text);
+            letter-spacing: 3px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid var(--ds-border);
         }
 
         .arcade-subtitle {
-            color: var(--text-dim);
-            font-size: 1.2rem;
-            margin-bottom: 30px;
+            display: none;
         }
 
         /* Avatar Bar */
@@ -36,28 +54,28 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 15px;
-            margin-bottom: 40px;
-            padding: 15px 20px;
-            background: var(--surface);
-            border: 1px solid rgba(0,255,136,0.2);
-            border-radius: var(--radius);
+            gap: 10px;
+            margin-bottom: 16px;
+            padding: 10px;
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            border-radius: var(--ds-radius);
         }
 
         .avatar-preview {
             width: 48px;
             height: 48px;
             image-rendering: pixelated;
-            border: 2px solid var(--accent);
-            border-radius: 4px;
+            border: 2px solid var(--ds-border);
+            border-radius: 0;
             background: #000;
         }
 
         .avatar-placeholder {
             width: 48px;
             height: 48px;
-            border: 2px dashed var(--text-dim);
-            border-radius: 4px;
+            border: 2px dashed var(--ds-text-dim);
+            border-radius: 0;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -66,49 +84,57 @@
         }
 
         .avatar-name {
-            color: var(--accent);
-            font-size: 1rem;
+            color: var(--ds-text);
+            font-size: 11px;
             letter-spacing: 1px;
         }
 
         .avatar-name-input {
-            background: var(--bg);
-            border: 1px solid var(--accent);
-            color: var(--text);
-            font-family: 'Orbitron', monospace;
-            font-size: 0.85rem;
-            padding: 8px 12px;
-            border-radius: 4px;
-            width: 140px;
+            background: var(--ds-bg);
+            border: 2px solid var(--ds-border);
+            color: var(--ds-text);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            padding: 8px 10px;
+            border-radius: 0;
+            width: 160px;
         }
 
         .avatar-name-input:focus {
-            outline: none;
-            box-shadow: 0 0 10px rgba(0,255,136,0.3);
+            outline: 2px solid var(--ds-border);
+            outline-offset: 2px;
+            box-shadow: 3px 3px 0 var(--ds-border);
         }
 
         .btn-avatar {
-            background: var(--surface);
-            border: 1px solid var(--accent);
-            color: var(--accent);
-            font-family: 'Orbitron', monospace;
-            font-size: 0.7rem;
-            padding: 8px 14px;
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            color: var(--ds-text);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 9px;
+            padding: 10px 16px;
             cursor: pointer;
             letter-spacing: 1px;
-            transition: all 0.3s;
+            transition: all 0.15s;
+            border-radius: 0;
+        }
+
+        .btn-avatar:hover {
+            background: var(--ds-border);
+            color: var(--ds-surface);
+            box-shadow: 3px 3px 0 var(--ds-text-dim);
         }
 
         .currency-display {
             display: flex;
             align-items: center;
             gap: 6px;
-            background: var(--bg);
-            border: 1px solid var(--gold);
+            background: var(--ds-bg);
+            border: 2px solid var(--ds-border);
             padding: 6px 12px;
-            border-radius: 4px;
-            font-size: 0.85rem;
-            color: var(--gold);
+            border-radius: 0;
+            font-size: 11px;
+            color: var(--ds-text);
             letter-spacing: 1px;
             white-space: nowrap;
         }
@@ -118,113 +144,129 @@
         }
 
         .currency-amount {
-            font-family: 'Orbitron', monospace;
+            font-family: 'Press Start 2P', monospace;
             font-weight: 700;
-        }
-
-        .btn-avatar:hover {
-            background: var(--accent);
-            color: #000;
-            box-shadow: 0 0 15px rgba(0,255,136,0.4);
         }
 
         .game-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            max-width: 900px;
-            margin: 0 auto 30px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            max-width: 600px;
+            margin: 0 auto 24px;
+            justify-items: center;
         }
 
         .game-card {
-            background: var(--surface);
-            border: 1px solid var(--accent);
-            padding: 12px 16px;
+            background: none;
+            border: none;
+            padding: 8px;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.15s;
             text-decoration: none;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 14px;
+            gap: 8px;
+            border-radius: 0;
         }
 
         .game-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(0,255,136,0.25);
-            border-color: var(--accent-glow);
+            box-shadow: none;
+            transform: scale(1.1);
+        }
+
+        .game-card:active {
+            box-shadow: none;
+            transform: scale(0.95);
         }
 
         .game-icon {
-            font-size: 2rem;
+            font-size: 3.5rem;
             flex-shrink: 0;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            border-radius: 18px;
         }
 
         .game-card-info {
             min-width: 0;
+            text-align: center;
         }
 
         .game-title {
-            font-size: 0.95rem;
-            color: var(--accent);
-            margin-bottom: 2px;
+            font-size: 10px;
+            color: var(--ds-text);
+            margin-bottom: 0;
+            font-weight: 700;
         }
 
         .game-desc {
-            color: var(--text-dim);
-            font-size: 0.7rem;
-            line-height: 1.4;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
+            display: none;
         }
 
         .game-players {
-            margin-top: 4px;
-            font-size: 0.65rem;
-            color: var(--gold);
+            display: none;
         }
 
         .game-card.coming-soon {
             opacity: 0.5;
             cursor: not-allowed;
-            border-style: dashed;
         }
 
         .game-card.coming-soon:hover {
             transform: none;
-            box-shadow: none;
         }
 
         .coming-soon-badge {
-            background: var(--danger);
-            color: white;
-            padding: 2px 8px;
-            font-size: 0.6rem;
+            background: var(--ds-border);
+            color: var(--ds-surface);
+            padding: 2px 6px;
+            font-size: 8px;
             letter-spacing: 1px;
             margin-top: 4px;
             display: inline-block;
         }
 
+        /* ===== Pixel Divider ===== */
+        .pixel-divider {
+            height: 2px;
+            background: repeating-linear-gradient(
+                90deg,
+                var(--ds-border) 0px,
+                var(--ds-border) 4px,
+                transparent 4px,
+                transparent 8px
+            );
+            margin: 12px 0;
+        }
+
         /* Online Players Section */
         .online-section {
-            max-width: 900px;
+            max-width: 800px;
             margin: 0 auto;
             text-align: left;
         }
 
         .online-section h3 {
-            color: var(--accent);
-            font-size: 0.9rem;
+            color: var(--ds-text);
+            font-size: 12px;
             letter-spacing: 2px;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             text-align: center;
+            padding: 6px 0;
+            border-bottom: 2px dashed var(--ds-border);
         }
 
         .online-list {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 8px;
             justify-content: center;
         }
 
@@ -232,11 +274,11 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            background: var(--surface);
-            border: 1px solid rgba(0,255,136,0.15);
-            padding: 6px 12px;
-            border-radius: var(--radius);
-            font-size: 0.75rem;
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            padding: 6px 10px;
+            border-radius: 0;
+            font-size: 10px;
         }
 
         .online-avatar img {
@@ -246,77 +288,278 @@
         }
 
         .online-status {
-            font-size: 0.6rem;
-            color: var(--text-dim);
+            font-size: 9px;
+            color: var(--ds-text-dim);
             letter-spacing: 1px;
         }
 
         .no-players {
-            color: var(--text-dim);
-            font-size: 0.8rem;
+            color: var(--ds-text-dim);
+            font-size: 10px;
             text-align: center;
+            padding: 16px;
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+        }
+
+        /* ===== Pictochat DS Override ===== */
+        .picto-section {
+            border: 2px solid var(--ds-border) !important;
+            background: var(--ds-surface) !important;
+            box-shadow: 4px 4px 0 var(--ds-border) !important;
+            border-radius: 0 !important;
+        }
+
+        .picto-section::before {
+            display: none !important;
+        }
+
+        .picto-title {
+            color: var(--ds-text) !important;
+            font-size: 14px !important;
+            letter-spacing: 2px;
+        }
+
+        .picto-subtitle {
+            color: var(--ds-text-dim) !important;
+            font-size: 9px !important;
+        }
+
+        .picto-tool {
+            background: var(--ds-bg) !important;
+            border: 2px solid var(--ds-border) !important;
+            color: var(--ds-text) !important;
+            font-family: 'Press Start 2P', monospace !important;
+            font-size: 9px !important;
+            border-radius: 0 !important;
+        }
+
+        .picto-tool.active,
+        .picto-tool:hover {
+            background: var(--ds-border) !important;
+            color: var(--ds-surface) !important;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .picto-size label {
+            color: var(--ds-text-dim) !important;
+            font-size: 9px !important;
+        }
+
+        .picto-swatch {
+            border: 2px solid var(--ds-border) !important;
+            border-radius: 0 !important;
+        }
+
+        .picto-swatch.active {
+            border-color: var(--ds-text) !important;
+            box-shadow: 2px 2px 0 var(--ds-border) !important;
+        }
+
+        .picto-canvas-wrap {
+            border: 2px solid var(--ds-border) !important;
+            border-radius: 0 !important;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1) !important;
+        }
+
+        .picto-chat {
+            background: var(--ds-bg) !important;
+            border: 2px solid var(--ds-border) !important;
+            border-radius: 0 !important;
+        }
+
+        .picto-chat-message {
+            background: var(--ds-surface) !important;
+            border-left: 3px solid var(--ds-border) !important;
+            font-size: 9px !important;
+        }
+
+        .picto-chat-message .name {
+            color: var(--ds-text) !important;
+        }
+
+        .picto-chat-input input {
+            background: var(--ds-surface) !important;
+            border: 2px solid var(--ds-border) !important;
+            color: var(--ds-text) !important;
+            font-family: 'Press Start 2P', monospace !important;
+            font-size: 9px !important;
+            border-radius: 0 !important;
+        }
+
+        .picto-chat-input input:focus {
+            box-shadow: 3px 3px 0 var(--ds-border) !important;
+        }
+
+        .picto-send {
+            background: var(--ds-border) !important;
+            color: var(--ds-surface) !important;
+            font-family: 'Press Start 2P', monospace !important;
+            font-size: 9px !important;
+            border: 2px solid var(--ds-border) !important;
+            border-radius: 0 !important;
+        }
+
+        .picto-send:hover {
+            box-shadow: 2px 2px 0 var(--ds-text-dim) !important;
+        }
+
+        .picto-status {
+            color: var(--ds-text-dim) !important;
+            font-size: 9px !important;
+        }
+
+        /* ===== Soundboard DS Override ===== */
+        .soundboard-section {
+            border: 2px solid var(--ds-border) !important;
+            background: var(--ds-surface) !important;
+            box-shadow: 4px 4px 0 var(--ds-border) !important;
+            border-radius: 0 !important;
+        }
+
+        .soundboard-section::before {
+            display: none !important;
+        }
+
+        .soundboard-title {
+            color: var(--ds-text) !important;
+            font-size: 14px !important;
+            letter-spacing: 2px;
+        }
+
+        .soundboard-subtitle {
+            color: var(--ds-text-dim) !important;
+            font-size: 9px !important;
+        }
+
+        .soundboard-mute {
+            background: var(--ds-bg) !important;
+            border: 2px solid var(--ds-border) !important;
+            color: var(--ds-text) !important;
+            border-radius: 0 !important;
+        }
+
+        .soundboard-mute:hover {
+            background: var(--ds-highlight) !important;
+        }
+
+        .soundboard-mute.muted {
+            border-color: var(--ds-text-dim) !important;
+            background: var(--ds-highlight) !important;
+        }
+
+        .soundboard-volume input[type=range] {
+            accent-color: var(--ds-border);
+        }
+
+        .soundboard-btn {
+            background: var(--ds-bg) !important;
+            border: 2px solid var(--ds-border) !important;
+            border-radius: 0 !important;
+            transition: all 0.15s !important;
+        }
+
+        .soundboard-btn:hover {
+            box-shadow: 3px 3px 0 var(--ds-border) !important;
+            transform: translate(-2px, -2px) !important;
+        }
+
+        .soundboard-btn:active {
+            transform: translate(0, 0) !important;
+            box-shadow: none !important;
+        }
+
+        .soundboard-btn-label {
+            color: var(--ds-text-dim) !important;
+            font-size: 8px !important;
+        }
+
+        .soundboard-btn.playing {
+            border-color: var(--ds-text) !important;
+            box-shadow: 3px 3px 0 var(--ds-border) !important;
+            animation: none !important;
+        }
+
+        .soundboard-toast {
+            background: var(--ds-surface) !important;
+            border: 2px solid var(--ds-border) !important;
+            border-radius: 0 !important;
+            color: var(--ds-text) !important;
+            font-size: 9px !important;
+        }
+
+        .soundboard-toast-name {
+            color: var(--ds-text) !important;
+            font-weight: 700;
+        }
+
+        /* ===== Stock Ticker DS Override ===== */
+        .stock-ticker-bar {
+            background: var(--ds-surface) !important;
+            border-top: 2px solid var(--ds-border) !important;
+        }
+
+        .ticker-symbol {
+            color: var(--ds-text) !important;
+        }
+
+        .ticker-price {
+            color: var(--ds-text-dim) !important;
         }
 
         /* Mobile responsive */
         @media (max-width: 768px) {
             .menu-container {
-                padding: 20px 15px;
+                padding: 10px 8px 32px;
             }
 
             .arcade-title {
-                font-size: 2rem;
-                letter-spacing: 2px;
-            }
-
-            .arcade-subtitle {
-                font-size: 1rem;
-                margin-bottom: 20px;
+                font-size: 16px;
             }
 
             .avatar-bar {
                 flex-wrap: wrap;
-                gap: 10px;
-                padding: 12px;
+                gap: 8px;
+                padding: 8px;
             }
 
             .game-grid {
-                grid-template-columns: 1fr;
-                gap: 10px;
-            }
-
-            .game-card {
-                padding: 10px 14px;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 12px;
             }
 
             .game-icon {
-                font-size: 1.8rem;
+                width: 64px;
+                height: 64px;
+                font-size: 2.8rem;
+                border-radius: 14px;
             }
 
             .game-title {
-                font-size: 0.85rem;
-            }
-
-            .game-desc {
-                font-size: 0.65rem;
+                font-size: 8px;
             }
         }
 
         @media (max-width: 400px) {
             .arcade-title {
-                font-size: 1.6rem;
+                font-size: 13px;
             }
 
-            .arcade-subtitle {
-                font-size: 0.85rem;
-                margin-bottom: 15px;
+            .game-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 16px;
             }
 
             .game-icon {
-                font-size: 1.5rem;
+                width: 60px;
+                height: 60px;
+                font-size: 2.5rem;
+                border-radius: 12px;
             }
 
             .game-title {
-                font-size: 0.8rem;
+                font-size: 8px;
             }
 
             .avatar-name-input {
