@@ -8,6 +8,13 @@
     // Get current game type from URL path
     const gameType = window.location.pathname.split('/')[2] || 'maexchen';
 
+    // Check URL for lobby code (?code=XXXX)
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlCode = urlParams.get('code');
+    if (urlCode && $('input-code')) {
+        $('input-code').value = urlCode.toUpperCase().slice(0, 4);
+    }
+
     // Request lobbies on load
     socket.emit('get-lobbies', gameType);
 
@@ -180,6 +187,7 @@
         state.roomCode = code;
         state.isHost = true;
         $('room-code-display').textContent = code;
+        updateInviteLink(code);
         showScreen('waiting');
 
         // Show chat panel
@@ -194,6 +202,7 @@
         state.roomCode = code;
         state.isHost = false;
         $('room-code-display').textContent = code;
+        updateInviteLink(code);
         showScreen('waiting');
 
         // Show chat panel
@@ -276,10 +285,14 @@
                 return `<div class="lobby-avatar">👽</div>`;
             }).join('');
 
+            const statusBadge = lobby.started
+                ? '<span class="lobby-status lobby-live">▶ LIVE</span>'
+                : '';
+
             return `
                 <div class="lobby-card" data-code="${lobby.code}">
                     <div class="lobby-info">
-                        <div class="lobby-host">${lobby.hostName}'s Raum</div>
+                        <div class="lobby-host">${lobby.hostName}'s Raum ${statusBadge}</div>
                         <div class="lobby-code">${lobby.code}</div>
                     </div>
                     <div class="lobby-players">
@@ -321,4 +334,23 @@
             list.appendChild(item);
         });
     }
+    // --- Invite Link ---
+    function updateInviteLink(code) {
+        const btn = $('btn-invite-link');
+        if (!btn) return;
+        btn.style.display = 'inline-flex';
+        btn.onclick = () => {
+            const url = `${window.location.origin}${window.location.pathname}?code=${code}`;
+            navigator.clipboard.writeText(url).then(() => {
+                const original = btn.textContent;
+                btn.textContent = '✓ Link kopiert!';
+                setTimeout(() => { btn.textContent = original; }, 2000);
+            }).catch((err) => {
+                console.warn('Clipboard write failed:', err);
+                // Fallback: show URL for manual copy
+                prompt('Einladungslink:', url);
+            });
+        };
+    }
+
 })();
