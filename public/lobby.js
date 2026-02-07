@@ -135,6 +135,14 @@
         }
     });
 
+    // --- Currency Balance ---
+    socket.on('balance-update', function (data) {
+        var el = document.getElementById('currency-amount');
+        if (el && data && typeof data.balance === 'number') {
+            el.textContent = data.balance;
+        }
+    });
+
     // --- Utility ---
     function escapeHtml(str) {
         var div = document.createElement('div');

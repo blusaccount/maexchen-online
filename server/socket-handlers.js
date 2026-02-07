@@ -11,6 +11,8 @@ import {
     removePlayerFromRoom
 } from './room-manager.js';
 
+import { getBalance } from './currency.js';
+
 // ============== INPUT VALIDATION ==============
 
 function sanitizeName(name) {
@@ -175,8 +177,20 @@ export function registerSocketHandlers(io) {
 
             onlinePlayers.set(socket.id, { name, character, game });
             broadcastOnlinePlayers(io);
+
+            // Send currency balance to the player
+            socket.emit('balance-update', { balance: getBalance(name) });
+
             console.log(`Registered: ${name} for ${game}`);
         } catch (err) { console.error('register-player error:', err.message); } });
+
+        // --- Get Currency Balance ---
+        socket.on('get-balance', () => { try {
+            if (!checkRateLimit(socket.id)) return;
+            const player = onlinePlayers.get(socket.id);
+            if (!player) return;
+            socket.emit('balance-update', { balance: getBalance(player.name) });
+        } catch (err) { console.error('get-balance error:', err.message); } });
 
         // --- Pictochat Join ---
         socket.on('picto-join', () => { try {

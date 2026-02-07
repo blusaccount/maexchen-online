@@ -98,6 +98,29 @@
             transition: all 0.3s;
         }
 
+        .currency-display {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--bg);
+            border: 1px solid var(--gold);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            color: var(--gold);
+            letter-spacing: 1px;
+            white-space: nowrap;
+        }
+
+        .currency-icon {
+            font-size: 1rem;
+        }
+
+        .currency-amount {
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+        }
+
         .btn-avatar:hover {
             background: var(--accent);
             color: #000;
@@ -304,6 +327,10 @@
             <img class="avatar-preview" id="avatar-img" src="" alt="" style="display:none;">
         </div>
         <input type="text" class="avatar-name-input" id="input-name" maxlength="12" placeholder="Dein Name..." autocomplete="off">
+        <div class="currency-display" id="currency-display" title="StrictCoins">
+            <span class="currency-icon">🪙</span>
+            <span class="currency-amount" id="currency-amount">—</span>
+        </div>
         <button class="btn-avatar" id="btn-create-character">CHARAKTER ERSTELLEN</button>
     </div>
 
