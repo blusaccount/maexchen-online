@@ -1,49 +1,52 @@
-# HANDOFF - Socket.IO Security Hardening
+# HANDOFF - Server Modularisierung & Health-Check
 
 ## Was wurde gemacht
 
-### server.js - Input-Validierung
-- `sanitizeName()`: Entfernt `<>&"'/`, trimmt, max 20 Zeichen
-- `validateCharacter()`: Prüft Objekt-Typ, max 2KB JSON, nur `pixels`/`dataURL` Keys erlaubt, dataURL muss mit `data:image/` beginnen
-- `validateRoomCode()`: Nur A-Z0-9, max 4 Zeichen
-- `validateGameType()`: Whitelist (`maexchen`, `lobby`), Fallback auf `maexchen`
-- Alle 13 Socket-Handler nutzen diese Validierungen
+### Server in Module aufgeteilt
+- `server.js` (Root) → Importiert `server/index.js` und startet den Server
+- `server/index.js` → Express + Socket.IO Setup, Static Files, Health-Check, Periodic Cleanup, Server Start
+- `server/game-logic.js` → ROLL_ORDER, STARTING_LIVES, rollDice, rollRank, rollName, isMaexchen, getAlivePlayers, nextAlivePlayerIndex
+- `server/room-manager.js` → rooms/onlinePlayers Maps, create/join/leave Room Logik, Broadcast-Funktionen, sendTurnStart
+- `server/socket-handlers.js` → Alle socket.on() Event Handler, Input-Validierung, Rate Limiting
+- `server/discord-bot.js` → Komplette Discord Bot Logik (startDiscordBot)
 
-### server.js - Rate Limiting
-- Token-Bucket pro Socket-ID (Map-basiert)
-- `checkRateLimit(socketId, maxPerSecond)` - Default: 10/Sekunde
-- Strengere Limits für: Chat (5/s), Emotes (5/s), Drawings (3/s)
-- Automatische Cleanup der Rate-Limiter-Map
+### .env Setup
+- `dotenv` war bereits in package.json - wird jetzt in `server/index.js` via `import 'dotenv/config'` geladen
+- `.env.example` erstellt mit PORT und DISCORD_TOKEN
+- `.env` war bereits in `.gitignore`
 
-### server.js - Error Handling
-- Alle 13 `socket.on()` Handler in try-catch gewrappt
-- Fehler werden geloggt mit Handler-Name (`console.error('handler-name error:', err.message)`)
-- User-facing Fehler werden per `socket.emit('error', ...)` zurückgegeben wo sinnvoll
-- setTimeout-Callbacks ebenfalls in try-catch
+### Health-Check Endpoint
+- `GET /health` → JSON mit `{ status: "ok", uptime, players: onlinePlayers.size, rooms: rooms.size }`
 
-### server.js - Zusätzliche Sicherheit
-- Doppelte Room-Erstellung verhindert (prüft `getRoom()` vor create)
-- Doppelter Room-Join verhindert (prüft ob Socket schon im Raum)
-- `announce`: Prüft `typeof value !== 'number' || !Number.isInteger(value)`
-- `drawing-note`: dataURL max 70KB, muss mit `data:image/` starten, target max 20 Zeichen
-- `chat-message`: HTML-Entities entfernt, max 100 Zeichen
-- `emote`: max 50 Zeichen String
+### Bisherige Security (aus vorherigem Sprint, unverändert übernommen)
+- Input-Validierung: sanitizeName, validateCharacter, validateRoomCode, validateGameType
+- Rate Limiting: Token-Bucket pro Socket-ID, strengere Limits für Chat/Emotes/Drawings
+- Error Handling: Alle Handler in try-catch
+- Periodischer Cleanup alle 5 Min
 
-### server.js - Periodischer Cleanup (alle 5 Min)
-- Prüft ob Socket-IDs in `onlinePlayers` noch connected sind
-- Entfernt verwaiste Spieler aus Rooms
-- Löscht leere Rooms
-- Reassigned Host wenn alter Host disconnected
-- Cleanup der Rate-Limiter-Map
-- Loggt Anzahl entfernter Einträge
-
-## Geänderte Datei
-- `server.js` (einzige Datei)
+## Geänderte Dateien
+- `server.js` → Nur noch Import von `server/index.js`
+- `server/index.js` → Express/Socket.IO Setup, Health-Check, Cleanup, Start (neu)
+- `server/game-logic.js` → Spiellogik-Funktionen (neu)
+- `server/room-manager.js` → Room-Verwaltung (neu)
+- `server/socket-handlers.js` → Socket Event Handler (neu)
+- `server/discord-bot.js` → Discord Bot (neu)
+- `.env.example` → Template für Umgebungsvariablen (neu)
 
 ## Was nicht geändert wurde
 - Client-Code (public/, shared/, games/)
-- Discord Bot
-- Statische Dateien
+- Spiellogik (nur verschoben, nicht umgeschrieben)
+- Discord Bot Logik (nur verschoben)
+- Frontend-Dateien, Nostalgiabait
+
+## Was funktioniert
+- Server startet korrekt über `node server.js`
+- Alle statischen Dateien werden korrekt ausgeliefert
+- Health-Check Endpoint liefert JSON mit Status, Uptime, Spieler- und Raum-Anzahl
+- Discord Bot startet wenn DISCORD_TOKEN gesetzt ist
+- Mäxchen-Spiellogik unverändert
+- Character-System unverändert
+- Nostalgiabait unverändert
 
 ## Was ist offen
 - Client-seitige Validierung (optional, Server validiert bereits alles)
