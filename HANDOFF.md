@@ -1,63 +1,58 @@
-# HANDOFF - Code Review Fixes
+# HANDOFF - Mäxchen Betting Feature
 
 ## What Was Done
 
-### Bugfixes
+### New Feature: Mäxchen Betting
 
-**WatchParty: use game-started payload** (`games/watchparty/js/watchparty.js`)
-- `game-started` handler now receives a `data` parameter
-- Player bar renders immediately from payload (instead of staying empty until the next room-update)
+**Betting UI in waiting room** (`games/maexchen/index.html`)
+- Added betting section with coin input, "Setzen" button, balance display, and bet list
+- Shows all placed bets in real-time
 
-**WatchParty: host change sync** (`games/watchparty/js/watchparty.js`)
-- On `room-update`, checks if the host changed (`wasHost` vs `isHost`)
-- New host automatically starts the sync interval
+**Server-side betting logic** (`server/socket-handlers.js`)
+- New `place-bet` socket event with validation (balance check, integer check, range 0-1000, rate limiting)
+- Imported `addBalance` and `deductBalance` from currency.js
+- On `start-game`: deducts bets from all players, builds pot, stores in game state
+- On `game-over` (challenge path): awards pot to winner, sends balance updates
+- On `game-over` (believe-maexchen path): same pot distribution
+- Broadcasts `bets-update` to room when any player places a bet
 
-**Maexchen join limit fixed** (`server/socket-handlers.js`)
-- Was: Watchparty 6, Maexchen 4, while UI said "2-6 players"
-- Now: unified max 6 players for all game types
+**Pot distribution on disconnect** (`server/room-manager.js`)
+- Imported `addBalance` and `getBalance` from currency.js
+- On disconnect game-over: awards pot to winner, sends balance updates
 
-**Pictochat resize** (`public/pictochat.js`)
-- Added `window.addEventListener('resize', resizeCanvas)`
-- Canvas re-renders on window resize
+**Client-side game logic** (`games/maexchen/js/game.js`)
+- Handles `balance-update` to track player balance
+- Handles `bets-update` to render bet list in waiting room
+- Emits `place-bet` on button click with client-side validation
+- Shows pot display during active game
+- Shows winnings amount on game-over screen
+- Requests balance on load via `get-balance`
 
-**XSS escaping in lobby** (`shared/js/lobby.js`)
-- Added `escapeHtml()` helper
-- `renderOnlinePlayers`: `p.name` and `p.character.dataURL` are escaped
-- `renderLobbies`: `lobby.hostName` and `lobby.code` are escaped
-
-### Refactoring
-
-**removePlayerFromRoom helper** (`server/room-manager.js`)
-- Extracted new function `removePlayerFromRoom(io, socketId, room)`
-- Includes all leave logic: game-state cleanup (WatchParty + Maexchen), player removal, host reassignment, room deletion, broadcasts
-- `leave-room` handler reduced from ~75 lines to 4
-- `disconnect` handler reduced from ~70 lines to ~10
-- Eliminated ~120 lines of duplicated code
-
-**socketToRoom lookup map** (`server/room-manager.js`)
-- New `Map<socketId, roomCode>` for O(1) room lookup
-- `getRoom()` now uses lookup instead of iterating all rooms
-- Map maintained on create-room, join-room, removePlayerFromRoom, and cleanup interval
-- Stale entries are automatically cleaned up
-
-**.env.example completed**
-- Added `CLIENT_ID` and `GUILD_ID` (previously only in `bot/.env.example`)
+**Styling** (`shared/css/theme.css`)
+- `.bet-section` — gold-bordered container for betting UI
+- `.bet-row` — flex row with input, label, button
+- `.bet-entry` — individual bet display in list
+- `.pot-display` — in-game pot indicator
+- `.pot-winnings` — animated gold text for winner's earnings
 
 ## Files Changed
-- `server/room-manager.js` — socketToRoom map, removePlayerFromRoom helper, game-logic import
-- `server/socket-handlers.js` — socketToRoom import + set on create/join, simplified leave/disconnect handlers, join limit fix
-- `server/index.js` — socketToRoom import + cleanup
-- `games/watchparty/js/watchparty.js` — game-started payload, host change sync
-- `public/pictochat.js` — resize listener
-- `shared/js/lobby.js` — escapeHtml helper + usage
-- `.env.example` — CLIENT_ID, GUILD_ID
+- `server/socket-handlers.js` — place-bet handler, pot in game state, pot distribution on game-over
+- `server/room-manager.js` — currency imports, pot distribution on disconnect game-over
+- `games/maexchen/index.html` — betting section in waiting room, pot display in game/gameover screens
+- `games/maexchen/js/game.js` — betting client logic, pot display, winnings display
+- `shared/css/theme.css` — betting and pot styles
 
 ## Not Changed
-- Game logic (game-logic.js unchanged)
-- Discord bot
-- Frontend HTML/CSS
-- Pictochat server handlers (clear/cursor limits unchanged)
+- `server/currency.js` — already had all needed functions
+- `server/game-logic.js` — no changes needed
+- Discord bot, other games, shared JS modules
+
+## Verification
+- Server starts without errors, all modules import correctly
+- Betting UI renders in waiting room with balance display
+- Placing a bet updates the bet list in real-time
+- CodeQL: 0 alerts
 
 ## Open Items
-- CSS could be split into modules (theme.css is 2200 lines)
-- `getOpenLobbies()` is still O(n) over all rooms (no index by gameType)
+- Balances are in-memory only (no persistence across server restarts)
+- CSS could be split into modules (theme.css is now ~2300 lines)

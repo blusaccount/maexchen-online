@@ -425,6 +425,104 @@ h3 { font-size: 1.3rem; color: var(--text-dim); letter-spacing: 2px; text-transf
     box-shadow: 0 0 10px var(--accent);
 }
 
+/* ===== Betting Section ===== */
+.bet-section {
+    width: 100%;
+    max-width: 300px;
+    margin: 10px auto;
+    padding: 15px;
+    background: rgba(255, 221, 0, 0.05);
+    border: 1px solid rgba(255, 221, 0, 0.3);
+    border-radius: var(--radius);
+}
+
+.bet-section h3 {
+    margin: 0 0 10px 0;
+    color: var(--gold);
+    font-size: 1rem;
+}
+
+.bet-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.bet-row input {
+    width: 80px;
+    padding: 8px 10px;
+    background: rgba(0,0,0,0.6);
+    border: 1px solid rgba(255,221,0,0.3);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: 1rem;
+    text-align: center;
+    font-family: 'Orbitron', monospace;
+}
+
+.bet-row input:focus {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 10px rgba(255,221,0,0.3);
+}
+
+.bet-currency {
+    color: var(--gold);
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+.bet-balance {
+    margin-top: 8px;
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.5);
+}
+
+.bet-list {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.bet-entry {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 8px;
+    font-size: 0.85rem;
+    background: rgba(0,0,0,0.3);
+    border-radius: 4px;
+    color: var(--gold);
+}
+
+/* ===== Pot Display ===== */
+.pot-display {
+    background: rgba(255,221,0,0.1);
+    border: 1px solid rgba(255,221,0,0.4);
+    border-radius: var(--radius);
+    padding: 8px 20px;
+    color: var(--gold);
+    font-size: 1rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 10px;
+    text-shadow: 0 0 10px var(--gold);
+}
+
+.pot-winnings {
+    font-size: 1.3rem;
+    color: var(--gold);
+    font-weight: 700;
+    margin: 10px 0;
+    text-shadow: 0 0 15px var(--gold), 0 0 30px var(--gold);
+    animation: pot-glow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes pot-glow {
+    from { opacity: 0.8; }
+    to { opacity: 1; text-shadow: 0 0 20px var(--gold), 0 0 40px var(--gold); }
+}
+
 /* ===== Lives Display (hidden when sidebar is used) ===== */
 .lives-bar {
     display: none; /* Hidden - using sidebar instead */
