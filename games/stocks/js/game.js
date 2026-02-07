@@ -66,7 +66,7 @@
         { symbol: 'PEP', name: 'PepsiCo', price: 158.70, change: -0.55, pct: -0.35, currency: 'USD' },
         { symbol: 'JNJ', name: 'Johnson & Johnson', price: 155.20, change: 0.45, pct: 0.29, currency: 'USD' },
         { symbol: 'PG', name: 'Procter & Gamble', price: 170.80, change: 0.70, pct: 0.41, currency: 'USD' },
-        { symbol: 'BRKB', name: 'Berkshire Hathaway', price: 458.90, change: 3.20, pct: 0.70, currency: 'USD' },
+        { symbol: 'BRK-B', name: 'Berkshire Hathaway', price: 458.90, change: 3.20, pct: 0.70, currency: 'USD' },
         { symbol: 'XOM', name: 'ExxonMobil', price: 108.50, change: -0.80, pct: -0.73, currency: 'USD' },
         { symbol: 'UNH', name: 'UnitedHealth', price: 532.10, change: 2.80, pct: 0.53, currency: 'USD' },
         { symbol: 'URTH', name: 'MSCI World', price: 135.20, change: 0.85, pct: 0.63, currency: 'USD' },
@@ -224,7 +224,7 @@
                 .then(function (r) { return r.json(); })
                 .then(function (results) {
                     if (!Array.isArray(results) || results.length === 0) {
-                        searchResults.innerHTML = '<div class="search-result-item" style="color:#666;cursor:default;">No results</div>';
+                        searchResults.innerHTML = '<div class="search-result-item" style="color:var(--ds-text-dim);cursor:default;">No results</div>';
                         searchResults.classList.add('active');
                         return;
                     }
@@ -250,7 +250,7 @@
                     }
                 })
                 .catch(function () {
-                    searchResults.innerHTML = '<div class="search-result-item" style="color:#666;cursor:default;">Search failed</div>';
+                    searchResults.innerHTML = '<div class="search-result-item" style="color:var(--ds-text-dim);cursor:default;">Search failed</div>';
                     searchResults.classList.add('active');
                 });
         }, 300);
@@ -308,7 +308,7 @@
             var p = h[j];
             var cls = p.gainLoss >= 0 ? 'positive' : 'negative';
             html += '<tr>'
-                + '<td class="symbol">' + escapeHtml(p.symbol) + '<br><span style="color:#666;font-size:6px">' + escapeHtml(p.name) + '</span></td>'
+                + '<td class="symbol">' + escapeHtml(p.symbol) + '<br><span style="color:var(--ds-text-dim);font-size:6px">' + escapeHtml(p.name) + '</span></td>'
                 + '<td>' + p.shares.toFixed(4) + '</td>'
                 + '<td>$' + p.avgCost.toFixed(2) + '</td>'
                 + '<td>$' + p.currentPrice.toFixed(2) + '</td>'
