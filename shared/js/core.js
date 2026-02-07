@@ -65,7 +65,8 @@ document.querySelectorAll('.title-maexchen').forEach(el => {
 
         // Stop ambient sounds
         if (window.MaexchenAmbient) {
-            window.MaexchenAmbient.stop();
+            window.MaexchenAmbient.stopAmbient();
+            window.MaexchenAmbient.stopVictory();
         }
 
         // Cleanup watch party

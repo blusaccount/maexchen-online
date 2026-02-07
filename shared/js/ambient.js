@@ -227,6 +227,15 @@
         victoryAudio.play().catch(() => {});
     }
 
+    // Stop victory sound
+    function stopVictory() {
+        if (victoryAudio) {
+            victoryAudio.pause();
+            victoryAudio.currentTime = 0;
+            victoryAudio = null;
+        }
+    }
+
     // Toggle mute
     function toggleMute() {
         isMuted = !isMuted;
@@ -248,6 +257,7 @@
         stopAmbient,
         playAlert,
         playVictory,
+        stopVictory,
         toggleMute,
         isMuted: getMuted,
         getAudioContext
