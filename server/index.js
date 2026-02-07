@@ -97,7 +97,7 @@ app.get('/health', (req, res) => {
 // ============== STOCK TICKER API ==============
 
 const TICKER_SYMBOLS = [
-    // ETFs / Indices (primary focus)
+    // ETFs / Indices
     { symbol: 'URTH', name: 'MSCI World' },
     { symbol: 'QQQ', name: 'Nasdaq 100' },
     { symbol: '^GDAXI', name: 'DAX' },
@@ -105,6 +105,13 @@ const TICKER_SYMBOLS = [
     { symbol: 'SPY', name: 'S&P 500' },
     { symbol: 'VGK', name: 'FTSE Europe' },
     { symbol: 'EEM', name: 'Emerging Mkts' },
+    { symbol: 'IWM', name: 'Russell 2000' },
+    { symbol: 'VTI', name: 'Total US Market' },
+    { symbol: 'ARKK', name: 'ARK Innovation' },
+    { symbol: 'XLF', name: 'Financials ETF' },
+    { symbol: 'XLE', name: 'Energy ETF' },
+    { symbol: 'GLD', name: 'Gold ETF' },
+    { symbol: 'TLT', name: 'US Treasury 20+' },
     // Individual stocks
     { symbol: 'AAPL', name: 'Apple' },
     { symbol: 'MSFT', name: 'Microsoft' },
@@ -114,6 +121,25 @@ const TICKER_SYMBOLS = [
     { symbol: 'META', name: 'Meta' },
     { symbol: 'GOOGL', name: 'Alphabet' },
     { symbol: 'NFLX', name: 'Netflix' },
+    { symbol: 'AMD', name: 'AMD' },
+    { symbol: 'CRM', name: 'Salesforce' },
+    { symbol: 'AVGO', name: 'Broadcom' },
+    { symbol: 'ORCL', name: 'Oracle' },
+    { symbol: 'ADBE', name: 'Adobe' },
+    { symbol: 'DIS', name: 'Disney' },
+    { symbol: 'PYPL', name: 'PayPal' },
+    { symbol: 'INTC', name: 'Intel' },
+    { symbol: 'BA', name: 'Boeing' },
+    { symbol: 'V', name: 'Visa' },
+    { symbol: 'JPM', name: 'JPMorgan Chase' },
+    { symbol: 'WMT', name: 'Walmart' },
+    { symbol: 'KO', name: 'Coca-Cola' },
+    { symbol: 'PEP', name: 'PepsiCo' },
+    { symbol: 'JNJ', name: 'Johnson & Johnson' },
+    { symbol: 'PG', name: 'Procter & Gamble' },
+    { symbol: 'BRK-B', name: 'Berkshire Hathaway' },
+    { symbol: 'XOM', name: 'ExxonMobil' },
+    { symbol: 'UNH', name: 'UnitedHealth' },
 ];
 
 let tickerCache = { data: null, ts: 0 };
