@@ -1352,6 +1352,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance 
 
                     // Server calculates coins (don't trust client)
                     // For reaction, convert sum of ms to normalized 0-100 score for coin calc
+                    // 5 rounds: 750ms sum (150ms avg) = 100, 2500ms sum (500ms avg) = 0
                     const coinScore = data.gameId === 'reaction'
                         ? Math.round(Math.max(0, Math.min(100, ((2500 - s) / 1750) * 100)))
                         : s;
