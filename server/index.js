@@ -323,6 +323,7 @@ const NOSTALGIA_VIDEOS = {
     ps1: process.env.NOSTALGIA_PS1_YOUTUBE_ID || '',
     ps2: process.env.NOSTALGIA_PS2_YOUTUBE_ID || '',
     gamecube: process.env.NOSTALGIA_GAMECUBE_YOUTUBE_ID || '',
+    wiissbb: process.env.NOSTALGIA_WIISSBB_YOUTUBE_ID || '',
 };
 
 app.get('/api/nostalgia-config', (req, res) => {
