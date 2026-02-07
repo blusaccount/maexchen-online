@@ -70,20 +70,15 @@ function checkRateLimit(socketId, maxPerSecond = 10) {
 // ============== PICTOCHAT STATE ==============
 
 const PICTO_ROOM = 'lobby-picto';
-const PICTO_PAGE_COUNT = 4;
 const PICTO_MAX_STROKES = 400;
 const PICTO_MAX_POINTS = 800;
 const PICTO_MAX_POINTS_PER_SEGMENT = 20;
 
 const pictoState = {
-    pages: Array.from({ length: PICTO_PAGE_COUNT }, () => ({ strokes: [] })),
+    strokes: [],
     inProgress: new Map(), // strokeId -> stroke
-    redoStacks: new Map()  // socketId -> { [page]: stroke[] }
+    redoStacks: new Map()  // socketId -> stroke[]
 };
-
-function isValidPage(page) {
-    return Number.isInteger(page) && page >= 0 && page < PICTO_PAGE_COUNT;
-}
 
 function normalizePoint(point) {
     if (!point || typeof point !== 'object') return null;
@@ -120,18 +115,15 @@ function getPictoName(socketId) {
     return entry?.name || 'Anon';
 }
 
-function getRedoStack(socketId, page) {
+function getRedoStack(socketId) {
     if (!pictoState.redoStacks.has(socketId)) {
-        pictoState.redoStacks.set(socketId, {});
+        pictoState.redoStacks.set(socketId, []);
     }
-    const stacks = pictoState.redoStacks.get(socketId);
-    if (!stacks[page]) stacks[page] = [];
-    return stacks[page];
+    return pictoState.redoStacks.get(socketId);
 }
 
-function trimStrokes(page) {
-    if (!pictoState.pages[page]) return;
-    const strokes = pictoState.pages[page].strokes;
+function trimStrokes() {
+    const strokes = pictoState.strokes;
     if (strokes.length > PICTO_MAX_STROKES) {
         strokes.splice(0, strokes.length - PICTO_MAX_STROKES);
     }
@@ -182,46 +174,28 @@ export function registerSocketHandlers(io) {
             if (!checkRateLimit(socket.id)) return;
             socket.join(PICTO_ROOM);
             socket.emit('picto-state', {
-                pages: pictoState.pages,
-                pageCount: PICTO_PAGE_COUNT
+                strokes: pictoState.strokes
             });
         } catch (err) { console.error('picto-join error:', err.message); } });
-
-        // --- Pictochat Page Request ---
-        socket.on('picto-request-page', (data) => { try {
-            if (!checkRateLimit(socket.id, 5)) return;
-            const page = data?.page;
-            if (!isValidPage(page)) return;
-            socket.emit('picto-page', {
-                page,
-                strokes: pictoState.pages[page].strokes
-            });
-        } catch (err) { console.error('picto-request-page error:', err.message); } });
 
         // --- Pictochat Cursor ---
         socket.on('picto-cursor', (data) => { try {
             if (!checkRateLimit(socket.id, 40)) return;
             if (!data || typeof data !== 'object') return;
-            const page = data.page;
-            if (!isValidPage(page)) return;
             const point = normalizePoint({ x: data.x, y: data.y });
             if (!point) return;
             socket.to(PICTO_ROOM).emit('picto-cursor', {
                 id: socket.id,
                 name: getPictoName(socket.id),
-                page,
                 x: point.x,
                 y: point.y
             });
         } catch (err) { console.error('picto-cursor error:', err.message); } });
 
-        socket.on('picto-cursor-hide', (data) => { try {
+        socket.on('picto-cursor-hide', () => { try {
             if (!checkRateLimit(socket.id, 20)) return;
-            const page = data?.page;
-            if (!isValidPage(page)) return;
             socket.to(PICTO_ROOM).emit('picto-cursor-hide', {
-                id: socket.id,
-                page
+                id: socket.id
             });
         } catch (err) { console.error('picto-cursor-hide error:', err.message); } });
 
@@ -229,9 +203,6 @@ export function registerSocketHandlers(io) {
         socket.on('picto-stroke-segment', (data) => { try {
             if (!checkRateLimit(socket.id, 30)) return;
             if (!data || typeof data !== 'object') return;
-
-            const page = data.page;
-            if (!isValidPage(page)) return;
 
             const tool = data.tool === 'eraser' ? 'eraser' : 'pen';
             const color = sanitizeColor(data.color);
@@ -250,7 +221,6 @@ export function registerSocketHandlers(io) {
                     strokeId,
                     authorId: socket.id,
                     authorName: getPictoName(socket.id),
-                    page,
                     tool,
                     color,
                     size,
@@ -264,7 +234,6 @@ export function registerSocketHandlers(io) {
 
             socket.to(PICTO_ROOM).emit('picto-stroke-segment', {
                 strokeId,
-                page,
                 tool,
                 color,
                 size,
@@ -277,24 +246,20 @@ export function registerSocketHandlers(io) {
             if (!checkRateLimit(socket.id, 10)) return;
             if (!data || typeof data !== 'object') return;
 
-            const page = data.page;
-            if (!isValidPage(page)) return;
-
             const strokeId = typeof data.strokeId === 'string' ? data.strokeId : '';
             const stroke = pictoState.inProgress.get(strokeId);
             if (!stroke || stroke.authorId !== socket.id) return;
 
             pictoState.inProgress.delete(strokeId);
-            pictoState.pages[page].strokes.push(stroke);
-            trimStrokes(page);
+            pictoState.strokes.push(stroke);
+            trimStrokes();
 
-            const redo = getRedoStack(socket.id, page);
+            const redo = getRedoStack(socket.id);
             redo.length = 0;
 
             io.to(PICTO_ROOM).emit('picto-stroke-commit', {
                 strokeId: stroke.strokeId,
                 authorId: stroke.authorId,
-                page,
                 tool: stroke.tool,
                 color: stroke.color,
                 size: stroke.size,
@@ -307,9 +272,6 @@ export function registerSocketHandlers(io) {
             if (!checkRateLimit(socket.id, 8)) return;
             if (!data || typeof data !== 'object') return;
 
-            const page = data.page;
-            if (!isValidPage(page)) return;
-
             const tool = ['line', 'rect', 'circle'].includes(data.tool) ? data.tool : null;
             if (!tool) return;
 
@@ -321,7 +283,6 @@ export function registerSocketHandlers(io) {
                 strokeId: `${socket.id}-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
                 authorId: socket.id,
                 authorName: getPictoName(socket.id),
-                page,
                 tool,
                 color: sanitizeColor(data.color),
                 size: sanitizeSize(data.size),
@@ -329,10 +290,10 @@ export function registerSocketHandlers(io) {
                 end
             };
 
-            pictoState.pages[page].strokes.push(stroke);
-            trimStrokes(page);
+            pictoState.strokes.push(stroke);
+            trimStrokes();
 
-            const redo = getRedoStack(socket.id, page);
+            const redo = getRedoStack(socket.id);
             redo.length = 0;
 
             io.to(PICTO_ROOM).emit('picto-shape', stroke);
@@ -342,60 +303,47 @@ export function registerSocketHandlers(io) {
         socket.on('picto-undo', (data) => { try {
             if (!checkRateLimit(socket.id, 5)) return;
             if (!data || typeof data !== 'object') return;
-            const page = data.page;
-            if (!isValidPage(page)) return;
 
             const strokeId = typeof data.strokeId === 'string' ? data.strokeId : '';
-            const strokes = pictoState.pages[page].strokes;
+            const strokes = pictoState.strokes;
             const index = strokes.findIndex(s => s.strokeId === strokeId && s.authorId === socket.id);
             if (index === -1) return;
 
             const [removed] = strokes.splice(index, 1);
-            getRedoStack(socket.id, page).push(removed);
+            getRedoStack(socket.id).push(removed);
 
             io.to(PICTO_ROOM).emit('picto-undo', {
-                page,
                 strokeId,
                 byId: socket.id
             });
         } catch (err) { console.error('picto-undo error:', err.message); } });
 
         // --- Pictochat Redo ---
-        socket.on('picto-redo', (data) => { try {
+        socket.on('picto-redo', () => { try {
             if (!checkRateLimit(socket.id, 5)) return;
-            if (!data || typeof data !== 'object') return;
-            const page = data.page;
-            if (!isValidPage(page)) return;
 
-            const redo = getRedoStack(socket.id, page);
+            const redo = getRedoStack(socket.id);
             if (!redo.length) return;
 
             const stroke = redo.pop();
-            pictoState.pages[page].strokes.push(stroke);
-            trimStrokes(page);
+            pictoState.strokes.push(stroke);
+            trimStrokes();
 
             io.to(PICTO_ROOM).emit('picto-redo', {
-                page,
                 stroke,
                 byId: socket.id
             });
         } catch (err) { console.error('picto-redo error:', err.message); } });
 
         // --- Pictochat Clear ---
-        socket.on('picto-clear', (data) => { try {
+        socket.on('picto-clear', () => { try {
             if (!checkRateLimit(socket.id, 2)) return;
-            if (!data || typeof data !== 'object') return;
-            const page = data.page;
-            if (!isValidPage(page)) return;
 
-            pictoState.pages[page].strokes = [];
-            getRedoStack(socket.id, page).length = 0;
-            for (const [strokeId, stroke] of pictoState.inProgress.entries()) {
-                if (stroke.page === page) pictoState.inProgress.delete(strokeId);
-            }
+            pictoState.strokes = [];
+            getRedoStack(socket.id).length = 0;
+            pictoState.inProgress.clear();
 
             io.to(PICTO_ROOM).emit('picto-clear', {
-                page,
                 byId: socket.id
             });
         } catch (err) { console.error('picto-clear error:', err.message); } });

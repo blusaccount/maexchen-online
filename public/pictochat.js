@@ -22,7 +22,6 @@
     var chatInput = document.getElementById('picto-chat-input');
     var chatSend = document.getElementById('picto-chat-send');
 
-    var pageButtons = panel.querySelectorAll('.picto-page');
     var toolButtons = panel.querySelectorAll('.picto-tool');
 
     var COLORS = [
@@ -36,20 +35,10 @@
         '#9b6a3f'
     ];
 
-    var pageCount = pageButtons.length || 4;
-    var pages = [];
-    var undoStacks = [];
-    var redoStacks = [];
-    var pageLoaded = [];
+    var strokes = [];
+    var undoStack = [];
+    var redoStack = [];
 
-    for (var i = 0; i < pageCount; i++) {
-        pages.push({ strokes: [] });
-        undoStacks.push([]);
-        redoStacks.push([]);
-        pageLoaded.push(false);
-    }
-
-    var currentPage = 0;
     var currentTool = 'pen';
     var currentColor = COLORS[1];
     var currentSize = parseInt(sizeInput && sizeInput.value, 10) || 4;
@@ -218,7 +207,6 @@
     function renderPage() {
         clearCanvas(ctx);
         clearCanvas(previewCtx);
-        var strokes = pages[currentPage] ? pages[currentPage].strokes : [];
         for (var i = 0; i < strokes.length; i++) {
             var stroke = strokes[i];
             if (stroke.points) {
@@ -239,21 +227,6 @@
         }
     }
 
-    function setActivePage(page) {
-        currentPage = page;
-        for (var i = 0; i < pageButtons.length; i++) {
-            var btn = pageButtons[i];
-            btn.classList.toggle('active', parseInt(btn.dataset.page, 10) === page);
-        }
-        for (var id in cursors) {
-            removeCursor(id);
-        }
-        renderPage();
-        if (!pageLoaded[page]) {
-            socket.emit('picto-request-page', { page: page });
-        }
-    }
-
     function queueSend() {
         if (sendTimer) return;
         sendTimer = setTimeout(function () {
@@ -268,7 +241,6 @@
         pendingPoints.length = 0;
         socket.emit('picto-stroke-segment', {
             strokeId: currentStroke.id,
-            page: currentPage,
             tool: currentStroke.tool,
             color: currentStroke.color,
             size: currentStroke.size,
@@ -309,8 +281,7 @@
         if (!currentStroke) return;
         flushPending();
         socket.emit('picto-stroke-end', {
-            strokeId: currentStroke.id,
-            page: currentPage
+            strokeId: currentStroke.id
         });
         currentStroke = null;
         isDrawing = false;
@@ -339,7 +310,6 @@
         if (!shapeStart) return;
         clearCanvas(previewCtx);
         socket.emit('picto-shape', {
-            page: currentPage,
             tool: currentTool,
             color: currentColor,
             size: currentSize,
@@ -355,14 +325,13 @@
         if (now - lastCursorSent < 40) return;
         lastCursorSent = now;
         socket.emit('picto-cursor', {
-            page: currentPage,
             x: point.x,
             y: point.y
         });
     }
 
     function hideCursor() {
-        socket.emit('picto-cursor-hide', { page: currentPage });
+        socket.emit('picto-cursor-hide');
     }
 
     function appendMessage(payload) {
@@ -409,26 +378,16 @@
                 if (tool) {
                     setActiveTool(tool);
                 } else if (action === 'undo') {
-                    if (!undoStacks[currentPage].length) return;
+                    if (!undoStack.length) return;
                     socket.emit('picto-undo', {
-                        page: currentPage,
-                        strokeId: undoStacks[currentPage][undoStacks[currentPage].length - 1]
+                        strokeId: undoStack[undoStack.length - 1]
                     });
                 } else if (action === 'redo') {
-                    if (!redoStacks[currentPage].length) return;
-                    socket.emit('picto-redo', { page: currentPage });
+                    if (!redoStack.length) return;
+                    socket.emit('picto-redo');
                 } else if (action === 'clear') {
-                    socket.emit('picto-clear', { page: currentPage });
+                    socket.emit('picto-clear');
                 }
-            });
-        }
-    }
-
-    function setupPages() {
-        for (var i = 0; i < pageButtons.length; i++) {
-            pageButtons[i].addEventListener('click', function () {
-                var page = parseInt(this.dataset.page, 10);
-                setActivePage(page);
             });
         }
     }
@@ -512,7 +471,6 @@
 
     function renderCursor(data) {
         if (!cursorsLayer) return;
-        if (data.page !== currentPage) return;
 
         var cursor = cursors[data.id];
         if (!cursor) {
@@ -551,27 +509,14 @@
         });
 
         socket.on('picto-state', function (data) {
-            if (!data || !Array.isArray(data.pages)) return;
-            pages = data.pages;
-            for (var i = 0; i < pageCount; i++) {
-                if (!pages[i]) pages[i] = { strokes: [] };
-                pageLoaded[i] = true;
-            }
+            if (!data) return;
+            strokes = Array.isArray(data.strokes) ? data.strokes : [];
             renderPage();
             updateStatus('Ready');
         });
 
-        socket.on('picto-page', function (data) {
-            if (!data || typeof data.page !== 'number') return;
-            pages[data.page] = { strokes: data.strokes || [] };
-            pageLoaded[data.page] = true;
-            if (data.page === currentPage) {
-                renderPage();
-            }
-        });
-
         socket.on('picto-stroke-segment', function (data) {
-            if (!data || data.page !== currentPage) return;
+            if (!data) return;
             var stroke = inProgress[data.strokeId];
             if (!stroke) {
                 stroke = {
@@ -590,7 +535,7 @@
         });
 
         socket.on('picto-stroke-commit', function (data) {
-            if (!data || typeof data.page !== 'number') return;
+            if (!data) return;
             var stroke = {
                 strokeId: data.strokeId,
                 authorId: data.authorId,
@@ -600,21 +545,21 @@
                 points: data.points || []
             };
 
-            pages[data.page].strokes.push(stroke);
+            strokes.push(stroke);
 
             if (data.authorId === socket.id) {
-                undoStacks[data.page].push(data.strokeId);
-                redoStacks[data.page].length = 0;
+                undoStack.push(data.strokeId);
+                redoStack.length = 0;
             }
 
-            if (data.page === currentPage && !inProgress[data.strokeId]) {
+            if (!inProgress[data.strokeId]) {
                 drawStroke(ctx, stroke);
             }
             delete inProgress[data.strokeId];
         });
 
         socket.on('picto-shape', function (data) {
-            if (!data || typeof data.page !== 'number') return;
+            if (!data) return;
             var stroke = {
                 strokeId: data.strokeId,
                 authorId: data.authorId,
@@ -624,52 +569,43 @@
                 start: data.start,
                 end: data.end
             };
-            pages[data.page].strokes.push(stroke);
-            if (data.page === currentPage) {
-                drawShape(ctx, stroke);
-            }
+            strokes.push(stroke);
+            drawShape(ctx, stroke);
         });
 
         socket.on('picto-undo', function (data) {
-            if (!data || typeof data.page !== 'number') return;
-            var strokes = pages[data.page].strokes;
-            pages[data.page].strokes = strokes.filter(function (s) {
+            if (!data) return;
+            strokes = strokes.filter(function (s) {
                 return s.strokeId !== data.strokeId;
             });
-            if (data.page === currentPage) {
-                renderPage();
-            }
+            renderPage();
             if (data.byId === socket.id) {
-                undoStacks[data.page].pop();
-                redoStacks[data.page].push(data.strokeId);
+                undoStack.pop();
+                redoStack.push(data.strokeId);
             }
         });
 
         socket.on('picto-redo', function (data) {
-            if (!data || typeof data.page !== 'number' || !data.stroke) return;
-            pages[data.page].strokes.push(data.stroke);
-            if (data.page === currentPage) {
-                if (data.stroke.points) {
-                    drawStroke(ctx, data.stroke);
-                } else if (data.stroke.start) {
-                    drawShape(ctx, data.stroke);
-                }
+            if (!data || !data.stroke) return;
+            strokes.push(data.stroke);
+            if (data.stroke.points) {
+                drawStroke(ctx, data.stroke);
+            } else if (data.stroke.start) {
+                drawShape(ctx, data.stroke);
             }
             if (data.byId === socket.id) {
-                redoStacks[data.page].pop();
-                undoStacks[data.page].push(data.stroke.strokeId);
+                redoStack.pop();
+                undoStack.push(data.stroke.strokeId);
             }
         });
 
         socket.on('picto-clear', function (data) {
-            if (!data || typeof data.page !== 'number') return;
-            pages[data.page].strokes = [];
-            if (data.page === currentPage) {
-                renderPage();
-            }
+            if (!data) return;
+            strokes = [];
+            renderPage();
             if (data.byId === socket.id) {
-                undoStacks[data.page].length = 0;
-                redoStacks[data.page].length = 0;
+                undoStack.length = 0;
+                redoStack.length = 0;
             }
         });
 
@@ -690,12 +626,10 @@
 
     setupPalette();
     setupTools();
-    setupPages();
     setupChat();
     setupCanvas();
     resizeCanvas();
     setActiveTool(currentTool);
-    setActivePage(0);
     bindSocket();
 
     if (socket.connected) {
