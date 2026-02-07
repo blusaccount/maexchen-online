@@ -397,6 +397,7 @@
         // Stop ambient
         if (window.MaexchenAmbient) {
             window.MaexchenAmbient.stopAmbient();
+            window.MaexchenAmbient.stopVictory();
         }
 
         // Remove sidebar
