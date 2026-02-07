@@ -598,6 +598,180 @@
             margin: 12px 0;
         }
 
+        /* ===== Versus Mode ===== */
+        .versus-lobby-box {
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .versus-lobby-box h3 {
+            font-size: 11px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .versus-code-display {
+            text-align: center;
+            font-size: 24px;
+            letter-spacing: 6px;
+            margin: 12px 0;
+            padding: 10px;
+            background: var(--ds-bg);
+            border: 2px dashed var(--ds-highlight);
+        }
+
+        .versus-join-form {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .versus-join-form input {
+            flex: 1;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 12px;
+            padding: 10px;
+            border: 2px solid var(--ds-border);
+            background: var(--ds-bg);
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+        }
+
+        .versus-join-form input:focus {
+            outline: 2px solid var(--ds-border);
+            outline-offset: 2px;
+        }
+
+        .versus-players {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 16px 0;
+            gap: 12px;
+        }
+
+        .versus-player-slot {
+            text-align: center;
+            padding: 12px 16px;
+            background: var(--ds-bg);
+            border: 2px solid var(--ds-highlight);
+            flex: 1;
+            min-height: 60px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .versus-player-slot.filled {
+            border-color: var(--ds-border);
+            background: var(--ds-surface);
+        }
+
+        .versus-player-name {
+            font-size: 10px;
+            margin-top: 4px;
+        }
+
+        .versus-vs {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--ds-negative);
+        }
+
+        .versus-game-select {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 12px;
+        }
+
+        .versus-game-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            padding: 10px 14px;
+            cursor: pointer;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 9px;
+            color: var(--ds-text);
+            text-align: left;
+            transition: all 0.15s;
+        }
+
+        .versus-game-btn:hover {
+            background: var(--ds-border);
+            color: var(--ds-surface);
+            box-shadow: 2px 2px 0 var(--ds-text-dim);
+        }
+
+        .versus-game-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: none;
+        }
+
+        .versus-game-btn-icon { font-size: 1.3rem; width: 28px; text-align: center; }
+
+        .versus-scoreboard {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            padding: 8px 12px;
+            margin-bottom: 8px;
+        }
+
+        .versus-sb-player {
+            text-align: center;
+            flex: 1;
+        }
+
+        .versus-sb-name {
+            font-size: 8px;
+            color: var(--ds-text-dim);
+            margin-bottom: 2px;
+        }
+
+        .versus-sb-score {
+            font-size: 16px;
+        }
+
+        .versus-sb-vs {
+            font-size: 14px;
+            color: var(--ds-negative);
+            padding: 0 8px;
+        }
+
+        .versus-sb-player.winner .versus-sb-score {
+            color: var(--ds-positive);
+        }
+
+        .versus-result-banner {
+            text-align: center;
+            font-size: 18px;
+            margin: 16px 0;
+            padding: 12px;
+            border: 2px solid var(--ds-border);
+        }
+
+        .versus-result-banner.win { background: #d4edda; color: var(--ds-positive); }
+        .versus-result-banner.lose { background: #f8d7da; color: var(--ds-negative); }
+        .versus-result-banner.draw { background: #fff3cd; color: #856404; }
+
+        .versus-waiting {
+            text-align: center;
+            font-family: 'Patrick Hand', cursive;
+            font-size: 18px;
+            color: var(--ds-text-dim);
+            padding: 20px;
+        }
+
         /* ===== Mobile ===== */
         @media (max-width: 500px) {
             .brain-page { padding: 10px 8px 32px; }
@@ -607,6 +781,8 @@
             .chimp-grid { max-width: 280px; }
             .chimp-cell { font-size: 13px; }
             .brain-age-display { font-size: 48px; }
+            .versus-code-display { font-size: 18px; letter-spacing: 4px; }
+            .versus-sb-score { font-size: 13px; }
         }
     </style>
 </head>
@@ -641,6 +817,13 @@
                 <div class="menu-btn-info">
                     <div class="menu-btn-title">FREIES TRAINING</div>
                     <div class="menu-btn-desc">Einzelne Spiele üben</div>
+                </div>
+            </button>
+            <button class="menu-btn" id="btn-versus-mode">
+                <span class="menu-btn-icon">⚔️</span>
+                <div class="menu-btn-info">
+                    <div class="menu-btn-title">VERSUS MODUS</div>
+                    <div class="menu-btn-desc">1v1 gegen einen Freund</div>
                 </div>
             </button>
         </div>
@@ -712,6 +895,142 @@
                     <div>WORT-SCRAMBLE</div>
                     <div class="menu-btn-desc">Buchstaben ordnen — Deutsche Wörter</div>
                 </div>
+            </button>
+        </div>
+    </div>
+
+    <!-- ===== VERSUS LOBBY ===== -->
+    <div class="screen" id="screen-versus-lobby">
+        <button class="btn-back" id="btn-back-versus">← ZURÜCK</button>
+
+        <div class="professor-box">
+            <div class="professor-alien">👽</div>
+            <div class="professor-speech" id="versus-professor-text">Fordere einen Freund zum Duell heraus!</div>
+        </div>
+
+        <div class="versus-lobby-box">
+            <h3>⚔️ VERSUS LOBBY</h3>
+            <div class="versus-players" id="versus-players">
+                <div class="versus-player-slot" id="versus-slot-1">
+                    <div style="font-size:1.5rem">❓</div>
+                    <div class="versus-player-name">Warte...</div>
+                </div>
+                <div class="versus-vs">VS</div>
+                <div class="versus-player-slot" id="versus-slot-2">
+                    <div style="font-size:1.5rem">❓</div>
+                    <div class="versus-player-name">Warte...</div>
+                </div>
+            </div>
+            <div class="versus-code-display" id="versus-room-code" style="display:none;"></div>
+        </div>
+
+        <div id="versus-actions">
+            <button class="menu-btn" id="btn-versus-create">
+                <span class="menu-btn-icon">🏠</span>
+                <div class="menu-btn-info">
+                    <div class="menu-btn-title">RAUM ERSTELLEN</div>
+                    <div class="menu-btn-desc">Erstelle einen Raum und teile den Code</div>
+                </div>
+            </button>
+            <div style="height:8px;"></div>
+            <div class="versus-join-form">
+                <input type="text" id="versus-join-code" placeholder="CODE" maxlength="4" autocomplete="off">
+                <button class="menu-btn" id="btn-versus-join" style="margin-bottom:0;">
+                    <span>BEITRETEN</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="versus-game-select" style="display:none;">
+            <div style="font-size:10px;text-align:center;margin-bottom:10px;">SPIEL WÄHLEN:</div>
+            <div class="versus-game-select">
+                <button class="versus-game-btn" data-game="math">
+                    <span class="versus-game-btn-icon">➗</span>
+                    <span>MATHE-BLITZ</span>
+                </button>
+                <button class="versus-game-btn" data-game="stroop">
+                    <span class="versus-game-btn-icon">🎨</span>
+                    <span>FARBE VS. WORT</span>
+                </button>
+                <button class="versus-game-btn" data-game="chimp">
+                    <span class="versus-game-btn-icon">🔢</span>
+                    <span>ZAHLEN-MEMORY</span>
+                </button>
+                <button class="versus-game-btn" data-game="reaction">
+                    <span class="versus-game-btn-icon">⚡</span>
+                    <span>REAKTIONSTEST</span>
+                </button>
+                <button class="versus-game-btn" data-game="scramble">
+                    <span class="versus-game-btn-icon">🔤</span>
+                    <span>WORT-SCRAMBLE</span>
+                </button>
+                <button class="versus-game-btn" data-game="random" style="border-color:var(--ds-accent);color:var(--ds-accent);">
+                    <span class="versus-game-btn-icon">🎲</span>
+                    <span>ZUFALL</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== VERSUS GAME SCREEN ===== -->
+    <div class="screen" id="screen-versus-game">
+        <div class="versus-scoreboard" id="versus-scoreboard">
+            <div class="versus-sb-player" id="versus-sb-p1">
+                <div class="versus-sb-name" id="versus-sb-name1">Spieler 1</div>
+                <div class="versus-sb-score" id="versus-sb-score1">0</div>
+            </div>
+            <div class="versus-sb-vs">⚔️</div>
+            <div class="versus-sb-player" id="versus-sb-p2">
+                <div class="versus-sb-name" id="versus-sb-name2">Spieler 2</div>
+                <div class="versus-sb-score" id="versus-sb-score2">0</div>
+            </div>
+        </div>
+        <div class="game-topbar">
+            <div class="game-timer" id="versus-game-timer">60</div>
+            <div class="game-label" id="versus-game-label"></div>
+            <div class="game-score" id="versus-game-score">0</div>
+        </div>
+        <div class="game-area" id="versus-game-area">
+            <!-- Versus game content injected here -->
+        </div>
+    </div>
+
+    <!-- ===== VERSUS RESULTS SCREEN ===== -->
+    <div class="screen" id="screen-versus-results">
+        <div class="results-box">
+            <div class="professor-box" style="border:none;padding:0;margin-bottom:12px;">
+                <div class="professor-alien">👽</div>
+                <div class="professor-speech" id="versus-results-speech">Was für ein Duell!</div>
+            </div>
+
+            <div class="versus-result-banner" id="versus-result-banner">
+                <!-- WIN / LOSE / DRAW -->
+            </div>
+
+            <div class="versus-scoreboard" style="margin:16px 0;">
+                <div class="versus-sb-player" id="versus-res-p1">
+                    <div class="versus-sb-name" id="versus-res-name1">-</div>
+                    <div class="versus-sb-score" id="versus-res-score1">0</div>
+                </div>
+                <div class="versus-sb-vs">⚔️</div>
+                <div class="versus-sb-player" id="versus-res-p2">
+                    <div class="versus-sb-name" id="versus-res-name2">-</div>
+                    <div class="versus-sb-score" id="versus-res-score2">0</div>
+                </div>
+            </div>
+
+            <div class="coins-earned" id="versus-results-coins">
+                <span class="coin-icon">🪙</span>
+                <span id="versus-results-coins-amount">+0 StrictCoins</span>
+            </div>
+
+            <div class="pixel-divider"></div>
+
+            <button class="menu-btn" id="btn-versus-rematch" style="justify-content:center;margin-bottom:8px;">
+                <span>🔄 REMATCH</span>
+            </button>
+            <button class="menu-btn" id="btn-versus-back-menu" style="justify-content:center;">
+                <span>← ZURÜCK ZUM MENÜ</span>
             </button>
         </div>
     </div>
