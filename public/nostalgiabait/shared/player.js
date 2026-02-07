@@ -1,15 +1,54 @@
-/* Nostalgiabait Shared Video Player */
+/* Nostalgiabait Shared YouTube Player */
 (function () {
     'use strict';
 
-    var video = document.getElementById('boot-video');
+    var YT_STATE_ENDED = 0;
+
     var overlay = document.getElementById('start-overlay');
+    var playerContainer = document.getElementById('yt-player-container');
     var controls = document.getElementById('player-controls');
     var btnReplay = document.getElementById('btn-replay');
     var btnBack = document.getElementById('btn-back');
     var errorScreen = document.getElementById('error-screen');
 
-    if (!video || !overlay) return;
+    if (!overlay || !playerContainer) return;
+
+    // Determine experience key from URL path
+    var pathParts = window.location.pathname.replace(/\/+$/, '').split('/');
+    var experienceKey = pathParts[pathParts.length - 1]; // e.g. "ps1", "ps2", "gamecube"
+
+    var videoId = null;
+    var ytPlayer = null;
+    var ytApiReady = false;
+    var pendingStart = false;
+
+    // Fetch config from server
+    fetch('/api/nostalgia-config')
+        .then(function (res) { return res.json(); })
+        .then(function (config) {
+            videoId = config[experienceKey];
+            if (!videoId) {
+                showError('No YouTube video configured');
+            }
+        })
+        .catch(function () {
+            showError('Failed to load configuration');
+        });
+
+    // Load YouTube IFrame API
+    var tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    var firstScript = document.getElementsByTagName('script')[0];
+    firstScript.parentNode.insertBefore(tag, firstScript);
+
+    // YouTube API ready callback
+    window.onYouTubeIframeAPIReady = function () {
+        ytApiReady = true;
+        if (pendingStart) {
+            pendingStart = false;
+            createPlayer();
+        }
+    };
 
     // Click-to-start
     overlay.addEventListener('click', startVideo);
@@ -19,22 +58,61 @@
     });
 
     function startVideo() {
+        if (!videoId) {
+            showError('No YouTube video configured');
+            return;
+        }
         overlay.classList.add('hidden');
-        video.classList.add('active');
-        video.play().catch(showError);
+        playerContainer.classList.add('active');
+        if (ytApiReady) {
+            createPlayer();
+        } else {
+            pendingStart = true;
+        }
     }
 
-    // Video ended → show controls
-    video.addEventListener('ended', function () {
-        if (controls) controls.classList.add('visible');
-    });
+    function createPlayer() {
+        if (ytPlayer) {
+            ytPlayer.seekTo(0);
+            ytPlayer.playVideo();
+            return;
+        }
+
+        ytPlayer = new YT.Player('yt-player', {
+            videoId: videoId,
+            playerVars: {
+                autoplay: 1,
+                controls: 0,
+                modestbranding: 1,
+                rel: 0,
+                showinfo: 0,
+                iv_load_policy: 3,
+                fs: 0,
+                disablekb: 1,
+                playsinline: 1
+            },
+            events: {
+                onReady: function (e) { e.target.playVideo(); },
+                onStateChange: onPlayerStateChange,
+                onError: function () { showError('YouTube video failed to load'); }
+            }
+        });
+    }
+
+    function onPlayerStateChange(event) {
+        if (event.data === YT_STATE_ENDED) {
+            if (controls) controls.classList.add('visible');
+        }
+    }
 
     // Replay
     if (btnReplay) {
         btnReplay.addEventListener('click', function () {
             if (controls) controls.classList.remove('visible');
-            video.currentTime = 0;
-            video.play().catch(showError);
+            if (ytPlayer) {
+                ytPlayer.seekTo(0);
+                ytPlayer.playVideo();
+            }
         });
     }
 
@@ -51,10 +129,10 @@
             e.preventDefault();
             if (!overlay.classList.contains('hidden')) {
                 startVideo();
-            } else if (video.ended) {
+            } else if (ytPlayer && ytPlayer.getPlayerState && ytPlayer.getPlayerState() === YT_STATE_ENDED) {
                 if (controls) controls.classList.remove('visible');
-                video.currentTime = 0;
-                video.play().catch(showError);
+                ytPlayer.seekTo(0);
+                ytPlayer.playVideo();
             }
         }
         if (e.key === 'Escape') {
@@ -62,20 +140,14 @@
         }
     });
 
-    // Suppress context menu on video
-    video.addEventListener('contextmenu', function (e) {
-        e.preventDefault();
-    });
-
-    // Error handler
-    video.addEventListener('error', function () {
-        showError();
-    });
-
-    function showError() {
+    function showError(msg) {
         overlay.classList.add('hidden');
-        video.classList.remove('active');
+        playerContainer.classList.remove('active');
         if (controls) controls.classList.remove('visible');
-        if (errorScreen) errorScreen.classList.add('active');
+        if (errorScreen) {
+            var errorSub = errorScreen.querySelector('.error-sub');
+            if (errorSub && msg) errorSub.textContent = msg;
+            errorScreen.classList.add('active');
+        }
     }
 })();

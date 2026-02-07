@@ -19,9 +19,9 @@
 
     <a href="/nostalgiabait/" id="home-btn" title="Back to Nostalgiabait">🏠</a>
 
-    <video id="boot-video" preload="auto" playsinline>
-        <source src="boot.mp4" type="video/mp4">
-    </video>
+    <div id="yt-player-container">
+        <div id="yt-player"></div>
+    </div>
 
     <div id="start-overlay">
         <div class="start-panel">
@@ -39,7 +39,7 @@
     <div id="error-screen">
         <div class="error-icon">⚠</div>
         <div class="error-text">VIDEO NOT AVAILABLE</div>
-        <div class="error-sub">boot.mp4 not found</div>
+        <div class="error-sub">YouTube video not configured</div>
         <button class="ctrl-btn" onclick="location.href='/nostalgiabait/'" style="margin-top:20px">← BACK</button>
     </div>
 
