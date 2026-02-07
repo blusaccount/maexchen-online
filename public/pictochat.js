@@ -629,6 +629,12 @@
         });
     }
 
+    if (sizeInput) {
+        sizeInput.addEventListener('input', function () {
+            currentSize = parseInt(sizeInput.value, 10) || 4;
+        });
+    }
+
     setupPalette();
     setupTools();
     setupChat();
