@@ -40,7 +40,7 @@
 
         // Master gain for ambient
         ambientGain = ctx.createGain();
-        ambientGain.gain.value = 0.08; // Very quiet
+        ambientGain.gain.value = 0.04; // Very quiet
         ambientGain.connect(ctx.destination);
 
         // Low drone
