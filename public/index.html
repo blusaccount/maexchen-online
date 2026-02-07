@@ -776,6 +776,7 @@
 (function () {
     var switchSound = new Audio('/userinput/switch.mp3');
     switchSound.preload = 'auto';
+    switchSound.volume = 0.5;
     document.querySelectorAll('.game-card:not(.coming-soon)').forEach(function (card) {
         card.addEventListener('click', function (e) {
             e.preventDefault();

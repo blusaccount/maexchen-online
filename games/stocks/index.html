@@ -653,6 +653,7 @@
     if (!backLink) return;
     var switchSound = new Audio('/userinput/switch.mp3');
     switchSound.preload = 'auto';
+    switchSound.volume = 0.5;
     backLink.addEventListener('click', function (e) {
         e.preventDefault();
         var href = backLink.getAttribute('href');

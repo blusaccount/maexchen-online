@@ -225,6 +225,7 @@
     if (!homeBtn) return;
     var switchSound = new Audio('/userinput/switch.mp3');
     switchSound.preload = 'auto';
+    switchSound.volume = 0.5;
     homeBtn.addEventListener('click', function (e) {
         e.preventDefault();
         var href = homeBtn.getAttribute('href');
