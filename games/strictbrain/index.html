@@ -775,6 +775,60 @@
             padding: 20px;
         }
 
+        /* ===== Versus Lobby List ===== */
+        .versus-lobbies-section {
+            margin-top: 16px;
+        }
+
+        .versus-lobbies-section h3 {
+            font-size: 10px;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .versus-lobby-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .versus-no-lobbies {
+            color: var(--ds-text-dim);
+            font-size: 9px;
+            text-align: center;
+            padding: 12px;
+        }
+
+        .versus-lobby-card {
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-highlight);
+            padding: 10px 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.15s;
+        }
+
+        .versus-lobby-card:hover {
+            border-color: var(--ds-border);
+            box-shadow: 2px 2px 0 var(--ds-text-dim);
+        }
+
+        .versus-lobby-card:active {
+            transform: translate(2px, 2px);
+            box-shadow: none;
+        }
+
+        .versus-lobby-host {
+            font-size: 10px;
+        }
+
+        .versus-lobby-players {
+            font-size: 9px;
+            color: var(--ds-text-dim);
+        }
+
         /* ===== Mobile ===== */
         @media (max-width: 500px) {
             .brain-page { padding: 10px 8px 32px; }
@@ -941,6 +995,14 @@
                 <button class="menu-btn" id="btn-versus-join" style="margin-bottom:0;">
                     <span>BEITRETEN</span>
                 </button>
+            </div>
+
+            <!-- Open Lobbies -->
+            <div class="versus-lobbies-section" id="versus-lobbies-section">
+                <h3>📡 OFFENE RÄUME</h3>
+                <div id="versus-lobby-list" class="versus-lobby-list">
+                    <p class="versus-no-lobbies">Keine offenen Räume</p>
+                </div>
             </div>
         </div>
 
