@@ -321,6 +321,40 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
             socket.emit('stock-portfolio', snapshot);
         } catch (err) { console.error('stock-get-portfolio error:', err.message); } });
 
+        // --- Stock Game: Get Another Player Portfolio ---
+        socket.on('stock-get-portfolio-other', async (data) => { try {
+            if (!checkRateLimit(socket.id)) return;
+            const player = onlinePlayers.get(socket.id);
+            if (!player || player.game !== 'stocks') return;
+            if (!data || typeof data !== 'object') return;
+
+            const targetName = sanitizeName(data.playerName);
+            if (!targetName || targetName === player.name) {
+                socket.emit('stock-error', { error: 'Invalid player' });
+                return;
+            }
+
+            let targetPlayer = null;
+            for (const entry of onlinePlayers.values()) {
+                if (entry.name === targetName && entry.game === 'stocks') {
+                    targetPlayer = entry;
+                    break;
+                }
+            }
+
+            if (!targetPlayer) {
+                socket.emit('stock-error', { error: 'Player not available' });
+                return;
+            }
+
+            const quotes = _fetchTickerQuotes ? await _fetchTickerQuotes() : [];
+            const snapshot = getPortfolioSnapshot(targetName, quotes);
+            socket.emit('stock-portfolio-other', {
+                playerName: targetName,
+                portfolio: snapshot
+            });
+        } catch (err) { console.error('stock-get-portfolio-other error:', err.message); } });
+
         // --- Pictochat Join ---
         socket.on('picto-join', () => { try {
             if (!checkRateLimit(socket.id)) return;

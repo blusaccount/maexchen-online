@@ -17,6 +17,9 @@
     var portfolioCashEl = $('portfolio-cash');
     var portfolioNetEl = $('portfolio-net');
     var holdingsContainer = $('holdings-container');
+    var otherPortfolioContainer = $('other-portfolio-container');
+    var otherPortfolioSelect = $('portfolio-player-select');
+    var otherPortfolioBtn = $('portfolio-view-btn');
     var marketGrid = $('market-grid');
     var tradeOverlay = $('trade-overlay');
     var tradeTitleEl = $('trade-title');
@@ -109,15 +112,20 @@
     var tradeStock = null;
     var activeCategory = 'all';
     var searchDebounce = null;
+    var selfName = '';
+    var lastOnlinePlayers = [];
+    var lastOtherPlayer = '';
 
     // --- Register with server ---
     function register() {
         var name = localStorage.getItem(NAME_KEY) || '';
         if (!name) return;
+        selfName = name;
         var charJSON = localStorage.getItem(CHAR_KEY);
         var character = null;
         try { character = charJSON ? JSON.parse(charJSON) : null; } catch (e) { /* ignore */ }
         socket.emit('register-player', { name: name, character: character, game: 'stocks' });
+        updateOtherPlayers(lastOnlinePlayers);
     }
 
     socket.on('connect', register);
@@ -143,6 +151,18 @@
     // --- Errors ---
     socket.on('stock-error', function (data) {
         showToast(data.error || 'Error', 'error');
+    });
+
+    // --- Online Players ---
+    socket.on('online-players', function (players) {
+        updateOtherPlayers(players);
+    });
+
+    // --- Other Player Portfolio ---
+    socket.on('stock-portfolio-other', function (data) {
+        if (!data || !data.portfolio) return;
+        lastOtherPlayer = data.playerName || '';
+        renderOtherPortfolio(data.playerName, data.portfolio);
     });
 
     // --- Fetch market data ---
@@ -332,6 +352,75 @@
         }
     }
 
+    function renderOtherPortfolio(playerName, portfolio) {
+        if (!otherPortfolioContainer) return;
+        var h = (portfolio && Array.isArray(portfolio.holdings)) ? portfolio.holdings : [];
+        var title = '<div class="other-portfolio-title">PLAYER: ' + escapeHtml(playerName || '') + '</div>';
+
+        if (h.length === 0) {
+            otherPortfolioContainer.innerHTML = title + '<div class="no-holdings">No investments yet.</div>';
+            return;
+        }
+
+        var html = title + '<table class="holdings-table"><thead><tr>'
+            + '<th>SYMBOL</th><th>SHARES</th><th>AVG</th><th>PRICE</th>'
+            + '<th>VALUE</th><th>G/L</th>'
+            + '</tr></thead><tbody>';
+
+        for (var i = 0; i < h.length; i++) {
+            var p = h[i];
+            var cls = p.gainLoss >= 0 ? 'positive' : 'negative';
+            html += '<tr>'
+                + '<td class="symbol">' + escapeHtml(p.symbol) + '<br><span style="color:var(--ds-text-dim);font-size:6px">' + escapeHtml(p.name) + '</span></td>'
+                + '<td>' + p.shares.toFixed(4) + '</td>'
+                + '<td>$' + p.avgCost.toFixed(2) + '</td>'
+                + '<td>$' + p.currentPrice.toFixed(2) + '</td>'
+                + '<td>$' + p.marketValue.toFixed(2) + '</td>'
+                + '<td class="' + cls + '">' + (p.gainLoss >= 0 ? '+' : '') + p.gainLoss.toFixed(2)
+                + ' (' + (p.gainLossPct >= 0 ? '+' : '') + p.gainLossPct.toFixed(2) + '%)</td>'
+                + '</tr>';
+        }
+
+        html += '</tbody></table>';
+        otherPortfolioContainer.innerHTML = html;
+    }
+
+    function updateOtherPlayers(players) {
+        if (!otherPortfolioSelect || !otherPortfolioBtn || !otherPortfolioContainer) return;
+        lastOnlinePlayers = Array.isArray(players) ? players : [];
+        var names = [];
+
+        for (var i = 0; i < lastOnlinePlayers.length; i++) {
+            var p = lastOnlinePlayers[i];
+            if (!p || !p.name || p.game !== 'stocks') continue;
+            if (selfName && p.name === selfName) continue;
+            names.push(p.name);
+        }
+
+        names.sort(function (a, b) { return a.localeCompare(b); });
+
+        if (names.length === 0) {
+            otherPortfolioSelect.innerHTML = '<option value="">No other players</option>';
+            otherPortfolioSelect.disabled = true;
+            otherPortfolioBtn.disabled = true;
+            otherPortfolioContainer.innerHTML = '<div class="no-holdings">No other players in the market.</div>';
+            return;
+        }
+
+        otherPortfolioSelect.disabled = false;
+        otherPortfolioBtn.disabled = false;
+        otherPortfolioSelect.innerHTML = names.map(function (name) {
+            return '<option value="' + escapeAttr(name) + '">' + escapeHtml(name) + '</option>';
+        }).join('');
+
+        if (lastOtherPlayer && names.indexOf(lastOtherPlayer) >= 0) {
+            otherPortfolioSelect.value = lastOtherPlayer;
+        } else {
+            lastOtherPlayer = names[0];
+            otherPortfolioSelect.value = lastOtherPlayer;
+        }
+    }
+
     function updateNetWorth() {
         var net = currentBalance + portfolioData.totalValue;
         portfolioNetEl.textContent = net.toFixed(2);
@@ -418,6 +507,19 @@
     tradeOverlay.addEventListener('click', function (e) {
         if (e.target === tradeOverlay) closeTrade();
     });
+
+    if (otherPortfolioSelect) {
+        otherPortfolioSelect.addEventListener('change', function () {
+            lastOtherPlayer = this.value;
+        });
+    }
+
+    if (otherPortfolioBtn) {
+        otherPortfolioBtn.addEventListener('click', function () {
+            if (!otherPortfolioSelect || !otherPortfolioSelect.value) return;
+            socket.emit('stock-get-portfolio-other', { playerName: otherPortfolioSelect.value });
+        });
+    }
 
     // --- Toast ---
     var toastTimer = null;

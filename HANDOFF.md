@@ -43,6 +43,13 @@
 **.env.example completed**
 - Added `CLIENT_ID` and `GUILD_ID` (previously only in `bot/.env.example`)
 
+### Features
+
+**Stocks: view other players' portfolios** (`server/socket-handlers.js`, `games/stocks/index.html`, `games/stocks/js/game.js`)
+- Added `stock-get-portfolio-other` and `stock-portfolio-other` socket events with validation
+- Stocks UI now lists other online stock players and renders their holdings read-only
+- Event catalog updated
+
 ## Files Changed
 - `server/room-manager.js` — socketToRoom map, removePlayerFromRoom helper, game-logic import
 - `server/socket-handlers.js` — socketToRoom import + set on create/join, simplified leave/disconnect handlers, join limit fix
@@ -51,6 +58,10 @@
 - `public/pictochat.js` — resize listener
 - `shared/js/lobby.js` — escapeHtml helper + usage
 - `.env.example` — CLIENT_ID, GUILD_ID
+- `server/socket-handlers.js` — stock portfolio sharing event
+- `games/stocks/index.html` — other portfolio UI
+- `games/stocks/js/game.js` — other portfolio rendering + online list
+- `EVENTS.md` — stock game events
 
 ## Not Changed
 - Game logic (game-logic.js unchanged)

@@ -62,6 +62,19 @@ S->C (common)
 - watchparty-sync
 - game-started
 
+## Stock game
+C->S
+- stock-buy
+- stock-sell
+- stock-get-portfolio
+- stock-get-portfolio-other
+
+S->C
+- balance-update
+- stock-portfolio
+- stock-portfolio-other
+- stock-error
+
 ## Pictochat (lobby)
 C->S
 - picto-join
