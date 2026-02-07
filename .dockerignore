@@ -1,0 +1,14 @@
+node_modules
+.env
+.git
+.DS_Store
+*.log
+.claude/
+.vscode
+userinput/
+docs/
+AGENTS.md
+EVENTS.md
+HANDOFF.md
+LLM_AGENT_GUIDE.md
+PLANS.md

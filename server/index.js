@@ -5,6 +5,7 @@ import http from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { readFileSync } from 'fs';
 let yahooFinancePromise = null;
 async function getYahooFinance() {
     if (!yahooFinancePromise) {
@@ -23,6 +24,8 @@ import { startDiscordBot } from './discord-bot.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.join(__dirname, '..');
+
+const pkg = JSON.parse(readFileSync(path.join(rootDir, 'package.json'), 'utf8'));
 
 const app = express();
 const server = http.createServer(app);
@@ -97,6 +100,7 @@ app.use('/userinput', express.static(path.join(rootDir, 'userinput')));
 app.get('/health', (req, res) => {
     res.json({
         status: 'ok',
+        version: pkg.version,
         uptime: process.uptime(),
         players: onlinePlayers.size,
         rooms: rooms.size
@@ -401,7 +405,8 @@ setInterval(() => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, async () => {
-    console.log(`✓ StrictHotel Server: http://localhost:${PORT}`);
+    console.log(`✓ StrictHotel v${pkg.version} running: http://localhost:${PORT}`);
+    console.log(`✓ Health check: http://localhost:${PORT}/health`);
 
     // Discord Bot starten
     try {

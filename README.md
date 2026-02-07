@@ -25,7 +25,18 @@ When LLM agents work in this repo, use these files:
 - [PLANS.md](PLANS.md): ExecPlan template for larger tasks
 - [HANDOFF.md](HANDOFF.md): short log of changes and risks
 
-## Run Locally
+## Quick Start (Docker)
+```bash
+git clone https://github.com/blusaccount/stricthotel.git
+cd stricthotel
+cp .env.example .env      # edit SESSION_SECRET at minimum
+docker compose up -d
+```
+Open **http://localhost:3000** – done.
+
+See [docs/INSTALL.md](docs/INSTALL.md) for the full guide.
+
+## Run Locally (without Docker)
 ```
 npm install
 npm run dev
