@@ -783,6 +783,7 @@
         $('versus-professor-text').textContent = 'Fordere einen Freund zum Duell heraus!';
         resetVersusSlots();
         showScreen('versus-lobby');
+        requestVersusLobbies();
     });
 
     $('btn-back-versus').addEventListener('click', () => {
@@ -841,6 +842,56 @@
     $('versus-join-code').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') $('btn-versus-join').click();
     });
+
+    // --- Open Lobbies ---
+    // Request lobbies when entering versus lobby
+    function requestVersusLobbies() {
+        socket.emit('get-lobbies', 'strictbrain');
+    }
+
+    // Listen for lobby updates
+    socket.on('lobbies-update', (data) => {
+        if (data.gameType === 'strictbrain') {
+            renderVersusLobbies(data.lobbies);
+        }
+    });
+
+    // Render open lobbies list
+    function renderVersusLobbies(lobbies) {
+        const list = $('versus-lobby-list');
+        if (!list) return;
+
+        if (!lobbies || lobbies.length === 0) {
+            list.innerHTML = '<p class="versus-no-lobbies">Keine offenen Räume</p>';
+            return;
+        }
+
+        list.innerHTML = lobbies.map(lobby =>
+            '<div class="versus-lobby-card" data-code="' + escapeHtml(lobby.code) + '">' +
+                '<span class="versus-lobby-host">🧠 ' + escapeHtml(lobby.hostName) + '</span>' +
+                '<span class="versus-lobby-players">' + lobby.playerCount + '/2</span>' +
+            '</div>'
+        ).join('');
+    }
+
+    // Click to join a lobby
+    const versusLobbyList = $('versus-lobby-list');
+    if (versusLobbyList) {
+        versusLobbyList.addEventListener('click', (e) => {
+            const card = e.target.closest('.versus-lobby-card');
+            if (card && card.dataset.code) {
+                if (!playerName) { alert('Bitte zuerst einen Namen setzen!'); return; }
+                socket.emit('brain-versus-join', { code: card.dataset.code, playerName });
+            }
+        });
+    }
+
+    // Periodically refresh lobbies while on versus lobby screen
+    setInterval(() => {
+        if ($('screen-versus-lobby')?.classList.contains('active') && !versusRoomCode) {
+            requestVersusLobbies();
+        }
+    }, 5000);
 
     // Lobby update
     socket.on('brain-versus-lobby', (data) => {
