@@ -644,5 +644,21 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/games/stocks/js/game.js"></script>
+
+<!-- Switch Sound on Back Button Click -->
+<script>
+(function () {
+    var backLink = document.querySelector('.back-link');
+    if (!backLink) return;
+    var switchSound = new Audio('/userinput/switch.mp3.mp3');
+    backLink.addEventListener('click', function (e) {
+        e.preventDefault();
+        var href = backLink.getAttribute('href');
+        switchSound.currentTime = 0;
+        switchSound.play();
+        setTimeout(function () { window.location.href = href; }, 300);
+    });
+})();
+</script>
 </body>
 </html>

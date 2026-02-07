@@ -291,5 +291,21 @@
 <!-- Watch Party Module -->
 <script src="/games/watchparty/js/watchparty.js"></script>
 
+<!-- Switch Sound on Home Button Click -->
+<script>
+(function () {
+    var homeBtn = document.getElementById('home-btn');
+    if (!homeBtn) return;
+    var switchSound = new Audio('/userinput/switch.mp3.mp3');
+    homeBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        var href = homeBtn.getAttribute('href');
+        switchSound.currentTime = 0;
+        switchSound.play();
+        setTimeout(function () { window.location.href = href; }, 300);
+    });
+})();
+</script>
+
 </body>
 </html>
