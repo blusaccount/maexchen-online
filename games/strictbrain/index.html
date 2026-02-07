@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StrictHotel – Strict Brain</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👽</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Patrick+Hand&display=swap" rel="stylesheet">
+    <style>
+        /* ===== Nintendo DS Light-Theme ===== */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --ds-bg: #e8e8e8;
+            --ds-surface: #ffffff;
+            --ds-border: #222222;
+            --ds-text: #111111;
+            --ds-text-dim: #666666;
+            --ds-highlight: #cccccc;
+            --ds-accent: #3366cc;
+            --ds-positive: #228833;
+            --ds-negative: #cc3333;
+            --ds-radius: 0px;
+        }
+
+        body {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            background: var(--ds-bg);
+            color: var(--ds-text);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            image-rendering: pixelated;
+            line-height: 1.8;
+        }
+
+        .brain-page {
+            max-width: 600px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 16px 12px 40px;
+        }
+
+        /* ===== DS Header ===== */
+        .brain-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid var(--ds-border);
+        }
+
+        .brain-title {
+            font-size: 16px;
+            letter-spacing: 2px;
+            cursor: pointer;
+        }
+
+        .brain-title:hover { opacity: 0.7; }
+
+        .brain-header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brain-home {
+            text-decoration: none;
+            font-size: 1.5rem;
+            padding: 4px;
+        }
+
+        /* ===== Professor Alien ===== */
+        .professor-box {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            padding: 12px;
+            margin-bottom: 16px;
+        }
+
+        .professor-alien {
+            font-size: 3rem;
+            flex-shrink: 0;
+            line-height: 1;
+        }
+
+        .professor-speech {
+            font-family: 'Patrick Hand', cursive;
+            font-size: 16px;
+            line-height: 1.5;
+            color: var(--ds-text);
+        }
+
+        /* ===== Menu Buttons ===== */
+        .menu-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .menu-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            padding: 12px 16px;
+            cursor: pointer;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            color: var(--ds-text);
+            text-align: left;
+            transition: all 0.15s;
+        }
+
+        .menu-btn:hover {
+            background: var(--ds-border);
+            color: var(--ds-surface);
+            box-shadow: 3px 3px 0 var(--ds-text-dim);
+        }
+
+        .menu-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: none;
+        }
+
+        .menu-btn-icon {
+            font-size: 1.8rem;
+            flex-shrink: 0;
+            width: 40px;
+            text-align: center;
+        }
+
+        .menu-btn-info {
+            flex: 1;
+        }
+
+        .menu-btn-title {
+            margin-bottom: 4px;
+        }
+
+        .menu-btn-desc {
+            font-family: 'Patrick Hand', cursive;
+            font-size: 13px;
+            color: var(--ds-text-dim);
+        }
+
+        /* ===== Screens ===== */
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        /* ===== Game Area ===== */
+        .game-area {
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            padding: 16px;
+            min-height: 300px;
+            position: relative;
+            margin-bottom: 12px;
+        }
+
+        .game-topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px dashed var(--ds-highlight);
+        }
+
+        .game-timer {
+            font-size: 14px;
+            font-family: 'Press Start 2P', monospace;
+        }
+
+        .game-score {
+            font-size: 12px;
+        }
+
+        .game-label {
+            font-family: 'Patrick Hand', cursive;
+            font-size: 16px;
+            color: var(--ds-text-dim);
+        }
+
+        /* ===== Math Game ===== */
+        .math-problem {
+            text-align: center;
+            font-size: 28px;
+            margin: 30px 0 20px;
+            font-family: 'Patrick Hand', cursive;
+        }
+
+        .math-input {
+            display: block;
+            width: 200px;
+            margin: 0 auto;
+            text-align: center;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 18px;
+            padding: 10px;
+            border: 2px solid var(--ds-border);
+            background: var(--ds-bg);
+            color: var(--ds-text);
+        }
+
+        .math-input:focus {
+            outline: 2px solid var(--ds-border);
+            outline-offset: 2px;
+        }
+
+        .math-feedback {
+            text-align: center;
+            margin-top: 12px;
+            font-family: 'Patrick Hand', cursive;
+            font-size: 18px;
+            min-height: 28px;
+        }
+
+        .math-feedback.correct { color: var(--ds-positive); }
+        .math-feedback.wrong { color: var(--ds-negative); }
+
+        /* ===== Stroop Game ===== */
+        .stroop-word {
+            text-align: center;
+            font-size: 36px;
+            font-weight: bold;
+            margin: 20px 0;
+            font-family: 'Press Start 2P', monospace;
+            letter-spacing: 3px;
+        }
+
+        .stroop-hint {
+            text-align: center;
+            font-family: 'Patrick Hand', cursive;
+            font-size: 16px;
+            color: var(--ds-text-dim);
+            margin-bottom: 16px;
+        }
+
+        .stroop-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .stroop-btn {
+            padding: 14px 8px;
+            border: 2px solid var(--ds-border);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            cursor: pointer;
+            color: #fff;
+            transition: all 0.1s;
+        }
+
+        .stroop-btn:hover {
+            opacity: 0.85;
+            box-shadow: 3px 3px 0 var(--ds-text-dim);
+        }
+
+        .stroop-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: none;
+        }
+
+        /* ===== Chimp / Memory Game ===== */
+        .chimp-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+            max-width: 350px;
+            margin: 12px auto;
+        }
+
+        .chimp-cell {
+            aspect-ratio: 1;
+            border: 2px solid var(--ds-border);
+            background: var(--ds-surface);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.1s;
+            user-select: none;
+        }
+
+        .chimp-cell:hover { background: var(--ds-bg); }
+
+        .chimp-cell.revealed {
+            background: var(--ds-border);
+            color: var(--ds-surface);
+        }
+
+        .chimp-cell.correct {
+            background: var(--ds-positive);
+            color: #fff;
+        }
+
+        .chimp-cell.wrong {
+            background: var(--ds-negative);
+            color: #fff;
+        }
+
+        .chimp-cell.hidden-number {
+            background: var(--ds-border);
+            color: var(--ds-border);
+        }
+
+        .chimp-info {
+            text-align: center;
+            margin-top: 10px;
+            font-family: 'Patrick Hand', cursive;
+            font-size: 16px;
+            color: var(--ds-text-dim);
+        }
+
+        /* ===== Reaction Test ===== */
+        .reaction-area {
+            width: 100%;
+            min-height: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-family: 'Patrick Hand', cursive;
+            font-size: 22px;
+            color: #fff;
+            border: 2px solid var(--ds-border);
+            transition: background 0.1s;
+            user-select: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .reaction-area.waiting { background: #cc3333; }
+        .reaction-area.ready { background: #228833; }
+        .reaction-area.too-early { background: #dd6600; }
+        .reaction-area.result { background: var(--ds-border); }
+
+        .reaction-results {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 10px;
+        }
+
+        /* ===== Word Scramble ===== */
+        .scramble-letters {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 6px;
+            margin: 20px 0;
+        }
+
+        .scramble-letter {
+            width: 36px;
+            height: 40px;
+            border: 2px solid var(--ds-border);
+            background: var(--ds-surface);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Patrick Hand', cursive;
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .scramble-input {
+            display: block;
+            width: 250px;
+            margin: 0 auto;
+            text-align: center;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 14px;
+            padding: 10px;
+            border: 2px solid var(--ds-border);
+            background: var(--ds-bg);
+            color: var(--ds-text);
+            text-transform: uppercase;
+        }
+
+        .scramble-input:focus {
+            outline: 2px solid var(--ds-border);
+            outline-offset: 2px;
+        }
+
+        /* ===== Results Screen ===== */
+        .results-box {
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            padding: 20px;
+            text-align: center;
+        }
+
+        .brain-age-display {
+            font-family: 'Patrick Hand', cursive;
+            font-size: 60px;
+            margin: 16px 0 8px;
+            color: var(--ds-text);
+        }
+
+        .brain-age-label {
+            font-family: 'Patrick Hand', cursive;
+            font-size: 20px;
+            color: var(--ds-text-dim);
+            margin-bottom: 16px;
+        }
+
+        .results-breakdown {
+            text-align: left;
+            margin: 16px 0;
+            padding: 12px;
+            background: var(--ds-bg);
+            border: 2px solid var(--ds-highlight);
+        }
+
+        .results-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px dashed var(--ds-highlight);
+            font-size: 9px;
+        }
+
+        .results-row:last-child { border-bottom: none; }
+
+        .results-game-name {
+            font-family: 'Patrick Hand', cursive;
+            font-size: 14px;
+        }
+
+        .results-game-score {
+            font-family: 'Press Start 2P', monospace;
+        }
+
+        .coins-earned {
+            margin-top: 16px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .coins-earned .coin-icon {
+            font-size: 1.3rem;
+        }
+
+        /* ===== Free Training List ===== */
+        .training-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .training-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            padding: 14px 16px;
+            cursor: pointer;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            color: var(--ds-text);
+            text-align: left;
+            transition: all 0.15s;
+        }
+
+        .training-btn:hover {
+            background: var(--ds-border);
+            color: var(--ds-surface);
+            box-shadow: 3px 3px 0 var(--ds-text-dim);
+        }
+
+        .training-btn-icon { font-size: 1.5rem; width: 32px; text-align: center; }
+
+        /* ===== Back Button ===== */
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            padding: 8px 14px;
+            cursor: pointer;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 9px;
+            color: var(--ds-text);
+            margin-bottom: 12px;
+            transition: all 0.15s;
+        }
+
+        .btn-back:hover {
+            background: var(--ds-border);
+            color: var(--ds-surface);
+        }
+
+        /* ===== Leaderboard ===== */
+        .leaderboard {
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            padding: 12px;
+            margin-top: 16px;
+        }
+
+        .leaderboard h3 {
+            font-size: 11px;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 2px dashed var(--ds-highlight);
+            text-align: center;
+        }
+
+        .lb-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 4px;
+            border-bottom: 1px dashed var(--ds-highlight);
+            font-size: 9px;
+        }
+
+        .lb-row:last-child { border-bottom: none; }
+
+        .lb-rank { width: 24px; text-align: center; }
+        .lb-name { flex: 1; margin-left: 8px; }
+
+        .lb-age {
+            font-family: 'Patrick Hand', cursive;
+            font-size: 14px;
+        }
+
+        /* ===== Pixel Divider ===== */
+        .pixel-divider {
+            height: 2px;
+            background: repeating-linear-gradient(
+                90deg,
+                var(--ds-border) 0px,
+                var(--ds-border) 4px,
+                transparent 4px,
+                transparent 8px
+            );
+            margin: 12px 0;
+        }
+
+        /* ===== Mobile ===== */
+        @media (max-width: 500px) {
+            .brain-page { padding: 10px 8px 32px; }
+            .brain-title { font-size: 13px; }
+            .stroop-word { font-size: 26px; }
+            .math-problem { font-size: 22px; }
+            .chimp-grid { max-width: 280px; }
+            .chimp-cell { font-size: 13px; }
+            .brain-age-display { font-size: 48px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="brain-page">
+    <!-- Header -->
+    <div class="brain-header">
+        <div class="brain-title" id="brain-title">STRICT BRAIN</div>
+        <div class="brain-header-right">
+            <a href="/" class="brain-home" title="Home">🏠</a>
+        </div>
+    </div>
+
+    <!-- ===== MAIN MENU ===== -->
+    <div class="screen active" id="screen-menu">
+        <div class="professor-box">
+            <div class="professor-alien">👽</div>
+            <div class="professor-speech">Willkommen zum Gehirn-Training! Ich bin Professor Strict. Lass uns sehen, wie fit dein Kopf ist...</div>
+        </div>
+
+        <div class="menu-grid">
+            <button class="menu-btn" id="btn-daily-test">
+                <span class="menu-btn-icon">🧠</span>
+                <div class="menu-btn-info">
+                    <div class="menu-btn-title">TÄGLICHER TEST</div>
+                    <div class="menu-btn-desc">3 zufällige Spiele → Dein Gehirnalter</div>
+                </div>
+            </button>
+            <button class="menu-btn" id="btn-free-training">
+                <span class="menu-btn-icon">🎯</span>
+                <div class="menu-btn-info">
+                    <div class="menu-btn-title">FREIES TRAINING</div>
+                    <div class="menu-btn-desc">Einzelne Spiele üben</div>
+                </div>
+            </button>
+        </div>
+
+        <div class="leaderboard" id="leaderboard-panel">
+            <h3>🏆 GEHIRNALTER RANGLISTE</h3>
+            <div id="leaderboard-list">
+                <div class="lb-row"><span style="color:var(--ds-text-dim)">Noch keine Ergebnisse</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== FREE TRAINING SELECTION ===== -->
+    <div class="screen" id="screen-training">
+        <button class="btn-back" id="btn-back-training">← ZURÜCK</button>
+
+        <div class="professor-box">
+            <div class="professor-alien">👽</div>
+            <div class="professor-speech">Wähle ein Spiel zum Üben!</div>
+        </div>
+
+        <div class="training-list">
+            <button class="training-btn" data-game="math">
+                <span class="training-btn-icon">➗</span>
+                <div>
+                    <div>MATHE-BLITZ</div>
+                    <div class="menu-btn-desc">Kopfrechnen — 60 Sekunden</div>
+                </div>
+            </button>
+            <button class="training-btn" data-game="stroop">
+                <span class="training-btn-icon">🎨</span>
+                <div>
+                    <div>FARBE VS. WORT</div>
+                    <div class="menu-btn-desc">Stroop-Test — Welche Farbe?</div>
+                </div>
+            </button>
+            <button class="training-btn" data-game="chimp">
+                <span class="training-btn-icon">🔢</span>
+                <div>
+                    <div>ZAHLEN-MEMORY</div>
+                    <div class="menu-btn-desc">Chimp Test — Reihenfolge merken</div>
+                </div>
+            </button>
+            <button class="training-btn" data-game="reaction">
+                <span class="training-btn-icon">⚡</span>
+                <div>
+                    <div>REAKTIONSTEST</div>
+                    <div class="menu-btn-desc">Schnell klicken — nicht bei Rot!</div>
+                </div>
+            </button>
+            <button class="training-btn" data-game="scramble">
+                <span class="training-btn-icon">🔤</span>
+                <div>
+                    <div>WORT-SCRAMBLE</div>
+                    <div class="menu-btn-desc">Buchstaben ordnen — Deutsche Wörter</div>
+                </div>
+            </button>
+        </div>
+    </div>
+
+    <!-- ===== GAME SCREEN ===== -->
+    <div class="screen" id="screen-game">
+        <div class="game-topbar">
+            <div class="game-timer" id="game-timer">60</div>
+            <div class="game-label" id="game-title-label"></div>
+            <div class="game-score" id="game-score">0</div>
+        </div>
+        <div class="game-area" id="game-area">
+            <!-- Game content injected here -->
+        </div>
+    </div>
+
+    <!-- ===== RESULTS SCREEN ===== -->
+    <div class="screen" id="screen-results">
+        <div class="results-box">
+            <div class="professor-box" style="border:none;padding:0;margin-bottom:12px;">
+                <div class="professor-alien">👽</div>
+                <div class="professor-speech" id="results-speech">Gut gemacht!</div>
+            </div>
+
+            <div class="brain-age-label" id="results-age-label">Dein Gehirnalter</div>
+            <div class="brain-age-display" id="results-brain-age">--</div>
+
+            <div class="results-breakdown" id="results-breakdown">
+                <!-- Filled dynamically -->
+            </div>
+
+            <div class="coins-earned" id="results-coins">
+                <span class="coin-icon">🪙</span>
+                <span id="results-coins-amount">+0 StrictCoins</span>
+            </div>
+
+            <div class="pixel-divider"></div>
+
+            <button class="menu-btn" id="btn-back-results" style="justify-content:center;">
+                <span>← ZURÜCK ZUM MENÜ</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/games/strictbrain/js/game.js"></script>
+
+</body>
+</html>
