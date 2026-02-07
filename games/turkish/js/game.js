@@ -9,6 +9,8 @@
     let currentQ = 0;
     let score = 0;
     let timer = null;
+    let answerTimeoutId = null;
+    let quizEnded = false;
     let timeLeft = QUIZ_TIME;
 
     // ===== Screen Management =====
@@ -48,6 +50,7 @@
 
     // ===== Quiz =====
     function startQuiz() {
+        resetQuizState();
         quiz = lesson.quiz;
         currentQ = 0;
         score = 0;
@@ -58,6 +61,10 @@
     }
 
     function renderQuestion() {
+        if (quizEnded === true) {
+            return;
+        }
+
         if (currentQ >= quiz.length) {
             endQuiz();
             return;
@@ -80,6 +87,10 @@
     }
 
     function handleAnswer(selected, correct) {
+        if (quizEnded === true) {
+            return;
+        }
+
         const opts = $('quiz-options').querySelectorAll('.quiz-option');
         opts.forEach(btn => {
             btn.classList.add('disabled');
@@ -96,7 +107,10 @@
             $('quiz-feedback').style.color = '#cc3333';
         }
 
-        setTimeout(function () {
+        answerTimeoutId = setTimeout(function () {
+            if (quizEnded === true) {
+                return;
+            }
             currentQ++;
             renderQuestion();
         }, 1200);
@@ -127,9 +141,30 @@
         }
     }
 
+    function resetQuizState() {
+        quizEnded = false;
+        stopTimer();
+
+        if (answerTimeoutId !== null) {
+            clearTimeout(answerTimeoutId);
+            answerTimeoutId = null;
+        }
+    }
+
     // ===== Results =====
     function endQuiz() {
+        if (quizEnded === true) {
+            return;
+        }
+
+        quizEnded = true;
         stopTimer();
+
+        if (answerTimeoutId !== null) {
+            clearTimeout(answerTimeoutId);
+            answerTimeoutId = null;
+        }
+
         showScreen('result');
 
         const total = quiz.length;

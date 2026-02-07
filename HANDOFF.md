@@ -283,3 +283,25 @@
 
 ### Remaining
 - **~600 lines code duplication in `games/strictbrain/js/game.js`** — Each of 5 mini-games is fully duplicated for single-player and versus mode. Only difference: target DOM element IDs and score update callbacks. Works correctly but is a maintenance burden. Future refactor could parameterize game functions with `{ area, onScore, onFinish }` config objects.
+
+---
+
+# HANDOFF - Turkish Quiz State Machine Stabilization
+
+## What Was Done
+
+- Added explicit quiz session state in `games/turkish/js/game.js` via `quizEnded` and `answerTimeoutId`.
+- Added central `resetQuizState()` called at quiz start to reset flags and clear any lingering interval/timeout handles.
+- Updated `renderQuestion()` to return early when the quiz has already ended.
+- Updated `handleAnswer()` to guard against post-end processing and to store the answer transition timeout handle.
+- Updated `endQuiz()` to be idempotent, set `quizEnded = true`, stop the interval timer, and clear any pending answer timeout.
+
+## Files Changed
+
+- `games/turkish/js/game.js`
+- `HANDOFF.md`
+
+## Verification
+
+- `node --check games/turkish/js/game.js`
+
