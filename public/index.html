@@ -238,63 +238,7 @@
             margin: 12px 0;
         }
 
-        /* Online Players Section */
-        .online-section {
-            max-width: 800px;
-            margin: 0 auto;
-            text-align: left;
-        }
-
-        .online-section h3 {
-            color: var(--ds-text);
-            font-size: 12px;
-            letter-spacing: 2px;
-            margin-bottom: 8px;
-            text-align: center;
-            padding: 6px 0;
-            border-bottom: 2px dashed var(--ds-border);
-        }
-
-        .online-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            justify-content: center;
-        }
-
-        .online-player {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: var(--ds-surface);
-            border: 2px solid var(--ds-border);
-            padding: 6px 10px;
-            border-radius: 0;
-            font-size: 10px;
-        }
-
-        .online-avatar img {
-            width: 24px;
-            height: 24px;
-            image-rendering: pixelated;
-        }
-
-        .online-status {
-            font-size: 9px;
-            color: var(--ds-text-dim);
-            letter-spacing: 1px;
-        }
-
-        .no-players {
-            color: var(--ds-text-dim);
-            font-size: 10px;
-            text-align: center;
-            padding: 16px;
-            background: var(--ds-surface);
-            border: 2px solid var(--ds-border);
-        }
-
-        /* ===== Pictochat DS Override ===== */
+        /* Mobile responsive */
         /* Using body scoping for specificity over theme.css (no !important) */
         body .picto-section {
             border: 2px solid var(--ds-border);
@@ -671,6 +615,13 @@
                 <div class="game-title">Strict Brain</div>
             </div>
         </a>
+
+        <a href="/contacts.html" class="game-card">
+            <div class="game-icon">📇</div>
+            <div class="game-card-info">
+                <div class="game-title">Contacts</div>
+            </div>
+        </a>
     </div>
 
     <!-- Pictochat -->
@@ -741,13 +692,6 @@
         <div class="soundboard-toast-area" id="soundboard-toasts"></div>
     </div>
 
-    <!-- Online Players -->
-    <div class="online-section">
-        <h3>ONLINE: <span id="online-count">0</span></h3>
-        <div id="online-list" class="online-list">
-            <span class="no-players">Niemand online</span>
-        </div>
-    </div>
 </div>
 
 <!-- Socket.io -->

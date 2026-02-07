@@ -14,8 +14,6 @@
     var avatarPlaceholder = $('avatar-placeholder');
     var inputName = $('input-name');
     var btnCreate = $('btn-create-character');
-    var onlineList = $('online-list');
-    var onlineCount = $('online-count');
 
     var STORAGE_KEY = 'stricthotel-character';
     var NAME_KEY = 'stricthotel-name';
@@ -103,30 +101,6 @@
         socket.emit('register-player', { name: name, character: character, game: 'lobby' });
         registered = true;
     }
-
-    // --- Online Players ---
-    socket.on('online-players', function (players) {
-        if (!onlineList) return;
-
-        if (onlineCount) onlineCount.textContent = players.length;
-
-        if (players.length === 0) {
-            onlineList.innerHTML = '<span class="no-players">Niemand online</span>';
-            return;
-        }
-
-        onlineList.innerHTML = players.map(function (p) {
-            var avatarHtml = p.character && p.character.dataURL
-                ? '<img src="' + p.character.dataURL + '" alt="">'
-                : '👽';
-            var statusText = p.game === 'lobby' ? 'Lobby' : p.game || '';
-            return '<div class="online-player">' +
-                '<span class="online-avatar">' + avatarHtml + '</span>' +
-                '<span>' + escapeHtml(p.name) + '</span>' +
-                (statusText ? '<span class="online-status">' + escapeHtml(statusText) + '</span>' : '') +
-                '</div>';
-        }).join('');
-    });
 
     // --- Socket connect → re-register ---
     socket.on('connect', function () {

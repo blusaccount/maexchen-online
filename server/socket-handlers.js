@@ -206,6 +206,31 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
             console.log(`Registered: ${name} for ${game}`);
         } catch (err) { console.error('register-player error:', err.message); } });
 
+        // --- Get Player Character (for contacts app) ---
+        socket.on('get-player-character', (data) => { try {
+            if (!checkRateLimit(socket.id)) return;
+            if (!data || typeof data !== 'object') return;
+            const name = sanitizeName(data.name);
+            if (!name) return;
+
+            // Find the player by name in onlinePlayers
+            let found = null;
+            for (const [, p] of onlinePlayers) {
+                if (p.name === name) {
+                    found = p;
+                    break;
+                }
+            }
+
+            if (found) {
+                socket.emit('player-character', {
+                    name: found.name,
+                    character: found.character,
+                    game: found.game
+                });
+            }
+        } catch (err) { console.error('get-player-character error:', err.message); } });
+
         // --- Get Currency Balance ---
         socket.on('get-balance', () => { try {
             if (!checkRateLimit(socket.id)) return;
