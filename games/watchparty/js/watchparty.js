@@ -65,8 +65,8 @@
                 height: '100%',
                 playerVars: {
                     autoplay: 0,
-                    controls: isHost ? 1 : 0,
-                    disablekb: isHost ? 0 : 1,
+                    controls: 1,
+                    disablekb: 0,
                     modestbranding: 1,
                     rel: 0,
                     fs: 1
@@ -78,9 +78,9 @@
         });
     }
 
-    // --- Player State Change (host only syncs to others) ---
+    // --- Player State Change (any user syncs to others) ---
     function onPlayerStateChange(event) {
-        if (!isHost || ignorePlayerEvents) return;
+        if (ignorePlayerEvents) return;
 
         var playerState = event.data;
         var time = ytPlayer.getCurrentTime ? ytPlayer.getCurrentTime() : 0;
@@ -92,7 +92,7 @@
         }
     }
 
-    // --- Host: Periodic sync (every 5 seconds while playing) ---
+    // --- Host: Periodic sync (every 5 seconds while playing, host only to avoid conflicts) ---
     function startSyncInterval() {
         stopSyncInterval();
         syncIntervalId = setInterval(function () {
@@ -116,14 +116,9 @@
         isHost = state.isHost;
         showScreen('game');
 
-        // Show host controls or viewer notice
-        if (isHost) {
-            $('url-input-section').style.display = 'flex';
-            $('viewer-notice').style.display = 'none';
-        } else {
-            $('url-input-section').style.display = 'none';
-            $('viewer-notice').style.display = 'block';
-        }
+        // Show URL input for all users
+        $('url-input-section').style.display = 'flex';
+        $('viewer-notice').style.display = 'none';
 
         // Show chat
         if (window.MaexchenChat) {
@@ -183,7 +178,7 @@
 
     // --- Receive Sync ---
     socket.on('watchparty-sync', function (data) {
-        if (isHost || !ytPlayer || !ytPlayer.getPlayerState) return;
+        if (!ytPlayer || !ytPlayer.getPlayerState) return;
 
         ignorePlayerEvents = true;
 

@@ -821,10 +821,6 @@ export function registerSocketHandlers(io) {
 
             const room = getRoom(socket.id);
             if (!room || room.gameType !== 'watchparty') return;
-            if (room.hostId !== socket.id) {
-                socket.emit('error', { message: 'Nur der Host kann Videos laden!' });
-                return;
-            }
 
             room.watchparty = room.watchparty || {};
             room.watchparty.videoId = id;
@@ -838,17 +834,18 @@ export function registerSocketHandlers(io) {
                 time: 0
             });
 
-            console.log(`[WatchParty ${room.code}] Video loaded: ${id}`);
+            const player = room.players.find(p => p.socketId === socket.id);
+            const playerName = player ? player.name : 'Unknown';
+            console.log(`[WatchParty ${room.code}] Video loaded by ${playerName}: ${id}`);
         } catch (err) { console.error('watchparty-load error:', err.message); } });
 
-        // --- Watch Party: Play/Pause ---
+        // --- Watch Party: Play/Pause (any user) ---
         socket.on('watchparty-playpause', (data) => { try {
             if (!checkRateLimit(socket.id, 5)) return;
             if (!data || typeof data !== 'object') return;
 
             const room = getRoom(socket.id);
             if (!room || room.gameType !== 'watchparty') return;
-            if (room.hostId !== socket.id) return;
             if (!room.watchparty || !room.watchparty.videoId) return;
 
             const state = data.state === 'playing' ? 'playing' : 'paused';
@@ -858,29 +855,30 @@ export function registerSocketHandlers(io) {
             room.watchparty.time = time;
             room.watchparty.updatedAt = Date.now();
 
-            io.to(room.code).emit('watchparty-sync', {
+            socket.to(room.code).emit('watchparty-sync', {
                 state,
                 time,
                 updatedAt: room.watchparty.updatedAt
             });
 
-            console.log(`[WatchParty ${room.code}] ${state} at ${time.toFixed(1)}s`);
+            const player = room.players.find(p => p.socketId === socket.id);
+            const playerName = player ? player.name : 'Unknown';
+            console.log(`[WatchParty ${room.code}] ${playerName}: ${state} at ${time.toFixed(1)}s`);
         } catch (err) { console.error('watchparty-playpause error:', err.message); } });
 
-        // --- Watch Party: Seek ---
+        // --- Watch Party: Seek (any user) ---
         socket.on('watchparty-seek', (time) => { try {
             if (!checkRateLimit(socket.id, 5)) return;
             if (typeof time !== 'number' || !isFinite(time)) return;
 
             const room = getRoom(socket.id);
             if (!room || room.gameType !== 'watchparty') return;
-            if (room.hostId !== socket.id) return;
             if (!room.watchparty || !room.watchparty.videoId) return;
 
             room.watchparty.time = Math.max(0, time);
             room.watchparty.updatedAt = Date.now();
 
-            io.to(room.code).emit('watchparty-sync', {
+            socket.to(room.code).emit('watchparty-sync', {
                 state: room.watchparty.state,
                 time: room.watchparty.time,
                 updatedAt: room.watchparty.updatedAt

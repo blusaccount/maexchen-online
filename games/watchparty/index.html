@@ -12,7 +12,7 @@
         /* Watch Party specific styles */
         .video-wrapper {
             width: 100%;
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto 20px;
             aspect-ratio: 16/9;
             background: #000;
@@ -20,6 +20,11 @@
             border-radius: var(--radius);
             overflow: hidden;
             position: relative;
+        }
+
+        /* Widen #app for the watch party game screen */
+        body:has(#screen-game.active) #app {
+            max-width: 960px;
         }
 
         .video-wrapper iframe {
@@ -43,7 +48,7 @@
         .url-input-row {
             display: flex;
             gap: 10px;
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto 20px;
         }
 
@@ -181,15 +186,15 @@
     <div id="screen-game" class="screen">
         <div class="title-maexchen" style="font-size:1.8rem; margin-bottom: 10px;">Watch Party</div>
 
-        <!-- URL Input (Host only) -->
+        <!-- URL Input (all users) -->
         <div id="url-input-section" class="url-input-row" style="display:none;">
             <input type="text" id="input-video-url" placeholder="YouTube URL einfügen..." autocomplete="off">
             <button class="btn btn-primary" id="btn-load-video">Laden</button>
         </div>
 
-        <!-- Viewer notice (non-host) -->
+        <!-- Sync notice (all users can control) -->
         <div id="viewer-notice" class="viewer-notice" style="display:none;">
-            Der Host steuert das Video<span class="host-badge">VIEWER</span>
+            Alle können das Video steuern
         </div>
 
         <!-- Video Player -->
