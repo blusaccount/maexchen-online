@@ -11,7 +11,7 @@ import {
     removePlayerFromRoom
 } from './room-manager.js';
 
-import { getBalance } from './currency.js';
+import { getBalance, addBalance, deductBalance } from './currency.js';
 import { buyStock, sellStock, getPortfolioSnapshot } from './stock-game.js';
 
 // ============== INPUT VALIDATION ==============
@@ -650,6 +650,41 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
             console.log(`${playerName} joined room ${code}`);
         } catch (err) { console.error('join-room error:', err.message); socket.emit('error', { message: 'Fehler beim Beitreten.' }); } });
 
+        // --- Place Bet ---
+        socket.on('place-bet', (data) => { try {
+            if (!checkRateLimit(socket.id)) return;
+            if (!data || typeof data !== 'object') return;
+
+            const room = getRoom(socket.id);
+            if (!room || room.game) return; // Only in waiting room, before game starts
+            if (room.gameType !== 'maexchen') return; // Only for Mäxchen
+
+            const amount = Number(data.amount);
+            if (!Number.isInteger(amount) || amount < 0 || amount > 1000) return;
+
+            const player = room.players.find(p => p.socketId === socket.id);
+            if (!player) return;
+
+            const balance = getBalance(player.name);
+            if (amount > balance) {
+                socket.emit('error', { message: 'Nicht genug Coins!' });
+                return;
+            }
+
+            // Initialize bets map if needed
+            if (!room.bets) room.bets = {};
+            room.bets[socket.id] = amount;
+
+            // Broadcast updated bets to room
+            const betsInfo = room.players.map(p => ({
+                name: p.name,
+                bet: room.bets[p.socketId] || 0
+            }));
+            io.to(room.code).emit('bets-update', { bets: betsInfo });
+
+            console.log(`${player.name} bet ${amount} coins in ${room.code}`);
+        } catch (err) { console.error('place-bet error:', err.message); } });
+
         // --- Start Game ---
         socket.on('start-game', () => { try {
             if (!checkRateLimit(socket.id)) return;
@@ -665,6 +700,23 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
                 return;
             }
 
+            // Deduct bets from player balances for Mäxchen
+            let pot = 0;
+            if (room.gameType === 'maexchen' && room.bets) {
+                for (const p of room.players) {
+                    const bet = room.bets[p.socketId] || 0;
+                    if (bet > 0) {
+                        const result = deductBalance(p.name, bet);
+                        if (result === null) {
+                            // Player can no longer afford their bet, reset to 0
+                            room.bets[p.socketId] = 0;
+                        } else {
+                            pot += bet;
+                        }
+                    }
+                }
+            }
+
             room.game = {
                 players: room.players.map(p => ({
                     socketId: p.socketId,
@@ -676,16 +728,25 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
                 previousAnnouncement: null,
                 isFirstTurn: true,
                 currentRoll: null,
-                hasRolled: false
+                hasRolled: false,
+                pot: pot || 0
             };
 
             io.to(room.code).emit('game-started', {
-                players: room.game.players.map(p => ({ name: p.name, lives: p.lives, character: p.character }))
+                players: room.game.players.map(p => ({ name: p.name, lives: p.lives, character: p.character })),
+                pot: room.game.pot
             });
+
+            // Send updated balances to all players after bet deduction
+            if (pot > 0) {
+                for (const p of room.players) {
+                    io.to(p.socketId).emit('balance-update', { balance: getBalance(p.name) });
+                }
+            }
 
             sendTurnStart(io, room);
             broadcastLobbies(io, room.gameType);
-            console.log(`Game started in ${room.code}`);
+            console.log(`Game started in ${room.code} (pot: ${pot})`);
         } catch (err) { console.error('start-game error:', err.message); } });
 
         // --- Roll Dice ---
@@ -808,9 +869,21 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
 
             const alive = getAlivePlayers(game);
             if (alive.length <= 1) {
+                const winnerName = alive[0]?.name || 'Niemand';
+                const pot = game.pot || 0;
+
+                // Award pot to winner
+                if (pot > 0 && alive[0]) {
+                    addBalance(alive[0].name, pot);
+                    for (const p of room.players) {
+                        io.to(p.socketId).emit('balance-update', { balance: getBalance(p.name) });
+                    }
+                }
+
                 io.to(room.code).emit('game-over', {
-                    winnerName: alive[0]?.name || 'Niemand',
-                    players: game.players.map(p => ({ name: p.name, lives: p.lives }))
+                    winnerName,
+                    players: game.players.map(p => ({ name: p.name, lives: p.lives })),
+                    pot
                 });
                 room.game = null;
                 return;
@@ -851,9 +924,21 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
 
             const alive = getAlivePlayers(game);
             if (alive.length <= 1) {
+                const winnerName = alive[0]?.name || 'Niemand';
+                const pot = game.pot || 0;
+
+                // Award pot to winner
+                if (pot > 0 && alive[0]) {
+                    addBalance(alive[0].name, pot);
+                    for (const p of room.players) {
+                        io.to(p.socketId).emit('balance-update', { balance: getBalance(p.name) });
+                    }
+                }
+
                 io.to(room.code).emit('game-over', {
-                    winnerName: alive[0]?.name || 'Niemand',
-                    players: game.players.map(p => ({ name: p.name, lives: p.lives }))
+                    winnerName,
+                    players: game.players.map(p => ({ name: p.name, lives: p.lives })),
+                    pot
                 });
                 room.game = null;
                 return;

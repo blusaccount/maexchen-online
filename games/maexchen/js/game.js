@@ -56,12 +56,62 @@
     let isFirstTurn = true;
     let hasRolled = false;
     let myRoll = null;
+    let currentPot = 0;
+
+    // --- Betting ---
+    let myBalance = 0;
+
+    socket.on('balance-update', ({ balance }) => {
+        myBalance = balance;
+        const el = $('bet-balance');
+        if (el) el.textContent = `Dein Guthaben: ${balance} Coins`;
+    });
+
+    // Request balance on load
+    socket.emit('get-balance');
+
+    $('btn-place-bet')?.addEventListener('click', () => {
+        const input = $('input-bet');
+        const amount = parseInt(input.value, 10);
+        if (isNaN(amount) || amount < 0) return;
+        if (amount > myBalance) {
+            input.value = myBalance;
+            return;
+        }
+        socket.emit('place-bet', { amount });
+    });
+
+    socket.on('bets-update', ({ bets }) => {
+        const list = $('bet-list');
+        if (!list) return;
+        const hasBets = bets.some(b => b.bet > 0);
+        if (!hasBets) {
+            list.innerHTML = '';
+            return;
+        }
+        list.innerHTML = bets
+            .filter(b => b.bet > 0)
+            .map(b => `<div class="bet-entry"><span>${b.name}</span><span>${b.bet} 💰</span></div>`)
+            .join('');
+    });
 
     // --- Game Started ---
-    socket.on('game-started', ({ players }) => {
+    socket.on('game-started', ({ players, pot }) => {
         state.gamePlayers = players;
         state.myPlayerIndex = players.findIndex(p => p.name === state.playerName);
+        currentPot = pot || 0;
         showScreen('game');
+
+        // Show pot display if there are bets
+        const potDisplay = $('game-pot-display');
+        if (potDisplay) {
+            if (currentPot > 0) {
+                potDisplay.textContent = `💰 Pot: ${currentPot} Coins`;
+                potDisplay.style.display = 'block';
+            } else {
+                potDisplay.style.display = 'none';
+            }
+        }
 
         // Create player sidebar
         createPlayerSidebar();
@@ -217,7 +267,7 @@
     });
 
     // --- Game Over ---
-    socket.on('game-over', ({ winnerName, players }) => {
+    socket.on('game-over', ({ winnerName, players, pot }) => {
         // Stop transmissions
         if (window.MaexchenReactions) {
             window.MaexchenReactions.stopTransmissions();
@@ -235,6 +285,18 @@
 
         setTimeout(() => {
             $('winner-name').textContent = winnerName;
+
+            // Show pot winnings
+            const potEl = $('winner-pot');
+            if (potEl) {
+                if (pot > 0) {
+                    potEl.textContent = `💰 +${pot} Coins gewonnen!`;
+                    potEl.style.display = 'block';
+                } else {
+                    potEl.style.display = 'none';
+                }
+            }
+
             showScreen('gameover');
             triggerCenteredReaction('win');
 
