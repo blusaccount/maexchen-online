@@ -112,7 +112,7 @@
     }
 
     // --- Game Started (transition from waiting to game screen) ---
-    socket.on('game-started', function () {
+    socket.on('game-started', function (data) {
         isHost = state.isHost;
         showScreen('game');
 
@@ -129,8 +129,12 @@
         // Start periodic sync
         startSyncInterval();
 
-        // Show player list
-        renderPartyPlayers();
+        // Show player list from payload
+        if (data && data.players) {
+            renderPartyPlayers(data.players.map(function (p) {
+                return { name: p.name, character: p.character, isHost: false };
+            }));
+        }
 
         // Request sync in case video is already loaded
         socket.emit('watchparty-request-sync');
@@ -208,8 +212,14 @@
     // --- Room Update (refresh player list) ---
     socket.on('room-update', function (data) {
         if (!data || !data.players) return;
+        var wasHost = isHost;
         isHost = (data.hostId === state.mySocketId);
         renderPartyPlayers(data.players);
+
+        // If we just became host, start sync interval
+        if (isHost && !wasHost) {
+            startSyncInterval();
+        }
     });
 
     // --- Player Left ---

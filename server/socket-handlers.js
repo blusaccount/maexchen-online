@@ -5,9 +5,10 @@ import {
 } from './game-logic.js';
 
 import {
-    rooms, onlinePlayers,
+    rooms, onlinePlayers, socketToRoom,
     broadcastOnlinePlayers, getOpenLobbies, broadcastLobbies,
-    generateRoomCode, getRoom, broadcastRoomState, sendTurnStart
+    generateRoomCode, getRoom, broadcastRoomState, sendTurnStart,
+    removePlayerFromRoom
 } from './room-manager.js';
 
 // ============== INPUT VALIDATION ==============
@@ -404,6 +405,7 @@ export function registerSocketHandlers(io) {
                 game: null
             };
             rooms.set(code, room);
+            socketToRoom.set(socket.id, code);
             socket.join(code);
 
             socket.emit('room-created', { code });
@@ -440,8 +442,8 @@ export function registerSocketHandlers(io) {
                 socket.emit('error', { message: 'Spiel läuft bereits!' });
                 return;
             }
-            if (room.players.length >= (room.gameType === 'watchparty' ? 6 : 4)) {
-                socket.emit('error', { message: 'Raum ist voll!' });
+            if (room.players.length >= 6) {
+                socket.emit('error', { message: 'Raum ist voll (max. 6 Spieler)!' });
                 return;
             }
             if (room.players.some(p => p.socketId === socket.id)) {
@@ -454,6 +456,7 @@ export function registerSocketHandlers(io) {
                 name: playerName,
                 character: character
             });
+            socketToRoom.set(socket.id, code);
             socket.join(code);
 
             // For watch party: add late joiner to game state if game already started
@@ -871,74 +874,8 @@ export function registerSocketHandlers(io) {
             const room = getRoom(socket.id);
             if (!room) return;
 
-            const playerIndex = room.players.findIndex(p => p.socketId === socket.id);
-            if (playerIndex === -1) return;
-
-            const playerName = room.players[playerIndex].name;
-            console.log(`${playerName} left ${room.code}`);
-
             socket.leave(room.code);
-
-            if (room.game) {
-                if (room.gameType === 'watchparty') {
-                    const gpIdx = room.game.players.findIndex(p => p.socketId === socket.id);
-                    if (gpIdx !== -1) {
-                        room.game.players.splice(gpIdx, 1);
-                    }
-
-                    io.to(room.code).emit('player-disconnected', {
-                        playerName,
-                        players: room.game.players.map(p => ({ name: p.name, lives: p.lives }))
-                    });
-                } else {
-                    const gamePlayer = room.game.players.find(p => p.socketId === socket.id);
-                    if (gamePlayer && gamePlayer.lives > 0) {
-                        gamePlayer.lives = 0;
-
-                        io.to(room.code).emit('player-disconnected', {
-                            playerName,
-                            players: room.game.players.map(p => ({ name: p.name, lives: p.lives }))
-                        });
-
-                        if (room.game.players[room.game.currentIndex].socketId === socket.id) {
-                            room.game.currentIndex = nextAlivePlayerIndex(room.game, room.game.currentIndex);
-                            room.game.previousAnnouncement = null;
-                            room.game.isFirstTurn = true;
-                        }
-
-                        const alive = getAlivePlayers(room.game);
-                        if (alive.length <= 1) {
-                            io.to(room.code).emit('game-over', {
-                                winnerName: alive[0]?.name || 'Niemand',
-                                players: room.game.players.map(p => ({ name: p.name, lives: p.lives }))
-                            });
-                            room.game = null;
-                        } else {
-                            sendTurnStart(io, room);
-                        }
-                    }
-                }
-            }
-
-            room.players.splice(playerIndex, 1);
-
-            if (room.players.length === 0) {
-                rooms.delete(room.code);
-                broadcastLobbies(io, room.gameType);
-            } else {
-                if (room.hostId === socket.id) {
-                    room.hostId = room.players[0].socketId;
-                }
-                io.to(room.code).emit('room-update', {
-                    players: room.players.map(p => ({
-                        name: p.name,
-                        isHost: p.socketId === room.hostId,
-                        character: p.character
-                    })),
-                    hostId: room.hostId
-                });
-                broadcastLobbies(io, room.gameType);
-            }
+            removePlayerFromRoom(io, socket.id, room);
         } catch (err) { console.error('leave-room error:', err.message); } });
 
         // --- Disconnect ---
@@ -954,74 +891,9 @@ export function registerSocketHandlers(io) {
             broadcastOnlinePlayers(io);
 
             const room = getRoom(socket.id);
-            if (!room) return;
-
-            const gameType = room.gameType;
-
-            const playerIndex = room.players.findIndex(p => p.socketId === socket.id);
-            if (playerIndex === -1) return;
-
-            const playerName = room.players[playerIndex].name;
-
-            if (room.game) {
-                if (room.gameType === 'watchparty') {
-                    // Watch party: simply remove player from game state
-                    const gpIdx = room.game.players.findIndex(p => p.socketId === socket.id);
-                    if (gpIdx !== -1) {
-                        room.game.players.splice(gpIdx, 1);
-                    }
-
-                    io.to(room.code).emit('player-disconnected', {
-                        playerName,
-                        players: room.game.players.map(p => ({ name: p.name, lives: p.lives }))
-                    });
-                } else {
-                    const gamePlayer = room.game.players.find(p => p.socketId === socket.id);
-                    if (gamePlayer && gamePlayer.lives > 0) {
-                        gamePlayer.lives = 0;
-
-                        io.to(room.code).emit('player-disconnected', {
-                            playerName,
-                            players: room.game.players.map(p => ({ name: p.name, lives: p.lives }))
-                        });
-
-                        if (room.game.players[room.game.currentIndex].socketId === socket.id) {
-                            room.game.currentIndex = nextAlivePlayerIndex(room.game, room.game.currentIndex);
-                            room.game.previousAnnouncement = null;
-                            room.game.isFirstTurn = true;
-                        }
-
-                        const alive = getAlivePlayers(room.game);
-                        if (alive.length <= 1) {
-                            io.to(room.code).emit('game-over', {
-                                winnerName: alive[0]?.name || 'Niemand',
-                                players: room.game.players.map(p => ({ name: p.name, lives: p.lives }))
-                            });
-                            room.game = null;
-                        } else {
-                            sendTurnStart(io, room);
-                        }
-                    }
-                }
+            if (room) {
+                removePlayerFromRoom(io, socket.id, room);
             }
-
-            room.players.splice(playerIndex, 1);
-
-            if (room.players.length === 0) {
-                rooms.delete(room.code);
-                broadcastLobbies(io, gameType);
-                console.log(`Room ${room.code} deleted`);
-                return;
-            }
-
-            if (room.hostId === socket.id) {
-                room.hostId = room.players[0].socketId;
-            }
-
-            broadcastRoomState(io, room);
-            broadcastLobbies(io, gameType);
-            io.to(room.code).emit('player-left', { playerName });
-            console.log(`${playerName} left ${room.code}`);
         } catch (err) { console.error('disconnect error:', err.message); } });
     });
 }

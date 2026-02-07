@@ -5,6 +5,12 @@
 (function() {
     const { socket, $, showScreen, state } = window.MaexchenApp;
 
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
     // Get current game type from URL path
     const gameType = window.location.pathname.split('/')[2] || 'maexchen';
 
@@ -256,12 +262,12 @@
 
         list.innerHTML = players.map(p => {
             const avatarHtml = p.character?.dataURL
-                ? `<img src="${p.character.dataURL}" alt="">`
+                ? `<img src="${escapeHtml(p.character.dataURL)}" alt="">`
                 : '👽';
             return `
                 <div class="online-player">
                     <span class="online-avatar">${avatarHtml}</span>
-                    <span>${p.name}</span>
+                    <span>${escapeHtml(p.name)}</span>
                 </div>
             `;
         }).join('');
@@ -292,8 +298,8 @@
             return `
                 <div class="lobby-card" data-code="${lobby.code}">
                     <div class="lobby-info">
-                        <div class="lobby-host">${lobby.hostName}'s Raum ${statusBadge}</div>
-                        <div class="lobby-code">${lobby.code}</div>
+                        <div class="lobby-host">${escapeHtml(lobby.hostName)}'s Raum ${statusBadge}</div>
+                        <div class="lobby-code">${escapeHtml(lobby.code)}</div>
                     </div>
                     <div class="lobby-players">
                         <div class="lobby-avatars">${avatars}</div>

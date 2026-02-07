@@ -643,6 +643,9 @@
     setActiveTool(currentTool);
     bindSocket();
 
+    // Re-render on window resize
+    window.addEventListener('resize', resizeCanvas);
+
     if (socket.connected) {
         updateStatus('Connected');
         socket.emit('picto-join');

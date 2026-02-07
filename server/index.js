@@ -5,7 +5,7 @@ import { Server } from 'socket.io';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-import { rooms, onlinePlayers, broadcastOnlinePlayers, broadcastLobbies } from './room-manager.js';
+import { rooms, onlinePlayers, socketToRoom, broadcastOnlinePlayers, broadcastLobbies } from './room-manager.js';
 import { registerSocketHandlers, cleanupRateLimiters } from './socket-handlers.js';
 import { startDiscordBot } from './discord-bot.js';
 
@@ -53,6 +53,11 @@ setInterval(() => {
             onlinePlayers.delete(socketId);
             removedPlayers++;
         }
+    }
+
+    // Cleanup socketToRoom lookup
+    for (const [socketId] of socketToRoom) {
+        if (!connectedIds.has(socketId)) socketToRoom.delete(socketId);
     }
 
     // Cleanup rooms with disconnected players

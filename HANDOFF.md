@@ -1,54 +1,63 @@
-# HANDOFF - Server Modularisierung & Health-Check
+# HANDOFF - Code Review Fixes
 
 ## Was wurde gemacht
 
-### Server in Module aufgeteilt
-- `server.js` (Root) → Importiert `server/index.js` und startet den Server
-- `server/index.js` → Express + Socket.IO Setup, Static Files, Health-Check, Periodic Cleanup, Server Start
-- `server/game-logic.js` → ROLL_ORDER, STARTING_LIVES, rollDice, rollRank, rollName, isMaexchen, getAlivePlayers, nextAlivePlayerIndex
-- `server/room-manager.js` → rooms/onlinePlayers Maps, create/join/leave Room Logik, Broadcast-Funktionen, sendTurnStart
-- `server/socket-handlers.js` → Alle socket.on() Event Handler, Input-Validierung, Rate Limiting
-- `server/discord-bot.js` → Komplette Discord Bot Logik (startDiscordBot)
+### Bugfixes
 
-### .env Setup
-- `dotenv` war bereits in package.json - wird jetzt in `server/index.js` via `import 'dotenv/config'` geladen
-- `.env.example` erstellt mit PORT und DISCORD_TOKEN
-- `.env` war bereits in `.gitignore`
+**WatchParty: game-started Payload nutzen** (`games/watchparty/js/watchparty.js`)
+- `game-started` Handler empfängt jetzt `data` Parameter
+- Player-Bar wird sofort mit Spielern aus der Payload gerendert (statt leer bis zum nächsten room-update)
 
-### Health-Check Endpoint
-- `GET /health` → JSON mit `{ status: "ok", uptime, players: onlinePlayers.size, rooms: rooms.size }`
+**WatchParty: Host-Wechsel Sync** (`games/watchparty/js/watchparty.js`)
+- Bei `room-update` wird geprüft ob sich der Host geändert hat (`wasHost` vs `isHost`)
+- Neuer Host startet automatisch den Sync-Interval
 
-### Bisherige Security (aus vorherigem Sprint, unverändert übernommen)
-- Input-Validierung: sanitizeName, validateCharacter, validateRoomCode, validateGameType
-- Rate Limiting: Token-Bucket pro Socket-ID, strengere Limits für Chat/Emotes/Drawings
-- Error Handling: Alle Handler in try-catch
-- Periodischer Cleanup alle 5 Min
+**Mäxchen Join-Limit korrigiert** (`server/socket-handlers.js`)
+- War: Watch Party 6, Mäxchen 4 — UI sagte "2-6 Spieler"
+- Jetzt: einheitlich max 6 Spieler für alle Spieltypen
+
+**Pictochat Resize** (`public/pictochat.js`)
+- `window.addEventListener('resize', resizeCanvas)` hinzugefügt
+- Canvas wird bei Fenster-Resize korrekt neu gerendert
+
+**XSS-Escaping in Lobby** (`shared/js/lobby.js`)
+- `escapeHtml()` Helper hinzugefügt
+- `renderOnlinePlayers`: `p.name` und `p.character.dataURL` werden escaped
+- `renderLobbies`: `lobby.hostName` und `lobby.code` werden escaped
+
+### Refactoring
+
+**removePlayerFromRoom Helper** (`server/room-manager.js`)
+- Neue Funktion `removePlayerFromRoom(io, socketId, room)` extrahiert
+- Enthält die gesamte Leave-Logik: Game-State-Cleanup (WatchParty + Mäxchen), Spieler entfernen, Host reassign, Room löschen, Broadcasts
+- `leave-room` Handler: von ~75 Zeilen auf 4 Zeilen reduziert
+- `disconnect` Handler: von ~70 Zeilen auf ~10 Zeilen reduziert
+- Eliminiert ~120 Zeilen duplizierter Code
+
+**socketToRoom Lookup Map** (`server/room-manager.js`)
+- Neue `Map<socketId, roomCode>` für O(1) Room-Lookup
+- `getRoom()` nutzt jetzt den Lookup statt über alle Rooms zu iterieren
+- Map wird bei create-room, join-room, removePlayerFromRoom und im Cleanup-Interval gepflegt
+- Stale Entries werden automatisch bereinigt
+
+**.env.example vervollständigt**
+- `CLIENT_ID` und `GUILD_ID` hinzugefügt (waren nur in `bot/.env.example`)
 
 ## Geänderte Dateien
-- `server.js` → Nur noch Import von `server/index.js`
-- `server/index.js` → Express/Socket.IO Setup, Health-Check, Cleanup, Start (neu)
-- `server/game-logic.js` → Spiellogik-Funktionen (neu)
-- `server/room-manager.js` → Room-Verwaltung (neu)
-- `server/socket-handlers.js` → Socket Event Handler (neu)
-- `server/discord-bot.js` → Discord Bot (neu)
-- `.env.example` → Template für Umgebungsvariablen (neu)
+- `server/room-manager.js` — socketToRoom Map, removePlayerFromRoom Helper, game-logic Import
+- `server/socket-handlers.js` — socketToRoom Import + set bei create/join, vereinfachte leave/disconnect Handler, Join-Limit Fix
+- `server/index.js` — socketToRoom Import + Cleanup
+- `games/watchparty/js/watchparty.js` — game-started Payload, Host-Wechsel Sync
+- `public/pictochat.js` — resize Listener
+- `shared/js/lobby.js` — escapeHtml Helper + Nutzung
+- `.env.example` — CLIENT_ID, GUILD_ID
 
 ## Was nicht geändert wurde
-- Client-Code (public/, shared/, games/)
-- Spiellogik (nur verschoben, nicht umgeschrieben)
-- Discord Bot Logik (nur verschoben)
-- Frontend-Dateien, Nostalgiabait
-
-## Was funktioniert
-- Server startet korrekt über `node server.js`
-- Alle statischen Dateien werden korrekt ausgeliefert
-- Health-Check Endpoint liefert JSON mit Status, Uptime, Spieler- und Raum-Anzahl
-- Discord Bot startet wenn DISCORD_TOKEN gesetzt ist
-- Mäxchen-Spiellogik unverändert
-- Character-System unverändert
-- Nostalgiabait unverändert
+- Spiellogik (game-logic.js unverändert)
+- Discord Bot
+- Frontend HTML/CSS
+- Pictochat Server-Handler (clear/cursor Limits bleiben — nur für Freunde)
 
 ## Was ist offen
-- Client-seitige Validierung (optional, Server validiert bereits alles)
-- CORS-Konfiguration für Socket.IO (aktuell offen)
-- Authentifizierung/Sessions (aktuell anonym)
+- CSS könnte in Module aufgeteilt werden (theme.css ist 2200 Zeilen)
+- `getOpenLobbies()` ist weiterhin O(n) über alle Rooms (kein Index nach gameType)

@@ -1,6 +1,9 @@
+import { getAlivePlayers, nextAlivePlayerIndex } from './game-logic.js';
+
 // ============== ROOM MANAGEMENT ==============
 
 export const rooms = new Map();
+export const socketToRoom = new Map(); // socketId -> roomCode (O(1) lookup)
 
 // Track all online players globally
 export const onlinePlayers = new Map(); // socketId -> { name, character, game }
@@ -53,10 +56,12 @@ export function generateRoomCode() {
 }
 
 export function getRoom(socketId) {
-    for (const [code, room] of rooms) {
-        if (room.players.some(p => p.socketId === socketId)) {
-            return room;
-        }
+    const code = socketToRoom.get(socketId);
+    if (code) {
+        const room = rooms.get(code);
+        if (room) return room;
+        // Stale entry — clean up
+        socketToRoom.delete(socketId);
     }
     return null;
 }
@@ -87,4 +92,77 @@ export function sendTurnStart(io, room) {
     // Reset turn state
     game.currentRoll = null;
     game.hasRolled = false;
+}
+
+// ============== REMOVE PLAYER FROM ROOM ==============
+// Shared logic for leave-room and disconnect handlers
+
+export function removePlayerFromRoom(io, socketId, room) {
+    const playerIndex = room.players.findIndex(p => p.socketId === socketId);
+    if (playerIndex === -1) return;
+
+    const playerName = room.players[playerIndex].name;
+    const gameType = room.gameType;
+
+    // Handle active game state
+    if (room.game) {
+        if (room.gameType === 'watchparty') {
+            const gpIdx = room.game.players.findIndex(p => p.socketId === socketId);
+            if (gpIdx !== -1) {
+                room.game.players.splice(gpIdx, 1);
+            }
+            io.to(room.code).emit('player-disconnected', {
+                playerName,
+                players: room.game.players.map(p => ({ name: p.name, lives: p.lives }))
+            });
+        } else {
+            const gamePlayer = room.game.players.find(p => p.socketId === socketId);
+            if (gamePlayer && gamePlayer.lives > 0) {
+                gamePlayer.lives = 0;
+
+                io.to(room.code).emit('player-disconnected', {
+                    playerName,
+                    players: room.game.players.map(p => ({ name: p.name, lives: p.lives }))
+                });
+
+                if (room.game.players[room.game.currentIndex].socketId === socketId) {
+                    room.game.currentIndex = nextAlivePlayerIndex(room.game, room.game.currentIndex);
+                    room.game.previousAnnouncement = null;
+                    room.game.isFirstTurn = true;
+                }
+
+                const alive = getAlivePlayers(room.game);
+                if (alive.length <= 1) {
+                    io.to(room.code).emit('game-over', {
+                        winnerName: alive[0]?.name || 'Niemand',
+                        players: room.game.players.map(p => ({ name: p.name, lives: p.lives }))
+                    });
+                    room.game = null;
+                } else {
+                    sendTurnStart(io, room);
+                }
+            }
+        }
+    }
+
+    // Remove from room players
+    room.players.splice(playerIndex, 1);
+    socketToRoom.delete(socketId);
+
+    // Delete empty room or reassign host
+    if (room.players.length === 0) {
+        rooms.delete(room.code);
+        broadcastLobbies(io, gameType);
+        console.log(`Room ${room.code} deleted`);
+    } else {
+        if (room.hostId === socketId) {
+            room.hostId = room.players[0].socketId;
+        }
+        broadcastRoomState(io, room);
+        broadcastLobbies(io, gameType);
+        io.to(room.code).emit('player-left', { playerName });
+    }
+
+    console.log(`${playerName} left ${room.code}`);
+    return playerName;
 }
