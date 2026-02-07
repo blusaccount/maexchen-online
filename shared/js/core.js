@@ -68,6 +68,11 @@ document.querySelectorAll('.title-maexchen').forEach(el => {
             window.MaexchenAmbient.stop();
         }
 
+        // Cleanup watch party
+        if (window.MaexchenWatchParty) {
+            window.MaexchenWatchParty.cleanup();
+        }
+
         // Show start screen
         showScreen('start');
     });

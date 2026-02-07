@@ -214,9 +214,10 @@
         state.isHost = (hostId === state.mySocketId);
 
         // Show/hide start button
-        const canStart = state.isHost && players.length >= 2;
+        const minPlayers = gameType === 'watchparty' ? 1 : 2;
+        const canStart = state.isHost && players.length >= minPlayers;
         $('btn-start-game').style.display = canStart ? 'inline-block' : 'none';
-        $('waiting-hint').textContent = players.length < 2
+        $('waiting-hint').textContent = players.length < minPlayers
             ? 'Warte auf weitere Spieler...'
             : (state.isHost ? '' : 'Warte auf den Host...');
     });
