@@ -203,8 +203,12 @@ function getGameLeaderboardSorted(gameId) {
     for (const [name, score] of board) {
         entries.push({ name, score });
     }
-    // Sort by score descending (higher = better)
-    entries.sort((a, b) => b.score - a.score);
+    // Reaction: lower ms = better (ascending); others: higher = better (descending)
+    if (gameId === 'reaction') {
+        entries.sort((a, b) => a.score - b.score);
+    } else {
+        entries.sort((a, b) => b.score - a.score);
+    }
     return entries.slice(0, 10);
 }
 
@@ -235,8 +239,15 @@ function updateGameScore(gameId, name, score) {
     const board = brainGameLeaderboards[gameId];
     if (!board) return;
     const current = board.get(name);
-    if (current === undefined || score > current) {
-        board.set(name, score);
+    // Reaction: lower ms = better; others: higher = better
+    if (gameId === 'reaction') {
+        if (current === undefined || score < current) {
+            board.set(name, score);
+        }
+    } else {
+        if (current === undefined || score > current) {
+            board.set(name, score);
+        }
     }
     // Limit size
     if (board.size > BRAIN_LEADERBOARD_MAX) {
@@ -1315,7 +1326,8 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance 
                 for (const g of data.games) {
                     if (g && VALID_BRAIN_GAME_IDS.includes(g.gameId)) {
                         const s = Number(g.score);
-                        if (Number.isFinite(s) && s >= 0 && s <= 100) {
+                        const maxScore = g.gameId === 'reaction' ? 10000 : 100;
+                        if (Number.isFinite(s) && s >= 0 && s <= maxScore) {
                             updateGameScore(g.gameId, name, s);
                         }
                     }
@@ -1333,12 +1345,18 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance 
             // Update per-game leaderboard
             if (data.gameId && VALID_BRAIN_GAME_IDS.includes(data.gameId)) {
                 const s = Number(data.score);
-                if (Number.isFinite(s) && s >= 0 && s <= 100) {
+                const maxScore = data.gameId === 'reaction' ? 10000 : 100;
+                if (Number.isFinite(s) && s >= 0 && s <= maxScore) {
                     updateGameScore(data.gameId, name, s);
                     io.emit('brain-game-leaderboards', getAllGameLeaderboards());
 
                     // Server calculates coins (don't trust client)
-                    const coins = calculateTrainingCoins(s);
+                    // For reaction, convert sum of ms to normalized 0-100 score for coin calc
+                    // 5 rounds: 750ms sum (150ms avg) = 100, 2500ms sum (500ms avg) = 0
+                    const coinScore = data.gameId === 'reaction'
+                        ? Math.round(Math.max(0, Math.min(100, ((2500 - s) / 1750) * 100)))
+                        : s;
+                    const coins = calculateTrainingCoins(coinScore);
                     await addBalance(name, coins, 'brain_reward');
                     socket.emit('balance-update', { balance: await getBalance(name) });
                 }
@@ -1439,7 +1457,9 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance 
             if (!player || player.finished) return;
 
             const finalScore = Number(data && data.score);
-            if (!Number.isFinite(finalScore) || finalScore < 0 || finalScore > 100) return;
+            const isReaction = room.game.gameId === 'reaction';
+            const maxAllowed = isReaction ? 10000 : 100;
+            if (!Number.isFinite(finalScore) || finalScore < 0 || finalScore > maxAllowed) return;
             player.finished = true;
             player.finalScore = finalScore;
             player.score = finalScore;
@@ -1447,9 +1467,17 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance 
             // Check if both finished
             const allFinished = room.game.players.every(p => p.finished);
             if (allFinished) {
-                const sorted = [...room.game.players].sort((a, b) => b.finalScore - a.finalScore);
-                const winner = sorted[0].finalScore > sorted[1].finalScore ? sorted[0].name : null;
-                const isDraw = sorted[0].finalScore === sorted[1].finalScore;
+                // Reaction: lower ms = better; others: higher = better
+                let sorted, winner, isDraw;
+                if (isReaction) {
+                    sorted = [...room.game.players].sort((a, b) => a.finalScore - b.finalScore);
+                    winner = sorted[0].finalScore < sorted[1].finalScore ? sorted[0].name : null;
+                    isDraw = sorted[0].finalScore === sorted[1].finalScore;
+                } else {
+                    sorted = [...room.game.players].sort((a, b) => b.finalScore - a.finalScore);
+                    winner = sorted[0].finalScore > sorted[1].finalScore ? sorted[0].name : null;
+                    isDraw = sorted[0].finalScore === sorted[1].finalScore;
+                }
 
                 // Award coins
                 const winnerCoins = 20;

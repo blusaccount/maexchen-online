@@ -112,7 +112,7 @@
             return '<div class="lb-row">' +
                 '<span class="lb-rank">' + medal + '</span>' +
                 '<span class="lb-name">' + escapeHtml(e.name) + '</span>' +
-                '<span class="lb-score">' + e.score + '/100</span>' +
+                '<span class="lb-score">' + formatGameScore(gameId, e.score) + '</span>' +
                 '</div>';
         }).join('');
     }
@@ -221,8 +221,21 @@
         return 5;
     }
 
+    function formatGameScore(gameId, score) {
+        if (gameId === 'reaction') return score + 'ms';
+        return score + '/100';
+    }
+
+    function getBrainAgeScore(r) {
+        // Reaction game stores sum of ms as score; use normalized for brain age
+        if (r.gameId === 'reaction' && r.rawData && typeof r.rawData.normalized === 'number') {
+            return r.rawData.normalized;
+        }
+        return r.score;
+    }
+
     function showDailyResults() {
-        const scores = dailyResults.map(r => r.score);
+        const scores = dailyResults.map(r => getBrainAgeScore(r));
         const brainAge = calculateBrainAge(scores);
         const coins = calculateCoins(brainAge);
 
@@ -245,7 +258,7 @@
         breakdown.innerHTML = dailyResults.map(r =>
             '<div class="results-row">' +
             '<span class="results-game-name">' + GAME_NAMES[r.gameId] + '</span>' +
-            '<span class="results-game-score">' + r.score + '/100</span>' +
+            '<span class="results-game-score">' + formatGameScore(r.gameId, r.score) + '</span>' +
             '</div>'
         ).join('');
 
@@ -266,24 +279,37 @@
     }
 
     function showSingleResult(gameId, score, rawData) {
-        const brainAge = calculateBrainAge([score]);
+        const brainAgeScore = (gameId === 'reaction' && rawData && typeof rawData.normalized === 'number')
+            ? rawData.normalized : score;
+        const brainAge = calculateBrainAge([brainAgeScore]);
         const coins = Math.max(2, Math.floor(calculateCoins(brainAge) / 2));
 
-        $('results-brain-age').textContent = score + '/100';
+        $('results-brain-age').textContent = formatGameScore(gameId, score);
         $('results-age-label').textContent = GAME_NAMES[gameId] + ' Score';
 
-        if (score >= 80) {
-            $('results-speech').textContent = 'Fantastisch! Weiter so!';
-        } else if (score >= 50) {
-            $('results-speech').textContent = 'Gut gemacht! Da ist noch Luft nach oben!';
+        if (gameId === 'reaction') {
+            // For reaction: lower sum of ms = better
+            if (brainAgeScore >= 80) {
+                $('results-speech').textContent = 'Fantastisch! Weiter so!';
+            } else if (brainAgeScore >= 50) {
+                $('results-speech').textContent = 'Gut gemacht! Da ist noch Luft nach oben!';
+            } else {
+                $('results-speech').textContent = 'Übung macht den Meister! Probier es nochmal!';
+            }
         } else {
-            $('results-speech').textContent = 'Übung macht den Meister! Probier es nochmal!';
+            if (score >= 80) {
+                $('results-speech').textContent = 'Fantastisch! Weiter so!';
+            } else if (score >= 50) {
+                $('results-speech').textContent = 'Gut gemacht! Da ist noch Luft nach oben!';
+            } else {
+                $('results-speech').textContent = 'Übung macht den Meister! Probier es nochmal!';
+            }
         }
 
         const breakdown = $('results-breakdown');
         breakdown.innerHTML = '<div class="results-row">' +
             '<span class="results-game-name">' + GAME_NAMES[gameId] + '</span>' +
-            '<span class="results-game-score">' + score + '/100</span>' +
+            '<span class="results-game-score">' + formatGameScore(gameId, score) + '</span>' +
             '</div>';
 
         $('results-coins-amount').textContent = '+' + coins + ' StrictCoins';
@@ -672,21 +698,25 @@
         function finishReaction() {
             stopTimer();
             const validTimes = reactionTimes.filter(t => t < 2000);
+            const sumTime = validTimes.length > 0
+                ? Math.round(validTimes.reduce((a, b) => a + b, 0))
+                : maxRounds * 2000;
             const avgTime = validTimes.length > 0
-                ? Math.round(validTimes.reduce((a, b) => a + b, 0) / validTimes.length)
+                ? Math.round(sumTime / validTimes.length)
                 : 2000;
 
-            // Score: 150ms = 100, 500ms+ = 0
+            // Normalized score for brain age: 150ms = 100, 500ms+ = 0
             let normalized = Math.round(Math.max(0, Math.min(100, ((500 - avgTime) / 350) * 100)));
             // Penalize false starts
             normalized = Math.max(0, normalized - falseStarts * 10);
 
             const resultsEl = $('reaction-results');
             if (resultsEl) {
-                resultsEl.innerHTML = 'Durchschnitt: ' + avgTime + 'ms | Fehlstarts: ' + falseStarts;
+                resultsEl.innerHTML = 'Summe: ' + sumTime + 'ms | Fehlstarts: ' + falseStarts;
             }
 
-            onGameFinished('reaction', normalized, { avgTime, falseStarts });
+            // Score = sum of reaction times in ms; normalized kept for brain age
+            onGameFinished('reaction', sumTime, { avgTime, falseStarts, normalized });
         }
 
         renderRound();
@@ -943,9 +973,9 @@
         const op = data.players.find(p => p.name !== playerName);
 
         $('versus-res-name1').textContent = me ? me.name : playerName;
-        $('versus-res-score1').textContent = (me ? me.score : 0) + '/100';
+        $('versus-res-score1').textContent = formatGameScore(versusGameId, me ? me.score : 0);
         $('versus-res-name2').textContent = op ? op.name : '???';
-        $('versus-res-score2').textContent = (op ? op.score : 0) + '/100';
+        $('versus-res-score2').textContent = formatGameScore(versusGameId, op ? op.score : 0);
 
         // Highlight winner
         $('versus-res-p1').classList.toggle('winner', data.winner === playerName);
@@ -1246,8 +1276,8 @@
                     reactionTimes.push(Math.round(rt));
                     zone.className = 'reaction-area result';
                     zone.innerHTML = Math.round(rt) + ' ms';
-                    const avgMs = Math.round(reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length);
-                    versusScoreUpdate(avgMs);
+                    const sumMs = Math.round(reactionTimes.reduce((a, b) => a + b, 0));
+                    versusScoreUpdate(sumMs);
                     setTimeout(nextRound, 800);
                 } else if (state === 'waiting') {
                     falseStarts++;
@@ -1267,10 +1297,8 @@
 
         function finishReaction() {
             const validTimes = reactionTimes.filter(t => t < 2000);
-            const avgTime = validTimes.length > 0 ? Math.round(validTimes.reduce((a, b) => a + b, 0) / validTimes.length) : 2000;
-            let normalized = Math.round(Math.max(0, Math.min(100, ((500 - avgTime) / 350) * 100)));
-            normalized = Math.max(0, normalized - falseStarts * 10);
-            versusFinish(normalized);
+            const sumTime = validTimes.length > 0 ? Math.round(validTimes.reduce((a, b) => a + b, 0)) : maxRounds * 2000;
+            versusFinish(sumTime);
         }
 
         renderRound();
