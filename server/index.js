@@ -82,6 +82,7 @@ app.use((req, res, next) => {
 app.use(express.static(path.join(rootDir, 'public')));
 app.use('/shared', express.static(path.join(rootDir, 'shared')));
 app.use('/games', express.static(path.join(rootDir, 'games')));
+app.use('/userinput', express.static(path.join(rootDir, 'userinput')));
 
 // ============== HEALTH CHECK ==============
 

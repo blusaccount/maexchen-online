@@ -215,29 +215,16 @@
     }
 
     // Play victory fanfare
+    let victoryAudio = null;
     function playVictory() {
         if (isMuted) return;
-        const ctx = getAudioContext();
-
-        const notes = [523, 659, 784, 1047]; // C E G C
-        notes.forEach((freq, i) => {
-            setTimeout(() => {
-                const osc = ctx.createOscillator();
-                osc.type = 'sine';
-                osc.frequency.value = freq;
-
-                const gain = ctx.createGain();
-                const now = ctx.currentTime;
-                gain.gain.setValueAtTime(0.15, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
-
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-
-                osc.start(now);
-                osc.stop(now + 0.5);
-            }, i * 150);
-        });
+        if (victoryAudio) {
+            victoryAudio.pause();
+            victoryAudio.currentTime = 0;
+        }
+        victoryAudio = new Audio('/userinput/winscreen.mp3');
+        victoryAudio.volume = 0.5;
+        victoryAudio.play().catch(() => {});
     }
 
     // Toggle mute
