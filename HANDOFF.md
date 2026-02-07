@@ -158,3 +158,31 @@
 - `node --check server/stock-game.js`
 - `node --check server/db.js`
 - Local `node server.js` start check in this environment is blocked by missing installed dependencies (e.g. `yahoo-finance2`), so runtime validation here is limited to syntax checks.
+
+---
+
+# HANDOFF - Pictochat Persistence
+
+## What Was Done
+
+- Added DB-backed persistence for pictochat strokes and messages so state survives server restarts.
+- Created `server/pictochat-store.js` with load/save/delete/clear helpers for both strokes and messages.
+- Extended `server/sql/persistence.sql` with `picto_strokes` and `picto_messages` tables.
+- Updated all pictochat socket handlers in `server/socket-handlers.js` to persist state asynchronously after broadcasting.
+- On first `picto-join`, server hydrates in-memory state from DB if it is empty (lazy load).
+- Updated client `public/pictochat.js` to replay persisted messages on join via the `picto-state` event.
+- In-memory fallback is preserved for local dev without `DATABASE_URL`.
+
+## Files Changed
+
+- `server/sql/persistence.sql` — added `picto_strokes` and `picto_messages` tables
+- `server/pictochat-store.js` — new module for pictochat DB operations
+- `server/socket-handlers.js` — import store, hydrate on join, persist on stroke/shape/undo/redo/clear/message
+- `public/pictochat.js` — replay persisted messages on join
+
+## Verification
+
+- `node --check server/pictochat-store.js`
+- `node --check server/socket-handlers.js`
+- After deploying: draw strokes and send messages, restart server, verify state is restored on rejoin.
+- Schema must be applied to the database (`picto_strokes`, `picto_messages` tables).

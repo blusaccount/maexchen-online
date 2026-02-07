@@ -2,8 +2,8 @@
 
 import { isDatabaseEnabled, query } from './db.js';
 
-const PICTO_MAX_STROKES = 400;
-const PICTO_MAX_MESSAGES = 200;
+export const PICTO_MAX_STROKES_DB = 400;
+export const PICTO_MAX_MESSAGES = 200;
 
 // ============== STROKE PERSISTENCE ==============
 
@@ -16,7 +16,7 @@ export async function loadStrokes() {
              from picto_strokes
              order by id asc
              limit $1`,
-            [PICTO_MAX_STROKES]
+            [PICTO_MAX_STROKES_DB]
         );
         return result.rows.map(row => {
             const base = {
@@ -61,7 +61,7 @@ export async function saveStroke(stroke) {
              where id not in (
                select id from picto_strokes order by id desc limit $1
              )`,
-            [PICTO_MAX_STROKES]
+            [PICTO_MAX_STROKES_DB]
         );
     } catch (err) {
         console.error('saveStroke error:', err.message);

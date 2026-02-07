@@ -13,7 +13,7 @@ import {
 
 import { getBalance, addBalance, deductBalance } from './currency.js';
 import { buyStock, sellStock, getPortfolioSnapshot, getAllPortfolioPlayerNames } from './stock-game.js';
-import { loadStrokes, saveStroke, deleteStroke, clearStrokes, loadMessages, saveMessage, clearMessages } from './pictochat-store.js';
+import { loadStrokes, saveStroke, deleteStroke, clearStrokes, loadMessages, saveMessage, clearMessages, PICTO_MAX_MESSAGES } from './pictochat-store.js';
 
 // ============== INPUT VALIDATION ==============
 
@@ -436,7 +436,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
             if (pictoState.strokes.length === 0 && !pictoState.hydrated) {
                 pictoState.hydrated = true;
                 const dbStrokes = await loadStrokes();
-                if (dbStrokes.length > 0 && pictoState.strokes.length === 0) {
+                if (dbStrokes.length > 0) {
                     pictoState.strokes = dbStrokes;
                 }
                 const dbMessages = await loadMessages();
@@ -646,8 +646,8 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
 
             pictoState.messages.push(payload);
             // Keep in-memory message list bounded
-            if (pictoState.messages.length > 200) {
-                pictoState.messages.splice(0, pictoState.messages.length - 200);
+            if (pictoState.messages.length > PICTO_MAX_MESSAGES) {
+                pictoState.messages.splice(0, pictoState.messages.length - PICTO_MAX_MESSAGES);
             }
 
             io.to(PICTO_ROOM).emit('picto-message', payload);
