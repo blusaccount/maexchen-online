@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" role="img" aria-labelledby="title desc">
+  <title id="title">Prof. Dr. Strict</title>
+  <desc id="desc">Gruenes Alien-Maskottchen mit Brille, Krawatte und Zeigestab vor einer Tafel.</desc>
+  <rect width="320" height="320" fill="#e8e8e8"/>
+  <rect x="170" y="88" width="130" height="98" rx="3" fill="#ffffff" stroke="#22140f" stroke-width="4"/>
+  <path d="M186 122c12-7 22-7 32 0M224 125c9-12 23-12 32 0M193 146c6-5 12-5 18 0" fill="none" stroke="#1c2a4a" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="259" cy="141" r="17" fill="#d5e5f6" stroke="#22345d" stroke-width="4"/>
+  <ellipse cx="259" cy="141" rx="30" ry="8" fill="none" stroke="#22345d" stroke-width="4"/>
+
+  <path d="M124 52l-10-20" stroke="#1b100d" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="111" cy="27" r="11" fill="#8cd63f" stroke="#1b100d" stroke-width="4"/>
+  <path d="M173 52l10-20" stroke="#1b100d" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="185" cy="27" r="11" fill="#8cd63f" stroke="#1b100d" stroke-width="4"/>
+
+  <ellipse cx="150" cy="104" rx="60" ry="56" fill="#8ad137" stroke="#1b100d" stroke-width="5"/>
+  <ellipse cx="128" cy="108" rx="17" ry="19" fill="#000"/>
+  <ellipse cx="172" cy="108" rx="17" ry="19" fill="#000"/>
+  <circle cx="133" cy="102" r="4" fill="#fff"/>
+  <circle cx="177" cy="102" r="4" fill="#fff"/>
+  <circle cx="128" cy="108" r="28" fill="none" stroke="#000" stroke-width="5"/>
+  <circle cx="172" cy="108" r="28" fill="none" stroke="#000" stroke-width="5"/>
+  <path d="M156 107h-12" stroke="#000" stroke-width="5"/>
+  <path d="M138 132c6 9 18 9 24 0" fill="none" stroke="#000" stroke-width="4" stroke-linecap="round"/>
+
+  <path d="M112 158l-22 17v64h120v-64l-22-17z" fill="#8e5b34" stroke="#1b100d" stroke-width="5"/>
+  <path d="M132 159h36l-18 25z" fill="#ffffff" stroke="#1b100d" stroke-width="4"/>
+  <path d="M145 184h10l4 17h-18z" fill="#dd2f2f" stroke="#1b100d" stroke-width="3"/>
+
+  <path d="M90 175l-38 26 14 20 31-19" fill="#8e5b34" stroke="#1b100d" stroke-width="5"/>
+  <rect x="24" y="197" width="50" height="24" rx="3" fill="#3f679e" stroke="#1b100d" stroke-width="5"/>
+  <path d="M24 197c8-6 34-6 50 0" fill="#fff" stroke="#1b100d" stroke-width="4"/>
+
+  <path d="M210 174l33 17-10 20-30-15" fill="#8e5b34" stroke="#1b100d" stroke-width="5"/>
+  <path d="M206 199l45-41" stroke="#8e5b34" stroke-width="6" stroke-linecap="round"/>
+
+  <rect x="20" y="245" width="75" height="17" rx="2" fill="#6f3ea4" stroke="#1b100d" stroke-width="4"/>
+  <rect x="24" y="229" width="75" height="17" rx="2" fill="#d62929" stroke="#1b100d" stroke-width="4"/>
+
+  <ellipse cx="208" cy="247" rx="22" ry="9" fill="#8e5b34" stroke="#1b100d" stroke-width="4"/>
+  <path d="M186 247v24c0 4 10 7 22 7s22-3 22-7v-24" fill="#8e5b34" stroke="#1b100d" stroke-width="4"/>
+  <rect x="201" y="234" width="5" height="16" fill="#ffd800"/>
+  <rect x="211" y="232" width="5" height="18" fill="#2b9cf0"/>
+</svg>

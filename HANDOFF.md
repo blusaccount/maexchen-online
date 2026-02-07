@@ -189,6 +189,24 @@
 
 ---
 
+# HANDOFF - Strict Brain Mascot (Prof. Dr. Strict)
+
+## What Was Done
+
+- Replaced the emoji professor placeholder in Strict Brain with a dedicated mascot image (`Prof. Dr. Strict`) on all relevant screens.
+- Added a new SVG mascot asset at `games/strictbrain/assets/prof-dr-strict.svg`.
+- Updated `.professor-alien` styles to support image rendering (fixed size, border, and themed background).
+
+## Files Changed
+
+- `games/strictbrain/index.html`
+- `games/strictbrain/assets/prof-dr-strict.svg`
+- `HANDOFF.md`
+
+## Verification
+
+- Confirmed markup updates for all professor slots in Strict Brain menu/training/versus/results screens.
+- Attempted to run server for visual verification, but startup is blocked in this environment due to a missing dependency (`yahoo-finance2`).
 # HANDOFF - Code Review Fixes (Round 1)
 
 ## What Was Done

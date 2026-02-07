@@ -85,9 +85,12 @@
         }
 
         .professor-alien {
-            font-size: 3rem;
+            width: 88px;
+            height: 88px;
+            object-fit: contain;
             flex-shrink: 0;
-            line-height: 1;
+            border: 2px solid var(--ds-border);
+            background: var(--ds-bg);
         }
 
         .professor-speech {
@@ -800,7 +803,7 @@
     <!-- ===== MAIN MENU ===== -->
     <div class="screen active" id="screen-menu">
         <div class="professor-box">
-            <div class="professor-alien">👽</div>
+            <img class="professor-alien" src="/games/strictbrain/assets/prof-dr-strict.svg" alt="Prof. Dr. Strict">
             <div class="professor-speech">Willkommen zum Gehirn-Training! Ich bin Professor Strict. Lass uns sehen, wie fit dein Kopf ist...</div>
         </div>
 
@@ -856,7 +859,7 @@
         <button class="btn-back" id="btn-back-training">← ZURÜCK</button>
 
         <div class="professor-box">
-            <div class="professor-alien">👽</div>
+            <img class="professor-alien" src="/games/strictbrain/assets/prof-dr-strict.svg" alt="Prof. Dr. Strict">
             <div class="professor-speech">Wähle ein Spiel zum Üben!</div>
         </div>
 
@@ -904,7 +907,7 @@
         <button class="btn-back" id="btn-back-versus">← ZURÜCK</button>
 
         <div class="professor-box">
-            <div class="professor-alien">👽</div>
+            <img class="professor-alien" src="/games/strictbrain/assets/prof-dr-strict.svg" alt="Prof. Dr. Strict">
             <div class="professor-speech" id="versus-professor-text">Fordere einen Freund zum Duell heraus!</div>
         </div>
 
@@ -999,7 +1002,7 @@
     <div class="screen" id="screen-versus-results">
         <div class="results-box">
             <div class="professor-box" style="border:none;padding:0;margin-bottom:12px;">
-                <div class="professor-alien">👽</div>
+                <img class="professor-alien" src="/games/strictbrain/assets/prof-dr-strict.svg" alt="Prof. Dr. Strict">
                 <div class="professor-speech" id="versus-results-speech">Was für ein Duell!</div>
             </div>
 
@@ -1051,7 +1054,7 @@
     <div class="screen" id="screen-results">
         <div class="results-box">
             <div class="professor-box" style="border:none;padding:0;margin-bottom:12px;">
-                <div class="professor-alien">👽</div>
+                <img class="professor-alien" src="/games/strictbrain/assets/prof-dr-strict.svg" alt="Prof. Dr. Strict">
                 <div class="professor-speech" id="results-speech">Gut gemacht!</div>
             </div>
 
