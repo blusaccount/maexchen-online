@@ -651,13 +651,13 @@
 (function () {
     var backLink = document.querySelector('.back-link');
     if (!backLink) return;
-    var switchSound = new Audio('/userinput/switch.mp3.mp3');
+    var switchSound = new Audio('/userinput/switch.mp3');
+    switchSound.preload = 'auto';
     backLink.addEventListener('click', function (e) {
         e.preventDefault();
         var href = backLink.getAttribute('href');
-        switchSound.currentTime = 0;
-        switchSound.play();
-        setTimeout(function () { window.location.href = href; }, 300);
+        try { switchSound.currentTime = 0; switchSound.play().catch(function(){}); } catch(ex) {}
+        setTimeout(function () { window.location.href = href; }, 250);
     });
 })();
 </script>

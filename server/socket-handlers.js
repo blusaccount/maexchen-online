@@ -161,17 +161,6 @@ export function cleanupRateLimiters() {
 
 // ============== STOCK GAME ==============
 
-const ALLOWED_STOCK_SYMBOLS = new Set([
-    'AAPL', 'MSFT', 'NVDA', 'TSLA', 'AMZN', 'META', 'GOOGL', 'NFLX',
-    'URTH', 'QQQ', 'GDAXI', 'DIA', 'SPY', 'VGK', 'EEM',
-    'IWM', 'VTI', 'ARKK', 'XLF', 'XLE', 'GLD', 'TLT',
-    'AMD', 'CRM', 'AVGO', 'ORCL', 'ADBE', 'DIS', 'PYPL', 'INTC',
-    'BA', 'V', 'JPM', 'WMT', 'KO', 'PEP', 'JNJ', 'PG', 'BRK-B',
-    'XOM', 'UNH',
-    'GC=F', 'SI=F', 'PL=F', 'HG=F', 'CL=F', 'BZ=F', 'NG=F',
-    'BTC-USD', 'ETH-USD', 'SOL-USD', 'BNB-USD', 'XRP-USD', 'ADA-USD', 'DOGE-USD'
-]);
-
 let _fetchTickerQuotes = null;
 let _yahooFinance = null;
 

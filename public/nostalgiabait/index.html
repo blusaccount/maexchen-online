@@ -351,10 +351,27 @@
 </div>
 
 <script>
-// Background animation with moving gradient and noise
+// Background animation with moving gradient and pre-rendered noise
 (function() {
     const canvas = document.getElementById('bg-canvas');
     const ctx = canvas.getContext('2d');
+
+    // Pre-render a small noise texture (tiled across the screen)
+    const NOISE_SIZE = 128;
+    const noiseCanvas = document.createElement('canvas');
+    noiseCanvas.width = NOISE_SIZE;
+    noiseCanvas.height = NOISE_SIZE;
+    const noiseCtx = noiseCanvas.getContext('2d');
+    const noiseData = noiseCtx.createImageData(NOISE_SIZE, NOISE_SIZE);
+    for (let i = 0; i < noiseData.data.length; i += 4) {
+        const v = (Math.random() - 0.5) * 12;
+        noiseData.data[i]     = 128 + v;
+        noiseData.data[i + 1] = 128 + v;
+        noiseData.data[i + 2] = 128 + v;
+        noiseData.data[i + 3] = 16; // very subtle alpha
+    }
+    noiseCtx.putImageData(noiseData, 0, 0);
+    const noisePattern = ctx.createPattern(noiseCanvas, 'repeat');
 
     function resize() {
         canvas.width = window.innerWidth;
@@ -383,16 +400,9 @@
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, w, h);
 
-        // Add subtle noise
-        const imageData = ctx.getImageData(0, 0, w, h);
-        const data = imageData.data;
-        for (let i = 0; i < data.length; i += 4) {
-            const noise = (Math.random() - 0.5) * 6;
-            data[i] += noise;
-            data[i + 1] += noise;
-            data[i + 2] += noise;
-        }
-        ctx.putImageData(imageData, 0, 0);
+        // Overlay pre-rendered noise pattern (GPU-friendly, no getImageData)
+        ctx.fillStyle = noisePattern;
+        ctx.fillRect(0, 0, w, h);
 
         // Floating particles
         ctx.fillStyle = 'rgba(150, 210, 255, 0.25)';

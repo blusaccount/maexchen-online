@@ -297,13 +297,13 @@
 (function () {
     var homeBtn = document.getElementById('home-btn');
     if (!homeBtn) return;
-    var switchSound = new Audio('/userinput/switch.mp3.mp3');
+    var switchSound = new Audio('/userinput/switch.mp3');
+    switchSound.preload = 'auto';
     homeBtn.addEventListener('click', function (e) {
         e.preventDefault();
         var href = homeBtn.getAttribute('href');
-        switchSound.currentTime = 0;
-        switchSound.play();
-        setTimeout(function () { window.location.href = href; }, 300);
+        try { switchSound.currentTime = 0; switchSound.play().catch(function(){}); } catch(ex) {}
+        setTimeout(function () { window.location.href = href; }, 250);
     });
 })();
 </script>

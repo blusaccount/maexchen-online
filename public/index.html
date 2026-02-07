@@ -22,7 +22,7 @@
         }
 
         body {
-            font-family: 'Press Start 2P', monospace !important;
+            font-family: 'Press Start 2P', monospace;
             font-size: 12px;
             color: var(--ds-text);
             image-rendering: pixelated;
@@ -206,14 +206,6 @@
             font-weight: 700;
         }
 
-        .game-desc {
-            display: none;
-        }
-
-        .game-players {
-            display: none;
-        }
-
         .game-card.coming-soon {
             opacity: 0.5;
             cursor: not-allowed;
@@ -303,209 +295,210 @@
         }
 
         /* ===== Pictochat DS Override ===== */
-        .picto-section {
-            border: 2px solid var(--ds-border) !important;
-            background: var(--ds-surface) !important;
-            box-shadow: 4px 4px 0 var(--ds-border) !important;
-            border-radius: 0 !important;
+        /* Using body scoping for specificity over theme.css (no !important) */
+        body .picto-section {
+            border: 2px solid var(--ds-border);
+            background: var(--ds-surface);
+            box-shadow: 4px 4px 0 var(--ds-border);
+            border-radius: 0;
         }
 
-        .picto-section::before {
-            display: none !important;
+        body .picto-section::before {
+            display: none;
         }
 
-        .picto-title {
-            color: var(--ds-text) !important;
-            font-size: 14px !important;
+        body .picto-title {
+            color: var(--ds-text);
+            font-size: 14px;
             letter-spacing: 2px;
         }
 
-        .picto-subtitle {
-            color: var(--ds-text-dim) !important;
-            font-size: 9px !important;
+        body .picto-subtitle {
+            color: var(--ds-text-dim);
+            font-size: 9px;
         }
 
-        .picto-tool {
-            background: var(--ds-bg) !important;
-            border: 2px solid var(--ds-border) !important;
-            color: var(--ds-text) !important;
-            font-family: 'Press Start 2P', monospace !important;
-            font-size: 9px !important;
-            border-radius: 0 !important;
+        body .picto-tool {
+            background: var(--ds-bg);
+            border: 2px solid var(--ds-border);
+            color: var(--ds-text);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 9px;
+            border-radius: 0;
         }
 
-        .picto-tool.active,
-        .picto-tool:hover {
-            background: var(--ds-border) !important;
-            color: var(--ds-surface) !important;
-            transform: none !important;
-            box-shadow: none !important;
+        body .picto-tool.active,
+        body .picto-tool:hover {
+            background: var(--ds-border);
+            color: var(--ds-surface);
+            transform: none;
+            box-shadow: none;
         }
 
-        .picto-size label {
-            color: var(--ds-text-dim) !important;
-            font-size: 9px !important;
+        body .picto-size label {
+            color: var(--ds-text-dim);
+            font-size: 9px;
         }
 
-        .picto-swatch {
-            border: 2px solid var(--ds-border) !important;
-            border-radius: 0 !important;
+        body .picto-swatch {
+            border: 2px solid var(--ds-border);
+            border-radius: 0;
         }
 
-        .picto-swatch.active {
-            border-color: var(--ds-text) !important;
-            box-shadow: 2px 2px 0 var(--ds-border) !important;
+        body .picto-swatch.active {
+            border-color: var(--ds-text);
+            box-shadow: 2px 2px 0 var(--ds-border);
         }
 
-        .picto-canvas-wrap {
-            border: 2px solid var(--ds-border) !important;
-            border-radius: 0 !important;
-            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1) !important;
+        body .picto-canvas-wrap {
+            border: 2px solid var(--ds-border);
+            border-radius: 0;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1);
         }
 
-        .picto-chat {
-            background: var(--ds-bg) !important;
-            border: 2px solid var(--ds-border) !important;
-            border-radius: 0 !important;
+        body .picto-chat {
+            background: var(--ds-bg);
+            border: 2px solid var(--ds-border);
+            border-radius: 0;
         }
 
-        .picto-chat-message {
-            background: var(--ds-surface) !important;
-            border-left: 3px solid var(--ds-border) !important;
-            font-size: 9px !important;
+        body .picto-chat-message {
+            background: var(--ds-surface);
+            border-left: 3px solid var(--ds-border);
+            font-size: 9px;
         }
 
-        .picto-chat-message .name {
-            color: var(--ds-text) !important;
+        body .picto-chat-message .name {
+            color: var(--ds-text);
         }
 
-        .picto-chat-input input {
-            background: var(--ds-surface) !important;
-            border: 2px solid var(--ds-border) !important;
-            color: var(--ds-text) !important;
-            font-family: 'Press Start 2P', monospace !important;
-            font-size: 9px !important;
-            border-radius: 0 !important;
+        body .picto-chat-input input {
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            color: var(--ds-text);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 9px;
+            border-radius: 0;
         }
 
-        .picto-chat-input input:focus {
-            box-shadow: 3px 3px 0 var(--ds-border) !important;
+        body .picto-chat-input input:focus {
+            box-shadow: 3px 3px 0 var(--ds-border);
         }
 
-        .picto-send {
-            background: var(--ds-border) !important;
-            color: var(--ds-surface) !important;
-            font-family: 'Press Start 2P', monospace !important;
-            font-size: 9px !important;
-            border: 2px solid var(--ds-border) !important;
-            border-radius: 0 !important;
+        body .picto-send {
+            background: var(--ds-border);
+            color: var(--ds-surface);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 9px;
+            border: 2px solid var(--ds-border);
+            border-radius: 0;
         }
 
-        .picto-send:hover {
-            box-shadow: 2px 2px 0 var(--ds-text-dim) !important;
+        body .picto-send:hover {
+            box-shadow: 2px 2px 0 var(--ds-text-dim);
         }
 
-        .picto-status {
-            color: var(--ds-text-dim) !important;
-            font-size: 9px !important;
+        body .picto-status {
+            color: var(--ds-text-dim);
+            font-size: 9px;
         }
 
         /* ===== Soundboard DS Override ===== */
-        .soundboard-section {
-            border: 2px solid var(--ds-border) !important;
-            background: var(--ds-surface) !important;
-            box-shadow: 4px 4px 0 var(--ds-border) !important;
-            border-radius: 0 !important;
+        body .soundboard-section {
+            border: 2px solid var(--ds-border);
+            background: var(--ds-surface);
+            box-shadow: 4px 4px 0 var(--ds-border);
+            border-radius: 0;
         }
 
-        .soundboard-section::before {
-            display: none !important;
+        body .soundboard-section::before {
+            display: none;
         }
 
-        .soundboard-title {
-            color: var(--ds-text) !important;
-            font-size: 14px !important;
+        body .soundboard-title {
+            color: var(--ds-text);
+            font-size: 14px;
             letter-spacing: 2px;
         }
 
-        .soundboard-subtitle {
-            color: var(--ds-text-dim) !important;
-            font-size: 9px !important;
+        body .soundboard-subtitle {
+            color: var(--ds-text-dim);
+            font-size: 9px;
         }
 
-        .soundboard-mute {
-            background: var(--ds-bg) !important;
-            border: 2px solid var(--ds-border) !important;
-            color: var(--ds-text) !important;
-            border-radius: 0 !important;
+        body .soundboard-mute {
+            background: var(--ds-bg);
+            border: 2px solid var(--ds-border);
+            color: var(--ds-text);
+            border-radius: 0;
         }
 
-        .soundboard-mute:hover {
-            background: var(--ds-highlight) !important;
+        body .soundboard-mute:hover {
+            background: var(--ds-highlight);
         }
 
-        .soundboard-mute.muted {
-            border-color: var(--ds-text-dim) !important;
-            background: var(--ds-highlight) !important;
+        body .soundboard-mute.muted {
+            border-color: var(--ds-text-dim);
+            background: var(--ds-highlight);
         }
 
-        .soundboard-volume input[type=range] {
+        body .soundboard-volume input[type=range] {
             accent-color: var(--ds-border);
         }
 
-        .soundboard-btn {
-            background: var(--ds-bg) !important;
-            border: 2px solid var(--ds-border) !important;
-            border-radius: 0 !important;
-            transition: all 0.15s !important;
+        body .soundboard-btn {
+            background: var(--ds-bg);
+            border: 2px solid var(--ds-border);
+            border-radius: 0;
+            transition: all 0.15s;
         }
 
-        .soundboard-btn:hover {
-            box-shadow: 3px 3px 0 var(--ds-border) !important;
-            transform: translate(-2px, -2px) !important;
+        body .soundboard-btn:hover {
+            box-shadow: 3px 3px 0 var(--ds-border);
+            transform: translate(-2px, -2px);
         }
 
-        .soundboard-btn:active {
-            transform: translate(0, 0) !important;
-            box-shadow: none !important;
+        body .soundboard-btn:active {
+            transform: translate(0, 0);
+            box-shadow: none;
         }
 
-        .soundboard-btn-label {
-            color: var(--ds-text-dim) !important;
-            font-size: 8px !important;
+        body .soundboard-btn-label {
+            color: var(--ds-text-dim);
+            font-size: 8px;
         }
 
-        .soundboard-btn.playing {
-            border-color: var(--ds-text) !important;
-            box-shadow: 3px 3px 0 var(--ds-border) !important;
-            animation: none !important;
+        body .soundboard-btn.playing {
+            border-color: var(--ds-text);
+            box-shadow: 3px 3px 0 var(--ds-border);
+            animation: none;
         }
 
-        .soundboard-toast {
-            background: var(--ds-surface) !important;
-            border: 2px solid var(--ds-border) !important;
-            border-radius: 0 !important;
-            color: var(--ds-text) !important;
-            font-size: 9px !important;
+        body .soundboard-toast {
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            border-radius: 0;
+            color: var(--ds-text);
+            font-size: 9px;
         }
 
-        .soundboard-toast-name {
-            color: var(--ds-text) !important;
+        body .soundboard-toast-name {
+            color: var(--ds-text);
             font-weight: 700;
         }
 
         /* ===== Stock Ticker DS Override ===== */
-        .stock-ticker-bar {
-            background: var(--ds-surface) !important;
-            border-top: 2px solid var(--ds-border) !important;
+        body .stock-ticker-bar {
+            background: var(--ds-surface);
+            border-top: 2px solid var(--ds-border);
         }
 
-        .ticker-symbol {
-            color: var(--ds-text) !important;
+        body .ticker-symbol {
+            color: var(--ds-text);
         }
 
-        .ticker-price {
-            color: var(--ds-text-dim) !important;
+        body .ticker-price {
+            color: var(--ds-text-dim);
         }
 
         /* Mobile responsive */
@@ -592,11 +585,6 @@
             <div class="game-icon">🎲</div>
             <div class="game-card-info">
                 <div class="game-title">Mäxchen</div>
-                <div class="game-desc">
-                    Das klassische Bluff-Würfelspiel.
-                    Würfle, lüge und durchschaue die anderen!
-                </div>
-                <div class="game-players">2-6 Spieler</div>
             </div>
         </a>
 
@@ -604,11 +592,6 @@
             <div class="game-icon">📺</div>
             <div class="game-card-info">
                 <div class="game-title">Watch Party</div>
-                <div class="game-desc">
-                    Schau YouTube Videos zusammen mit deinen Freunden.
-                    Synchronisiert und in Echtzeit!
-                </div>
-                <div class="game-players">2-6 Spieler</div>
             </div>
         </a>
 
@@ -616,11 +599,6 @@
             <div class="game-icon">📈</div>
             <div class="game-card-info">
                 <div class="game-title">Stock Market</div>
-                <div class="game-desc">
-                    Investiere deine StrictCoins in echte Aktien.
-                    1 SC = 1 USD – echte Kurse, virtuelles Geld!
-                </div>
-                <div class="game-players">Solo Experience</div>
             </div>
         </a>
 
@@ -628,11 +606,6 @@
             <div class="game-icon">📼</div>
             <div class="game-card-info">
                 <div class="game-title">Nostalgiabait</div>
-                <div class="game-desc">
-                    Erinnerungen an Startup-Screens vergangener Konsolen-Ären.
-                    Fan-inspirierte Nachbildungen.
-                </div>
-                <div class="game-players">Solo Experience</div>
             </div>
         </a>
     </div>
@@ -735,14 +708,14 @@
 <!-- Switch Sound on Game Card Click -->
 <script>
 (function () {
-    var switchSound = new Audio('/userinput/switch.mp3.mp3');
-    document.querySelectorAll('.game-card').forEach(function (card) {
+    var switchSound = new Audio('/userinput/switch.mp3');
+    switchSound.preload = 'auto';
+    document.querySelectorAll('.game-card:not(.coming-soon)').forEach(function (card) {
         card.addEventListener('click', function (e) {
             e.preventDefault();
             var href = card.getAttribute('href');
-            switchSound.currentTime = 0;
-            switchSound.play();
-            setTimeout(function () { window.location.href = href; }, 300);
+            try { switchSound.currentTime = 0; switchSound.play().catch(function(){}); } catch(ex) {}
+            setTimeout(function () { window.location.href = href; }, 250);
         });
     });
 })();
