@@ -270,7 +270,7 @@ export async function getLeaderboardSnapshot(currentPrices) {
                 holdings,
             });
         }
-        leaderboard.sort((a, b) => b.netWorth - a.netWorth);
+        leaderboard.sort((a, b) => b.portfolioValue - a.portfolioValue);
         return leaderboard;
     }
 
@@ -333,7 +333,7 @@ export async function getLeaderboardSnapshot(currentPrices) {
         });
     }
 
-    leaderboard.sort((a, b) => b.netWorth - a.netWorth);
+    leaderboard.sort((a, b) => b.portfolioValue - a.portfolioValue);
     return leaderboard;
 }
 
