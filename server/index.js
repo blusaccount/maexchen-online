@@ -193,6 +193,18 @@ app.get('/api/ticker', async (req, res) => {
     }
 });
 
+// ============== NOSTALGIABAIT CONFIG ==============
+
+const NOSTALGIA_VIDEOS = {
+    ps1: process.env.NOSTALGIA_PS1_YOUTUBE_ID || '',
+    ps2: process.env.NOSTALGIA_PS2_YOUTUBE_ID || '',
+    gamecube: process.env.NOSTALGIA_GAMECUBE_YOUTUBE_ID || '',
+};
+
+app.get('/api/nostalgia-config', (req, res) => {
+    res.json(NOSTALGIA_VIDEOS);
+});
+
 // ============== SOCKET HANDLERS ==============
 
 registerSocketHandlers(io, { fetchTickerQuotes: fetchTickerQuotes });
