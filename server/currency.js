@@ -1,6 +1,6 @@
 // ============== CURRENCY MANAGEMENT ==============
 
-const STARTING_BALANCE = 100;
+const STARTING_BALANCE = 1000;
 
 // Currency balances keyed by player name (persists across reconnections)
 const balances = new Map(); // playerName -> number
