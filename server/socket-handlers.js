@@ -436,12 +436,12 @@ export function registerSocketHandlers(io) {
                 socket.emit('error', { message: 'Raum nicht gefunden!' });
                 return;
             }
-            if (room.game) {
+            if (room.game && room.gameType !== 'watchparty') {
                 socket.emit('error', { message: 'Spiel läuft bereits!' });
                 return;
             }
-            if (room.players.length >= 4) {
-                socket.emit('error', { message: 'Raum ist voll (max. 4 Spieler)!' });
+            if (room.players.length >= (room.gameType === 'watchparty' ? 6 : 4)) {
+                socket.emit('error', { message: 'Raum ist voll!' });
                 return;
             }
             if (room.players.some(p => p.socketId === socket.id)) {
@@ -456,7 +456,22 @@ export function registerSocketHandlers(io) {
             });
             socket.join(code);
 
-            socket.emit('room-joined', { code });
+            // For watch party: add late joiner to game state if game already started
+            if (room.game && room.gameType === 'watchparty') {
+                room.game.players.push({
+                    socketId: socket.id,
+                    name: playerName,
+                    lives: 0,
+                    character: character
+                });
+                // Send game-started so the joiner transitions to game screen
+                socket.emit('room-joined', { code });
+                socket.emit('game-started', {
+                    players: room.game.players.map(p => ({ name: p.name, lives: p.lives, character: p.character }))
+                });
+            } else {
+                socket.emit('room-joined', { code });
+            }
             broadcastRoomState(io, room);
             broadcastLobbies(io, room.gameType);
             console.log(`${playerName} joined room ${code}`);
@@ -865,30 +880,42 @@ export function registerSocketHandlers(io) {
             socket.leave(room.code);
 
             if (room.game) {
-                const gamePlayer = room.game.players.find(p => p.socketId === socket.id);
-                if (gamePlayer && gamePlayer.lives > 0) {
-                    gamePlayer.lives = 0;
+                if (room.gameType === 'watchparty') {
+                    const gpIdx = room.game.players.findIndex(p => p.socketId === socket.id);
+                    if (gpIdx !== -1) {
+                        room.game.players.splice(gpIdx, 1);
+                    }
 
                     io.to(room.code).emit('player-disconnected', {
                         playerName,
                         players: room.game.players.map(p => ({ name: p.name, lives: p.lives }))
                     });
+                } else {
+                    const gamePlayer = room.game.players.find(p => p.socketId === socket.id);
+                    if (gamePlayer && gamePlayer.lives > 0) {
+                        gamePlayer.lives = 0;
 
-                    if (room.game.players[room.game.currentIndex].socketId === socket.id) {
-                        room.game.currentIndex = nextAlivePlayerIndex(room.game, room.game.currentIndex);
-                        room.game.previousAnnouncement = null;
-                        room.game.isFirstTurn = true;
-                    }
-
-                    const alive = getAlivePlayers(room.game);
-                    if (alive.length <= 1) {
-                        io.to(room.code).emit('game-over', {
-                            winnerName: alive[0]?.name || 'Niemand',
+                        io.to(room.code).emit('player-disconnected', {
+                            playerName,
                             players: room.game.players.map(p => ({ name: p.name, lives: p.lives }))
                         });
-                        room.game = null;
-                    } else {
-                        sendTurnStart(io, room);
+
+                        if (room.game.players[room.game.currentIndex].socketId === socket.id) {
+                            room.game.currentIndex = nextAlivePlayerIndex(room.game, room.game.currentIndex);
+                            room.game.previousAnnouncement = null;
+                            room.game.isFirstTurn = true;
+                        }
+
+                        const alive = getAlivePlayers(room.game);
+                        if (alive.length <= 1) {
+                            io.to(room.code).emit('game-over', {
+                                winnerName: alive[0]?.name || 'Niemand',
+                                players: room.game.players.map(p => ({ name: p.name, lives: p.lives }))
+                            });
+                            room.game = null;
+                        } else {
+                            sendTurnStart(io, room);
+                        }
                     }
                 }
             }
@@ -897,6 +924,7 @@ export function registerSocketHandlers(io) {
 
             if (room.players.length === 0) {
                 rooms.delete(room.code);
+                broadcastLobbies(io, room.gameType);
             } else {
                 if (room.hostId === socket.id) {
                     room.hostId = room.players[0].socketId;
@@ -909,6 +937,7 @@ export function registerSocketHandlers(io) {
                     })),
                     hostId: room.hostId
                 });
+                broadcastLobbies(io, room.gameType);
             }
         } catch (err) { console.error('leave-room error:', err.message); } });
 
@@ -935,30 +964,43 @@ export function registerSocketHandlers(io) {
             const playerName = room.players[playerIndex].name;
 
             if (room.game) {
-                const gamePlayer = room.game.players.find(p => p.socketId === socket.id);
-                if (gamePlayer && gamePlayer.lives > 0) {
-                    gamePlayer.lives = 0;
+                if (room.gameType === 'watchparty') {
+                    // Watch party: simply remove player from game state
+                    const gpIdx = room.game.players.findIndex(p => p.socketId === socket.id);
+                    if (gpIdx !== -1) {
+                        room.game.players.splice(gpIdx, 1);
+                    }
 
                     io.to(room.code).emit('player-disconnected', {
                         playerName,
                         players: room.game.players.map(p => ({ name: p.name, lives: p.lives }))
                     });
+                } else {
+                    const gamePlayer = room.game.players.find(p => p.socketId === socket.id);
+                    if (gamePlayer && gamePlayer.lives > 0) {
+                        gamePlayer.lives = 0;
 
-                    if (room.game.players[room.game.currentIndex].socketId === socket.id) {
-                        room.game.currentIndex = nextAlivePlayerIndex(room.game, room.game.currentIndex);
-                        room.game.previousAnnouncement = null;
-                        room.game.isFirstTurn = true;
-                    }
-
-                    const alive = getAlivePlayers(room.game);
-                    if (alive.length <= 1) {
-                        io.to(room.code).emit('game-over', {
-                            winnerName: alive[0]?.name || 'Niemand',
+                        io.to(room.code).emit('player-disconnected', {
+                            playerName,
                             players: room.game.players.map(p => ({ name: p.name, lives: p.lives }))
                         });
-                        room.game = null;
-                    } else {
-                        sendTurnStart(io, room);
+
+                        if (room.game.players[room.game.currentIndex].socketId === socket.id) {
+                            room.game.currentIndex = nextAlivePlayerIndex(room.game, room.game.currentIndex);
+                            room.game.previousAnnouncement = null;
+                            room.game.isFirstTurn = true;
+                        }
+
+                        const alive = getAlivePlayers(room.game);
+                        if (alive.length <= 1) {
+                            io.to(room.code).emit('game-over', {
+                                winnerName: alive[0]?.name || 'Niemand',
+                                players: room.game.players.map(p => ({ name: p.name, lives: p.lives }))
+                            });
+                            room.game = null;
+                        } else {
+                            sendTurnStart(io, room);
+                        }
                     }
                 }
             }

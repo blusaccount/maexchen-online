@@ -15,13 +15,15 @@ export function broadcastOnlinePlayers(io) {
 export function getOpenLobbies(gameType) {
     const lobbies = [];
     for (const [code, room] of rooms) {
-        // Only show rooms that haven't started and match the game type
-        if (!room.game && room.gameType === gameType) {
+        // Show rooms that match game type and are either not started or are watch parties (joinable anytime)
+        const isJoinable = !room.game || room.gameType === 'watchparty';
+        if (isJoinable && room.gameType === gameType) {
             lobbies.push({
                 code: code,
                 hostName: room.players.find(p => p.socketId === room.hostId)?.name || 'Unknown',
                 playerCount: room.players.length,
                 maxPlayers: 6,
+                started: !!room.game,
                 players: room.players.map(p => ({
                     name: p.name,
                     character: p.character

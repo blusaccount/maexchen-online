@@ -2145,6 +2145,17 @@ h3 { font-size: 1.3rem; color: var(--text-dim); letter-spacing: 2px; text-transf
     image-rendering: pixelated;
 }
 
+.lobby-live {
+    background: var(--danger, #ff4444);
+    color: #fff;
+    padding: 1px 6px;
+    font-size: 0.55rem;
+    border-radius: 3px;
+    letter-spacing: 1px;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
 /* ===== Online Players Section ===== */
 .online-section {
     margin-top: 30px;
