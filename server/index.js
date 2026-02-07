@@ -5,8 +5,14 @@ import http from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import YahooFinance from 'yahoo-finance2';
-const yahooFinance = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
+let yahooFinance = null;
+async function getYahooFinance() {
+    if (!yahooFinance) {
+        const YahooFinance = (await import('yahoo-finance2')).default;
+        yahooFinance = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
+    }
+    return yahooFinance;
+}
 
 import { rooms, onlinePlayers, socketToRoom, broadcastOnlinePlayers, broadcastLobbies } from './room-manager.js';
 import { registerSocketHandlers, cleanupRateLimiters } from './socket-handlers.js';
@@ -176,7 +182,8 @@ async function fetchTickerQuotes() {
     tickerFetchPromise = (async () => {
         try {
             const symbols = TICKER_SYMBOLS.map(s => s.symbol);
-            const quotes = await yahooFinance.quote(symbols);
+            const yf = await getYahooFinance();
+            const quotes = await yf.quote(symbols);
 
             const nameMap = new Map(TICKER_SYMBOLS.map(s => [s.symbol, s.name]));
             const results = [];
@@ -249,7 +256,8 @@ app.get('/api/stock-search', async (req, res) => {
             return res.json(cached.data);
         }
 
-        const results = await yahooFinance.search(sanitised, { quotesCount: 8, newsCount: 0 });
+        const yf = await getYahooFinance();
+        const results = await yf.search(sanitised, { quotesCount: 8, newsCount: 0 });
         const quotes = (results.quotes || [])
             .filter(q => q.symbol && (q.quoteType === 'EQUITY' || q.quoteType === 'ETF'))
             .slice(0, 8)
@@ -291,7 +299,8 @@ app.get('/api/stock-quote', async (req, res) => {
             return res.json(cached.data);
         }
 
-        const q = await yahooFinance.quote(symbol);
+        const yf = await getYahooFinance();
+        const q = await yf.quote(symbol);
         if (!q || q.regularMarketPrice == null) {
             return res.status(404).json({ error: 'Symbol not found' });
         }
@@ -341,7 +350,7 @@ app.get('/api/nostalgia-config', (req, res) => {
 
 // ============== SOCKET HANDLERS ==============
 
-registerSocketHandlers(io, { fetchTickerQuotes: fetchTickerQuotes, yahooFinance: yahooFinance });
+registerSocketHandlers(io, { fetchTickerQuotes: fetchTickerQuotes, getYahooFinance: getYahooFinance });
 
 // ============== PERIODIC CLEANUP ==============
 

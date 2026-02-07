@@ -1,4 +1,3 @@
-import { Client, GatewayIntentBits, Collection, Events } from 'discord.js';
 import { readdirSync } from 'fs';
 import { createRequire } from 'module';
 import path from 'path';
@@ -11,6 +10,8 @@ export async function startDiscordBot(rootDir) {
         console.log('⚠ DISCORD_TOKEN nicht gesetzt - Bot wird nicht gestartet');
         return;
     }
+
+    const { Client, GatewayIntentBits, Collection, Events } = await import('discord.js');
 
     const sodium = require('libsodium-wrappers');
     await sodium.ready;

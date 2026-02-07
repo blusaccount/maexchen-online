@@ -260,11 +260,11 @@ export function cleanupRateLimiters() {
 // ============== STOCK GAME ==============
 
 let _fetchTickerQuotes = null;
-let _yahooFinance = null;
+let _getYahooFinance = null;
 
-export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } = {}) {
+export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance } = {}) {
     _fetchTickerQuotes = fetchTickerQuotes || null;
-    _yahooFinance = yahooFinance || null;
+    _getYahooFinance = getYahooFinance || null;
     io.on('connection', (socket) => {
         console.log(`Connected: ${socket.id}`);
 
@@ -345,9 +345,10 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
             // Get current price from ticker cache or live lookup
             const quotes = _fetchTickerQuotes ? await _fetchTickerQuotes() : [];
             let quote = quotes.find(q => q.symbol === symbol);
-            if (!quote && _yahooFinance) {
+            if (!quote && _getYahooFinance) {
                 try {
-                    const q = await _yahooFinance.quote(symbol);
+                    const yf = await _getYahooFinance();
+                    const q = await yf.quote(symbol);
                     if (q && q.regularMarketPrice != null) {
                         quote = {
                             symbol: (q.symbol || symbol).replace('^', ''),
@@ -394,9 +395,10 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
 
             const quotes = _fetchTickerQuotes ? await _fetchTickerQuotes() : [];
             let quote = quotes.find(q => q.symbol === symbol);
-            if (!quote && _yahooFinance) {
+            if (!quote && _getYahooFinance) {
                 try {
-                    const q = await _yahooFinance.quote(symbol);
+                    const yf = await _getYahooFinance();
+                    const q = await yf.quote(symbol);
                     if (q && q.regularMarketPrice != null) {
                         quote = {
                             symbol: (q.symbol || symbol).replace('^', ''),

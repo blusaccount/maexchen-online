@@ -260,7 +260,6 @@ export async function getLeaderboardSnapshot(currentPrices) {
                 totalValue += marketValue;
             }
 
-            const { getBalance } = await import('./currency.js');
             const cash = await getBalance(name);
             leaderboard.push({
                 name,

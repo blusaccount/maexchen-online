@@ -9,6 +9,12 @@ const rootDir = join(__dirname, '..', '..');
 const isWindows = process.platform === 'win32';
 
 async function setup() {
+    // Skip yt-dlp download in CI or when SKIP_YT_DLP is set
+    if (process.env.CI || process.env.SKIP_YT_DLP) {
+        console.log('Setup: Skipping yt-dlp download (CI or SKIP_YT_DLP set)');
+        return;
+    }
+
     const ytDlpPath = join(rootDir, isWindows ? 'yt-dlp.exe' : 'yt-dlp');
 
     console.log('Setup: Checking for yt-dlp at', ytDlpPath);
