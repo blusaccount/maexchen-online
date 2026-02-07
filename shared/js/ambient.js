@@ -5,15 +5,35 @@
 (function() {
     const { $ } = window.MaexchenApp;
 
+    const STORAGE_MUTE = 'ambient-muted';
+    const STORAGE_VOL = 'ambient-volume';
+    const DEFAULT_VOLUME = 0.04; // Very quiet master gain
+
     let audioCtx = null;
     let ambientGain = null;
     let isPlaying = false;
     let isMuted = false;
+    let volume = DEFAULT_VOLUME;
 
     // Ambient sound nodes
     let droneOsc = null;
     let noiseNode = null;
     let beepInterval = null;
+
+    // Restore saved settings
+    function restoreSettings() {
+        var saved = localStorage.getItem(STORAGE_MUTE);
+        if (saved === 'true') {
+            isMuted = true;
+        }
+        var savedVol = localStorage.getItem(STORAGE_VOL);
+        if (savedVol !== null) {
+            var parsed = parseFloat(savedVol);
+            if (!isNaN(parsed) && parsed >= 0 && parsed <= 1) {
+                volume = parsed;
+            }
+        }
+    }
 
     // Initialize ambient system
     function initAmbient() {
@@ -40,7 +60,7 @@
 
         // Master gain for ambient
         ambientGain = ctx.createGain();
-        ambientGain.gain.value = 0.04; // Very quiet
+        ambientGain.gain.value = volume;
         ambientGain.connect(ctx.destination);
 
         // Low drone
@@ -239,17 +259,64 @@
     // Toggle mute
     function toggleMute() {
         isMuted = !isMuted;
+        localStorage.setItem(STORAGE_MUTE, isMuted);
         if (isMuted) {
             stopAmbient();
         } else {
             startAmbient();
         }
+        updateMuteUI();
         return isMuted;
     }
 
     function getMuted() {
         return isMuted;
     }
+
+    // Set volume (0-100 from slider, mapped to 0.0–0.15 gain range)
+    function setVolume(val) {
+        volume = (val / 100) * 0.15;
+        localStorage.setItem(STORAGE_VOL, volume);
+        if (ambientGain) {
+            ambientGain.gain.value = volume;
+        }
+    }
+
+    // Update mute button UI
+    function updateMuteUI() {
+        var btn = document.getElementById('ambient-mute');
+        if (!btn) return;
+        var icon = btn.querySelector('.ambient-mute-icon');
+        if (!icon) return;
+        btn.classList.toggle('muted', isMuted);
+        icon.textContent = isMuted ? '🔇' : '🔊';
+    }
+
+    // Bind volume slider and mute button if present
+    function bindControls() {
+        var btn = document.getElementById('ambient-mute');
+        var slider = document.getElementById('ambient-volume');
+
+        if (btn) {
+            btn.addEventListener('click', function () {
+                toggleMute();
+            });
+        }
+
+        if (slider) {
+            // Set slider to current volume (map gain 0–0.15 to 0–100)
+            slider.value = Math.round((volume / 0.15) * 100);
+            slider.addEventListener('input', function () {
+                setVolume(parseInt(slider.value, 10));
+            });
+        }
+
+        updateMuteUI();
+    }
+
+    // Restore settings on load
+    restoreSettings();
+    bindControls();
 
     // Public API
     window.MaexchenAmbient = {
@@ -260,6 +327,7 @@
         stopVictory,
         toggleMute,
         isMuted: getMuted,
-        getAudioContext
+        getAudioContext,
+        setVolume
     };
 })();

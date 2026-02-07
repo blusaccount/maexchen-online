@@ -452,6 +452,20 @@
             bottom: 44px;
             right: 12px;
             z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ambience-volume {
+            display: flex;
+            align-items: center;
+        }
+
+        .ambience-volume input[type=range] {
+            width: 80px;
+            accent-color: var(--ds-border);
+            cursor: pointer;
         }
 
         .ambience-mute {
@@ -559,6 +573,9 @@
 
 <!-- Ambience mute button -->
 <div class="ambience-control">
+    <div class="ambience-volume">
+        <input id="ambience-volume" type="range" min="0" max="100" value="30">
+    </div>
     <button class="ambience-mute" id="ambience-mute" type="button" title="Toggle Ambience">
         <span class="ambience-mute-icon">🎵</span>
     </button>
