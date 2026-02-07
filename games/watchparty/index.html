@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Watch Party - StrictHotel</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/shared/css/theme.css">
+    <style>
+        /* Watch Party specific styles */
+        .video-wrapper {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto 20px;
+            aspect-ratio: 16/9;
+            background: #000;
+            border: 2px solid var(--accent);
+            border-radius: var(--radius);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .video-wrapper iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .video-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            color: var(--text-dim);
+            font-size: 1rem;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .url-input-row {
+            display: flex;
+            gap: 10px;
+            max-width: 800px;
+            margin: 0 auto 20px;
+        }
+
+        .url-input-row input {
+            flex: 1;
+            background: var(--bg);
+            border: 1px solid var(--accent);
+            color: var(--text);
+            font-family: 'Orbitron', monospace;
+            font-size: 0.75rem;
+            padding: 10px 14px;
+            border-radius: var(--radius);
+        }
+
+        .url-input-row input:focus {
+            outline: none;
+            box-shadow: 0 0 10px rgba(0,255,136,0.3);
+        }
+
+        .url-input-row input::placeholder {
+            color: var(--text-dim);
+        }
+
+        .sync-status {
+            text-align: center;
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+        }
+
+        .sync-status .synced {
+            color: var(--accent);
+        }
+
+        .host-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .host-badge {
+            background: var(--gold);
+            color: #000;
+            padding: 2px 8px;
+            font-size: 0.6rem;
+            border-radius: 4px;
+            letter-spacing: 1px;
+            margin-left: 6px;
+        }
+
+        .viewer-notice {
+            text-align: center;
+            color: var(--text-dim);
+            font-size: 0.75rem;
+            margin-bottom: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .url-input-row {
+                flex-direction: column;
+            }
+
+            .url-input-row input {
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Home Button -->
+<a href="/" id="home-btn" title="Zurück zum Hauptmenü">🏠</a>
+
+<div id="app">
+
+    <!-- ===== START SCREEN ===== -->
+    <div id="screen-start" class="screen active">
+        <div class="title-maexchen" id="main-title">Watch Party</div>
+        <p class="subtitle">YouTube zusammen schauen</p>
+
+        <div class="form-group">
+            <input type="text" id="input-name" maxlength="12" placeholder="Dein Name..." autocomplete="off">
+        </div>
+
+        <button class="btn btn-primary" id="btn-create">Raum erstellen</button>
+
+        <h3>- oder -</h3>
+
+        <div class="join-row">
+            <input type="text" id="input-code" maxlength="4" placeholder="CODE" autocomplete="off">
+            <button class="btn btn-secondary" id="btn-join">Beitreten</button>
+        </div>
+
+        <div class="error-text" id="start-error"></div>
+
+        <button class="btn btn-secondary" id="btn-edit-character" style="margin-top: 20px; min-width: 160px; padding: 10px 20px; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; gap: 10px;">
+            <img id="current-avatar" src="" alt="" style="width: 24px; height: 24px; image-rendering: pixelated; display: none;">
+            <span id="current-avatar-placeholder">🎨</span>
+            <span>Charakter erstellen</span>
+        </button>
+
+        <!-- Open Lobbies -->
+        <div id="open-lobbies" class="lobbies-section">
+            <h3>Offene Räume</h3>
+            <div id="lobby-list" class="lobby-list">
+                <p class="no-lobbies">Keine offenen Räume</p>
+            </div>
+        </div>
+
+        <!-- Online Players -->
+        <div id="online-players" class="online-section">
+            <h3>Online: <span id="online-count">0</span></h3>
+            <div id="online-list" class="online-list"></div>
+        </div>
+    </div>
+
+    <!-- ===== WAITING ROOM ===== -->
+    <div id="screen-waiting" class="screen">
+        <div class="title-maexchen" style="font-size:2rem;">Watch Party</div>
+        <p class="subtitle">Warteraum</p>
+
+        <h3>Raum-Code:</h3>
+        <div class="room-code" id="room-code-display"></div>
+
+        <h3>Spieler:</h3>
+        <div class="player-list" id="player-list"></div>
+
+        <button class="btn btn-success" id="btn-start-game" style="display:none;">Watch Party starten</button>
+        <p class="subtitle" id="waiting-hint">Warte auf weitere Spieler...</p>
+    </div>
+
+    <!-- ===== WATCH PARTY SCREEN ===== -->
+    <div id="screen-game" class="screen">
+        <div class="title-maexchen" style="font-size:1.8rem; margin-bottom: 10px;">Watch Party</div>
+
+        <!-- URL Input (Host only) -->
+        <div id="url-input-section" class="url-input-row" style="display:none;">
+            <input type="text" id="input-video-url" placeholder="YouTube URL einfügen..." autocomplete="off">
+            <button class="btn btn-primary" id="btn-load-video">Laden</button>
+        </div>
+
+        <!-- Viewer notice (non-host) -->
+        <div id="viewer-notice" class="viewer-notice" style="display:none;">
+            Der Host steuert das Video<span class="host-badge">VIEWER</span>
+        </div>
+
+        <!-- Video Player -->
+        <div class="video-wrapper" id="video-wrapper">
+            <div class="video-placeholder" id="video-placeholder">
+                Warte auf Video...
+            </div>
+            <div id="player-container"></div>
+        </div>
+
+        <!-- Sync Status -->
+        <div class="sync-status" id="sync-status">
+            <span class="synced">● VERBUNDEN</span>
+        </div>
+
+        <!-- Player List Bar -->
+        <div class="lives-bar" id="lives-bar"></div>
+    </div>
+
+    <!-- ===== GAME OVER (unused but needed by shared modules) ===== -->
+    <div id="screen-reveal" class="screen"></div>
+    <div id="screen-gameover" class="screen"></div>
+
+</div>
+
+<!-- Chat Panel -->
+<div id="chat-panel" style="display:none;">
+    <div id="chat-header">
+        <span>Transmission</span>
+        <button id="btn-mute" title="TTS stumm schalten">🔊</button>
+    </div>
+    <div id="chat-messages"></div>
+    <div id="chat-input-row">
+        <button id="btn-draw" title="Notiz zeichnen">✏️</button>
+        <input type="text" id="chat-input" placeholder="Nachricht..." maxlength="100" autocomplete="off">
+        <button id="btn-send">↑</button>
+    </div>
+</div>
+
+<!-- Drawing Note Overlay -->
+<div id="draw-note-overlay" style="display:none;">
+    <div id="draw-note-panel">
+        <div class="draw-note-title">Notiz zeichnen</div>
+        <div class="draw-note-canvas-container">
+            <div class="draw-note-grid" id="draw-note-grid"></div>
+        </div>
+        <div class="draw-note-palette" id="draw-note-palette"></div>
+        <div class="draw-note-recipient">
+            <label>Senden an:</label>
+            <select id="draw-note-target"></select>
+        </div>
+        <div class="draw-note-buttons">
+            <button class="btn btn-small" id="btn-note-clear">Löschen</button>
+            <button class="btn btn-small btn-secondary" id="btn-note-cancel">Abbrechen</button>
+            <button class="btn btn-small btn-primary" id="btn-note-send">Senden</button>
+        </div>
+    </div>
+</div>
+
+<!-- Received Drawing Display -->
+<div id="received-drawing" style="display:none;">
+    <div class="received-drawing-content">
+        <div class="received-from"></div>
+        <canvas id="received-canvas"></canvas>
+    </div>
+</div>
+
+<!-- Socket.io -->
+<script src="/socket.io/socket.io.js"></script>
+
+<!-- Shared Modules -->
+<script src="/shared/js/core.js"></script>
+<script src="/shared/js/lobby.js"></script>
+<script src="/shared/js/tts.js"></script>
+<script src="/shared/js/chat.js"></script>
+<script src="/shared/js/reactions.js"></script>
+<script src="/shared/js/ambient.js"></script>
+<script src="/shared/js/avatars.js"></script>
+<script src="/shared/js/emotes.js"></script>
+<script src="/shared/js/creator.js"></script>
+
+<!-- Watch Party Module -->
+<script src="/games/watchparty/js/watchparty.js"></script>
+
+</body>
+</html>
