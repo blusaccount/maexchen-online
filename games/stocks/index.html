@@ -542,9 +542,65 @@
         @media (max-width: 400px) {
             .market-grid { grid-template-columns: 1fr; }
         }
+
+        /* ===== Ambience Music ===== */
+        .ambience-control {
+            position: fixed;
+            bottom: 44px;
+            right: 12px;
+            z-index: 1000;
+        }
+
+        .ambience-mute {
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            color: var(--ds-text);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 14px;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0;
+            transition: all 0.15s;
+        }
+
+        .ambience-mute:hover {
+            background: var(--ds-highlight);
+            box-shadow: 3px 3px 0 var(--ds-border);
+        }
+
+        .ambience-mute.muted {
+            border-color: var(--ds-text-dim);
+            background: var(--ds-highlight);
+        }
+
+        .ambience-yt-container {
+            position: fixed;
+            top: -9999px;
+            left: -9999px;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
+
+<!-- Hidden YouTube player for background music -->
+<div class="ambience-yt-container" aria-hidden="true">
+    <div id="ambience-yt-player"></div>
+</div>
+
+<!-- Ambience mute button -->
+<div class="ambience-control">
+    <button class="ambience-mute" id="ambience-mute" type="button" title="Toggle Music">
+        <span class="ambience-mute-icon">🎵</span>
+    </button>
+</div>
 
 <div class="stock-page">
     <!-- Header -->
@@ -645,6 +701,129 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/games/stocks/js/game.js"></script>
+
+<!-- Background Music -->
+<script>
+(function () {
+    'use strict';
+
+    // https://www.youtube.com/watch?v=WwB8SQMyfls
+    var VIDEO_ID = 'WwB8SQMyfls';
+    var STORAGE_MUTE = 'stocks-music-muted';
+    var DEFAULT_VOLUME = 50; // 0-100 (0.5 volume)
+
+    var player = null;
+    var isMuted = false;
+    var ready = false;
+    var userInteracted = false;
+
+    var muteBtn = document.getElementById('ambience-mute');
+    var muteIcon = muteBtn ? muteBtn.querySelector('.ambience-mute-icon') : null;
+
+    function loadYouTubeAPI() {
+        if (window.YT && window.YT.Player) {
+            createPlayer();
+            return;
+        }
+        var tag = document.createElement('script');
+        tag.src = 'https://www.youtube.com/iframe_api';
+        document.head.appendChild(tag);
+    }
+
+    var previousOnReady = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = function () {
+        if (previousOnReady) previousOnReady();
+        createPlayer();
+    };
+
+    function createPlayer() {
+        player = new YT.Player('ambience-yt-player', {
+            videoId: VIDEO_ID,
+            playerVars: {
+                autoplay: 1,
+                loop: 1,
+                playlist: VIDEO_ID,
+                controls: 0,
+                disablekb: 1,
+                fs: 0,
+                modestbranding: 1,
+                rel: 0
+            },
+            events: {
+                onReady: onPlayerReady,
+                onStateChange: onPlayerStateChange
+            }
+        });
+    }
+
+    function onPlayerReady() {
+        ready = true;
+        player.setVolume(DEFAULT_VOLUME);
+        if (isMuted) {
+            player.mute();
+        } else {
+            player.unMute();
+        }
+        player.playVideo();
+    }
+
+    function onPlayerStateChange(event) {
+        if (event.data === YT.PlayerState.ENDED) {
+            player.seekTo(0);
+            player.playVideo();
+        }
+    }
+
+    function restoreSettings() {
+        var saved = localStorage.getItem(STORAGE_MUTE);
+        if (saved === 'true') {
+            isMuted = true;
+        }
+        updateMuteUI();
+    }
+
+    function toggleMute() {
+        isMuted = !isMuted;
+        localStorage.setItem(STORAGE_MUTE, isMuted);
+        updateMuteUI();
+
+        if (!ready || !player) return;
+        if (isMuted) {
+            player.mute();
+        } else {
+            player.unMute();
+            player.playVideo();
+        }
+    }
+
+    function updateMuteUI() {
+        if (!muteBtn || !muteIcon) return;
+        muteBtn.classList.toggle('muted', isMuted);
+        muteIcon.textContent = isMuted ? '🔇' : '🎵';
+    }
+
+    function onFirstInteraction() {
+        if (userInteracted) return;
+        userInteracted = true;
+        document.removeEventListener('click', onFirstInteraction);
+        document.removeEventListener('keydown', onFirstInteraction);
+        if (ready && player && !isMuted) {
+            player.playVideo();
+        }
+    }
+
+    restoreSettings();
+
+    if (muteBtn) {
+        muteBtn.addEventListener('click', toggleMute);
+    }
+
+    document.addEventListener('click', onFirstInteraction);
+    document.addEventListener('keydown', onFirstInteraction);
+
+    loadYouTubeAPI();
+})();
+</script>
 
 <!-- Switch Sound on Back Button Click -->
 <script>
