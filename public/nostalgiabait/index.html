@@ -7,7 +7,17 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@300;500;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --aero-blue: #7bb7ff;
+            --aero-blue-soft: rgba(123, 183, 255, 0.35);
+            --glass-bg: rgba(255, 255, 255, 0.12);
+            --glass-border: rgba(255, 255, 255, 0.35);
+            --glass-shadow: rgba(10, 30, 60, 0.45);
+            --text-ice: #e8f1ff;
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -15,9 +25,9 @@
         }
 
         body {
-            font-family: 'Orbitron', sans-serif;
-            background: #000;
-            color: #fff;
+            font-family: 'M PLUS Rounded 1c', 'Orbitron', sans-serif;
+            background: radial-gradient(circle at 20% 20%, #24497a, #0b1430 45%, #050913 100%);
+            color: var(--text-ice);
             min-height: 100vh;
             overflow: hidden;
             display: flex;
@@ -46,12 +56,13 @@
             background: repeating-linear-gradient(
                 0deg,
                 transparent,
-                transparent 2px,
-                rgba(0, 0, 0, 0.3) 2px,
-                rgba(0, 0, 0, 0.3) 4px
+                transparent 5px,
+                rgba(0, 0, 0, 0.15) 6px,
+                rgba(0, 0, 0, 0.15) 8px
             );
             pointer-events: none;
             z-index: 100;
+            opacity: 0.3;
         }
 
         /* Content */
@@ -59,7 +70,12 @@
             position: relative;
             z-index: 10;
             text-align: center;
-            padding: 20px;
+            padding: 30px 34px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            backdrop-filter: blur(14px);
+            box-shadow: 0 20px 45px var(--glass-shadow);
         }
 
         /* Home button */
@@ -69,8 +85,8 @@
             left: 20px;
             width: 50px;
             height: 50px;
-            background: rgba(0, 0, 0, 0.7);
-            border: 2px solid #00ffff;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid var(--glass-border);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -79,27 +95,29 @@
             text-decoration: none;
             z-index: 200;
             transition: all 0.3s;
+            backdrop-filter: blur(10px);
         }
 
         #home-btn:hover {
-            background: rgba(0, 255, 255, 0.2);
-            box-shadow: 0 0 20px #00ffff;
-            transform: scale(1.1);
+            background: rgba(255, 255, 255, 0.35);
+            box-shadow: 0 0 18px var(--aero-blue);
+            transform: scale(1.08);
         }
 
         /* Title */
         .title {
-            font-size: 3.5rem;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3.2rem;
             font-weight: 900;
-            letter-spacing: 5px;
+            letter-spacing: 4px;
             margin-bottom: 10px;
-            background: linear-gradient(90deg, #ff00ff, #00ffff, #ff00ff);
+            background: linear-gradient(120deg, #ffffff, #7bb7ff, #e2f0ff);
             background-size: 200% auto;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             animation: gradient-shift 3s ease infinite;
-            text-shadow: 0 0 30px rgba(255, 0, 255, 0.5);
+            text-shadow: 0 0 20px rgba(123, 183, 255, 0.45);
         }
 
         @keyframes gradient-shift {
@@ -108,10 +126,10 @@
         }
 
         .subtitle {
-            font-size: 1.2rem;
-            color: #888;
-            letter-spacing: 3px;
-            margin-bottom: 60px;
+            font-size: 1rem;
+            color: rgba(232, 241, 255, 0.7);
+            letter-spacing: 2px;
+            margin-bottom: 50px;
             text-transform: uppercase;
         }
 
@@ -127,9 +145,9 @@
         .memory-card {
             width: 300px;
             height: 400px;
-            background: linear-gradient(135deg, #111 0%, #1a1a2e 100%);
-            border: 2px solid #333;
-            border-radius: 20px;
+            background: linear-gradient(150deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.04) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            border-radius: 26px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -141,6 +159,8 @@
             overflow: hidden;
             text-decoration: none;
             color: inherit;
+            backdrop-filter: blur(18px);
+            box-shadow: 0 18px 36px rgba(7, 20, 45, 0.55);
         }
 
         .memory-card::before {
@@ -148,8 +168,8 @@
             position: absolute;
             inset: 0;
             background: linear-gradient(135deg,
-                rgba(255,0,255,0.1) 0%,
-                rgba(0,255,255,0.1) 100%);
+                rgba(255,255,255,0.2) 0%,
+                rgba(123,183,255,0.25) 100%);
             opacity: 0;
             transition: opacity 0.3s;
         }
@@ -159,11 +179,11 @@
         }
 
         .memory-card:hover {
-            transform: translateY(-10px) scale(1.02);
+            transform: translateY(-8px) scale(1.02);
             border-color: var(--card-color);
             box-shadow:
-                0 0 30px var(--card-glow),
-                0 20px 40px rgba(0, 0, 0, 0.5),
+                0 0 35px var(--card-glow),
+                0 25px 45px rgba(7, 20, 45, 0.5),
                 inset 0 0 30px var(--card-glow-inner);
         }
 
@@ -176,8 +196,8 @@
                 0deg,
                 transparent,
                 transparent 1px,
-                rgba(255,255,255,0.03) 1px,
-                rgba(255,255,255,0.03) 2px
+                rgba(255,255,255,0.05) 1px,
+                rgba(255,255,255,0.05) 2px
             );
             opacity: 0;
             transition: opacity 0.3s;
@@ -235,14 +255,14 @@
         }
 
         .card-year {
-            font-size: 0.9rem;
-            color: #666;
-            letter-spacing: 3px;
+            font-size: 0.85rem;
+            color: rgba(232, 241, 255, 0.7);
+            letter-spacing: 2px;
         }
 
         .card-desc {
             font-size: 0.8rem;
-            color: #888;
+            color: rgba(232, 241, 255, 0.6);
             max-width: 200px;
             line-height: 1.5;
             text-align: center;
@@ -256,19 +276,19 @@
             right: 0;
             text-align: center;
             font-size: 0.7rem;
-            color: #444;
+            color: rgba(232, 241, 255, 0.5);
             z-index: 10;
         }
 
         /* Mobile */
         @media (max-width: 700px) {
             .title {
-                font-size: 2rem;
+                font-size: 2.1rem;
             }
 
             .subtitle {
                 font-size: 0.9rem;
-                margin-bottom: 40px;
+                margin-bottom: 35px;
             }
 
             .cards {
@@ -355,9 +375,9 @@
             w * 0.5 + Math.cos(time * 0.3) * w * 0.3,
             h
         );
-        gradient.addColorStop(0, '#0a0a1a');
-        gradient.addColorStop(0.5, '#0f0f2a');
-        gradient.addColorStop(1, '#050510');
+        gradient.addColorStop(0, '#1e3c6b');
+        gradient.addColorStop(0.5, '#0e1f40');
+        gradient.addColorStop(1, '#060b16');
 
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, w, h);
@@ -366,7 +386,7 @@
         const imageData = ctx.getImageData(0, 0, w, h);
         const data = imageData.data;
         for (let i = 0; i < data.length; i += 4) {
-            const noise = (Math.random() - 0.5) * 10;
+            const noise = (Math.random() - 0.5) * 6;
             data[i] += noise;
             data[i + 1] += noise;
             data[i + 2] += noise;
@@ -374,7 +394,7 @@
         ctx.putImageData(imageData, 0, 0);
 
         // Floating particles
-        ctx.fillStyle = 'rgba(100, 150, 255, 0.3)';
+        ctx.fillStyle = 'rgba(150, 210, 255, 0.25)';
         for (let i = 0; i < 30; i++) {
             const x = (Math.sin(time * 0.2 + i * 0.5) * 0.5 + 0.5) * w;
             const y = (Math.cos(time * 0.15 + i * 0.7) * 0.5 + 0.5) * h;
