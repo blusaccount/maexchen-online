@@ -283,3 +283,58 @@
 
 ### Remaining
 - **~600 lines code duplication in `games/strictbrain/js/game.js`** — Each of 5 mini-games is fully duplicated for single-player and versus mode. Only difference: target DOM element IDs and score update callbacks. Works correctly but is a maintenance burden. Future refactor could parameterize game functions with `{ area, onScore, onFinish }` config objects.
+
+---
+
+# HANDOFF - Turkish Startflow Error State
+
+## What Was Done
+
+- Improved lesson loading resilience in `games/turkish/js/game.js`:
+  - Added explicit `res.ok` check before parsing successful payload.
+  - Added user-facing error state renderer (`setLoadError`) and start-button gating (`setStartButtonEnabled`).
+  - Added retry action wiring (`btn-retry-lesson`) to re-run `loadLesson()`.
+  - Ensured quiz cannot start while no lesson is loaded.
+- Added learn-screen error UI in `games/turkish/index.html`:
+  - New error container with clear message area and `Erneut versuchen` button.
+  - Start button is now disabled by default and styled for disabled state.
+- Standardized `/api/turkish/daily` failures in `server/index.js` with a structured JSON shape:
+  - `{ error: 'turkish_daily_failed', message: 'Daily lesson could not be generated.' }`
+
+## Files Changed
+
+- `games/turkish/js/game.js`
+- `games/turkish/index.html`
+- `server/index.js`
+- `PLANS.md`
+- `HANDOFF.md`
+
+## Verification
+
+- `node --check games/turkish/js/game.js`
+- `node --check server/index.js`
+- `npm test` *(fails in this environment because `vitest` is not installed)*
+- Manual browser check with mocked `500` response on `/api/turkish/daily` confirms visible error message, retry button, and disabled start button.
+
+---
+
+# HANDOFF - Turkish Startflow Follow-up (Review Addressed)
+
+## What Was Done
+
+- Updated Turkish load-failure copy in `games/turkish/js/game.js` to a clear German fallback message (`LESSON_LOAD_ERROR_MESSAGE`).
+- Adjusted learn-screen fallback labels to German (`Lektion nicht verfügbar` / `Bitte versuche es erneut.`) for a clearer local UX.
+- Restored the `PLANS.md` template checklist defaults back to unchecked values in the template section.
+
+## Files Changed
+
+- `games/turkish/js/game.js`
+- `PLANS.md`
+- `HANDOFF.md`
+
+## Verification
+
+- `node --check games/turkish/js/game.js`
+- `node --check server/index.js`
+- `npm test` *(fails in this environment because `vitest` is not installed)*
+- Browser screenshot captured with mocked `500 /api/turkish/daily` showing German error-state copy.

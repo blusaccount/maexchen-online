@@ -321,9 +321,17 @@ app.get('/api/stock-quote', async (req, res) => {
 // ============== TURKISH DAILY LESSON API ==============
 
 app.get('/api/turkish/daily', (req, res) => {
-    const lesson = getDailyLesson();
-    const quiz = buildQuiz(lesson);
-    res.json({ id: lesson.id, topic: lesson.topic, words: lesson.words, quiz });
+    try {
+        const lesson = getDailyLesson();
+        const quiz = buildQuiz(lesson);
+        res.json({ id: lesson.id, topic: lesson.topic, words: lesson.words, quiz });
+    } catch (err) {
+        console.error('[TurkishDaily] Error:', err.message);
+        res.status(500).json({
+            error: 'turkish_daily_failed',
+            message: 'Daily lesson could not be generated.',
+        });
+    }
 });
 
 // ============== NOSTALGIABAIT CONFIG ==============

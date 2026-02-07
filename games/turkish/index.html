@@ -149,6 +149,45 @@
             background: var(--ds-text-dim);
         }
 
+        .btn-start:disabled {
+            background: var(--ds-highlight);
+            color: var(--ds-text-dim);
+            cursor: not-allowed;
+        }
+
+        .lesson-error {
+            display: none;
+            background: #ffe9e9;
+            border: 2px solid var(--ds-negative);
+            padding: 10px 12px;
+            margin-bottom: 12px;
+        }
+
+        .lesson-error.active {
+            display: block;
+        }
+
+        .lesson-error-message {
+            font-size: 9px;
+            color: #8e1d1d;
+            margin-bottom: 8px;
+            line-height: 1.7;
+        }
+
+        .btn-retry {
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-negative);
+            color: #8e1d1d;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 9px;
+            padding: 8px 10px;
+            cursor: pointer;
+        }
+
+        .btn-retry:hover {
+            background: #ffd6d6;
+        }
+
         /* Timer Bar */
         .timer-bar-wrap {
             background: var(--ds-highlight);
@@ -312,9 +351,14 @@
             <div class="lesson-day" id="lesson-day"></div>
         </div>
 
+        <div class="lesson-error" id="lesson-error">
+            <div class="lesson-error-message" id="lesson-error-message"></div>
+            <button class="btn-retry" id="btn-retry-lesson" type="button">Erneut versuchen</button>
+        </div>
+
         <div class="word-list" id="word-list"></div>
 
-        <button class="btn-start" id="btn-start-quiz">START QUIZ ▶</button>
+        <button class="btn-start" id="btn-start-quiz" disabled>START QUIZ ▶</button>
     </div>
 
     <!-- QUIZ SCREEN -->
