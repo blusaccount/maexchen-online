@@ -12,6 +12,7 @@ import {
 } from './room-manager.js';
 
 import { getBalance } from './currency.js';
+import { buyStock, sellStock, getPortfolioSnapshot } from './stock-game.js';
 
 // ============== INPUT VALIDATION ==============
 
@@ -45,7 +46,7 @@ function validateRoomCode(code) {
 
 function validateGameType(gameType) {
     if (typeof gameType !== 'string') return 'maexchen';
-    const allowed = ['maexchen', 'lobby', 'watchparty'];
+    const allowed = ['maexchen', 'lobby', 'watchparty', 'stocks'];
     const clean = gameType.replace(/[^a-z]/g, '').slice(0, 20);
     return allowed.includes(clean) ? clean : 'maexchen';
 }
@@ -158,7 +159,17 @@ export function cleanupRateLimiters() {
 
 // ============== SOCKET HANDLERS ==============
 
-export function registerSocketHandlers(io) {
+// ============== STOCK GAME ==============
+
+const ALLOWED_STOCK_SYMBOLS = new Set([
+    'AAPL', 'MSFT', 'NVDA', 'TSLA', 'AMZN', 'META', 'GOOGL', 'NFLX',
+    'URTH', 'QQQ', 'GDAXI', 'DIA', 'SPY', 'VGK', 'EEM'
+]);
+
+let _fetchTickerQuotes = null;
+
+export function registerSocketHandlers(io, { fetchTickerQuotes } = {}) {
+    _fetchTickerQuotes = fetchTickerQuotes || null;
     io.on('connection', (socket) => {
         console.log(`Connected: ${socket.id}`);
 
@@ -191,6 +202,92 @@ export function registerSocketHandlers(io) {
             if (!player) return;
             socket.emit('balance-update', { balance: getBalance(player.name) });
         } catch (err) { console.error('get-balance error:', err.message); } });
+
+        // --- Stock Game: Buy ---
+        socket.on('stock-buy', async (data) => { try {
+            if (!checkRateLimit(socket.id)) return;
+            const player = onlinePlayers.get(socket.id);
+            if (!player) return;
+            if (!data || typeof data !== 'object') return;
+
+            const symbol = typeof data.symbol === 'string'
+                ? data.symbol.replace(/[^A-Z]/g, '').slice(0, 10) : '';
+            if (!ALLOWED_STOCK_SYMBOLS.has(symbol)) {
+                socket.emit('stock-error', { error: 'Invalid symbol' });
+                return;
+            }
+            const amount = Number(data.amount);
+            if (!Number.isFinite(amount) || amount <= 0) {
+                socket.emit('stock-error', { error: 'Invalid amount' });
+                return;
+            }
+
+            // Get current price from ticker cache
+            const quotes = _fetchTickerQuotes ? await _fetchTickerQuotes() : [];
+            const quote = quotes.find(q => q.symbol === symbol);
+            if (!quote) {
+                socket.emit('stock-error', { error: 'Price unavailable' });
+                return;
+            }
+
+            const result = buyStock(player.name, symbol, quote.price, amount);
+            if (!result.ok) {
+                socket.emit('stock-error', { error: result.error });
+                return;
+            }
+
+            socket.emit('balance-update', { balance: result.newBalance });
+            const snapshot = getPortfolioSnapshot(player.name, quotes);
+            socket.emit('stock-portfolio', snapshot);
+        } catch (err) { console.error('stock-buy error:', err.message); } });
+
+        // --- Stock Game: Sell ---
+        socket.on('stock-sell', async (data) => { try {
+            if (!checkRateLimit(socket.id)) return;
+            const player = onlinePlayers.get(socket.id);
+            if (!player) return;
+            if (!data || typeof data !== 'object') return;
+
+            const symbol = typeof data.symbol === 'string'
+                ? data.symbol.replace(/[^A-Z]/g, '').slice(0, 10) : '';
+            if (!ALLOWED_STOCK_SYMBOLS.has(symbol)) {
+                socket.emit('stock-error', { error: 'Invalid symbol' });
+                return;
+            }
+            const amount = Number(data.amount);
+            if (!Number.isFinite(amount) || amount <= 0) {
+                socket.emit('stock-error', { error: 'Invalid amount' });
+                return;
+            }
+
+            const quotes = _fetchTickerQuotes ? await _fetchTickerQuotes() : [];
+            const quote = quotes.find(q => q.symbol === symbol);
+            if (!quote) {
+                socket.emit('stock-error', { error: 'Price unavailable' });
+                return;
+            }
+
+            const result = sellStock(player.name, symbol, quote.price, amount);
+            if (!result.ok) {
+                socket.emit('stock-error', { error: result.error });
+                return;
+            }
+
+            socket.emit('balance-update', { balance: result.newBalance });
+            const snapshot = getPortfolioSnapshot(player.name, quotes);
+            socket.emit('stock-portfolio', snapshot);
+        } catch (err) { console.error('stock-sell error:', err.message); } });
+
+        // --- Stock Game: Get Portfolio ---
+        socket.on('stock-get-portfolio', async () => { try {
+            if (!checkRateLimit(socket.id)) return;
+            const player = onlinePlayers.get(socket.id);
+            if (!player) return;
+
+            const quotes = _fetchTickerQuotes ? await _fetchTickerQuotes() : [];
+            const snapshot = getPortfolioSnapshot(player.name, quotes);
+            socket.emit('stock-portfolio', snapshot);
+        } catch (err) { console.error('stock-get-portfolio error:', err.message); } });
 
         // --- Pictochat Join ---
         socket.on('picto-join', () => { try {

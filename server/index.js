@@ -195,7 +195,7 @@ app.get('/api/ticker', async (req, res) => {
 
 // ============== SOCKET HANDLERS ==============
 
-registerSocketHandlers(io);
+registerSocketHandlers(io, { fetchTickerQuotes: fetchTickerQuotes });
 
 // ============== PERIODIC CLEANUP ==============
 

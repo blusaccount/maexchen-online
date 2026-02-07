@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StrictHotel – Stock Market</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/shared/css/theme.css">
+    <style>
+        body { align-items: flex-start; }
+
+        .stock-page {
+            max-width: 1100px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 30px 20px 60px;
+        }
+
+        .stock-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .stock-title {
+            font-size: 2rem;
+            color: var(--accent);
+            text-shadow: 0 0 20px var(--accent);
+            letter-spacing: 3px;
+        }
+
+        .stock-balance {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--surface);
+            border: 1px solid var(--gold);
+            padding: 10px 18px;
+            border-radius: var(--radius);
+            font-size: 1rem;
+            color: var(--gold);
+            letter-spacing: 1px;
+        }
+
+        .stock-balance-amount {
+            font-weight: 700;
+        }
+
+        .back-link {
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            transition: color 0.3s;
+        }
+
+        .back-link:hover { color: var(--accent); }
+
+        /* Portfolio Summary */
+        .portfolio-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .summary-card {
+            background: var(--surface);
+            border: 1px solid rgba(0,255,136,0.2);
+            border-radius: var(--radius);
+            padding: 18px;
+            text-align: center;
+        }
+
+        .summary-label {
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+        }
+
+        .summary-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .summary-value.positive { color: var(--green); }
+        .summary-value.negative { color: var(--danger); }
+
+        /* Sections */
+        .section-title {
+            font-size: 0.85rem;
+            color: var(--accent);
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(0,255,136,0.15);
+        }
+
+        /* Portfolio Holdings */
+        .holdings-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            font-size: 0.8rem;
+        }
+
+        .holdings-table th {
+            text-align: left;
+            color: var(--text-dim);
+            font-size: 0.65rem;
+            letter-spacing: 1px;
+            padding: 8px 10px;
+            border-bottom: 1px solid rgba(0,255,136,0.15);
+        }
+
+        .holdings-table td {
+            padding: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .holdings-table .symbol { color: var(--accent); font-weight: 700; }
+        .holdings-table .positive { color: var(--green); }
+        .holdings-table .negative { color: var(--danger); }
+
+        .btn-sell-row {
+            background: transparent;
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            font-family: 'Orbitron', monospace;
+            font-size: 0.6rem;
+            padding: 4px 10px;
+            cursor: pointer;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+        }
+
+        .btn-sell-row:hover {
+            background: var(--danger);
+            color: #000;
+        }
+
+        .no-holdings {
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            text-align: center;
+            padding: 20px;
+        }
+
+        /* Market Grid */
+        .market-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stock-card {
+            background: var(--surface);
+            border: 1px solid rgba(0,255,136,0.15);
+            border-radius: var(--radius);
+            padding: 18px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .stock-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 15px rgba(0,255,136,0.15);
+        }
+
+        .stock-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .stock-card .symbol {
+            font-size: 1rem;
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        .stock-card .name {
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+        }
+
+        .stock-card .price {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .stock-card .change {
+            font-size: 0.7rem;
+            margin-top: 4px;
+        }
+
+        .stock-card .change.up { color: var(--green); }
+        .stock-card .change.down { color: var(--danger); }
+
+        /* Trade Modal */
+        .trade-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .trade-overlay.active { display: flex; }
+
+        .trade-modal {
+            background: var(--surface);
+            border: 2px solid var(--accent);
+            border-radius: var(--radius);
+            padding: 30px;
+            width: 90%;
+            max-width: 420px;
+        }
+
+        .trade-modal-title {
+            font-size: 1.2rem;
+            color: var(--accent);
+            margin-bottom: 5px;
+        }
+
+        .trade-modal-price {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-bottom: 20px;
+        }
+
+        .trade-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 20px;
+        }
+
+        .trade-tab {
+            flex: 1;
+            padding: 10px;
+            background: var(--bg);
+            border: 1px solid rgba(0,255,136,0.2);
+            color: var(--text-dim);
+            font-family: 'Orbitron', monospace;
+            font-size: 0.75rem;
+            cursor: pointer;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+        }
+
+        .trade-tab:first-child { border-radius: 6px 0 0 6px; }
+        .trade-tab:last-child { border-radius: 0 6px 6px 0; }
+
+        .trade-tab.active {
+            background: var(--accent);
+            color: #000;
+            border-color: var(--accent);
+        }
+
+        .trade-input-group {
+            margin-bottom: 15px;
+        }
+
+        .trade-label {
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+
+        .trade-input {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid rgba(0,255,136,0.3);
+            color: var(--text);
+            font-family: 'Orbitron', monospace;
+            font-size: 0.9rem;
+            padding: 10px 14px;
+            border-radius: 6px;
+            outline: none;
+        }
+
+        .trade-input:focus { border-color: var(--accent); box-shadow: 0 0 10px rgba(0,255,136,0.2); }
+
+        .trade-preview {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-bottom: 20px;
+            min-height: 20px;
+        }
+
+        .trade-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-trade {
+            flex: 1;
+            padding: 12px;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.8rem;
+            cursor: pointer;
+            letter-spacing: 1px;
+            border: none;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+
+        .btn-trade.confirm {
+            background: var(--accent);
+            color: #000;
+        }
+
+        .btn-trade.confirm:hover { box-shadow: 0 0 20px rgba(0,255,136,0.4); }
+
+        .btn-trade.cancel {
+            background: transparent;
+            border: 1px solid var(--text-dim);
+            color: var(--text-dim);
+        }
+
+        .btn-trade.cancel:hover { border-color: var(--text); color: var(--text); }
+
+        /* Toast */
+        .stock-toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            z-index: 2000;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        .stock-toast.show { opacity: 1; }
+        .stock-toast.success { background: var(--green); color: #000; }
+        .stock-toast.error { background: var(--danger); color: #fff; }
+
+        @media (max-width: 768px) {
+            .stock-page { padding: 15px 10px 40px; }
+            .stock-title { font-size: 1.4rem; }
+            .market-grid { grid-template-columns: 1fr 1fr; }
+            .holdings-table { font-size: 0.7rem; }
+        }
+
+        @media (max-width: 480px) {
+            .market-grid { grid-template-columns: 1fr; }
+            .portfolio-summary { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="stock-page">
+    <!-- Header -->
+    <div class="stock-header">
+        <div>
+            <a href="/" class="back-link">← ZURÜCK ZUM MENÜ</a>
+            <div class="stock-title">📈 STOCK MARKET</div>
+        </div>
+        <div class="stock-balance">
+            <span>🪙</span>
+            <span class="stock-balance-amount" id="balance-display">—</span>
+            <span style="font-size:0.7rem;">SC</span>
+        </div>
+    </div>
+
+    <!-- Portfolio Summary -->
+    <div class="portfolio-summary">
+        <div class="summary-card">
+            <div class="summary-label">PORTFOLIO VALUE</div>
+            <div class="summary-value" id="portfolio-value">0.00</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-label">TOTAL GAIN/LOSS</div>
+            <div class="summary-value" id="portfolio-gain">0.00</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-label">CASH BALANCE</div>
+            <div class="summary-value" id="portfolio-cash">—</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-label">NET WORTH</div>
+            <div class="summary-value" id="portfolio-net">—</div>
+        </div>
+    </div>
+
+    <!-- Holdings -->
+    <div class="section-title">YOUR HOLDINGS</div>
+    <div id="holdings-container">
+        <div class="no-holdings">No investments yet — pick a stock below to start trading!</div>
+    </div>
+
+    <!-- Market -->
+    <div class="section-title" style="margin-top:30px;">MARKET</div>
+    <div class="market-grid" id="market-grid">
+        <!-- populated by JS -->
+    </div>
+</div>
+
+<!-- Trade Modal -->
+<div class="trade-overlay" id="trade-overlay">
+    <div class="trade-modal">
+        <div class="trade-modal-title" id="trade-title">AAPL – Apple</div>
+        <div class="trade-modal-price" id="trade-price">Current: $0.00</div>
+        <div class="trade-tabs">
+            <button class="trade-tab active" data-side="buy">BUY</button>
+            <button class="trade-tab" data-side="sell">SELL</button>
+        </div>
+        <div class="trade-input-group">
+            <div class="trade-label">AMOUNT (STRICTCOINS)</div>
+            <input type="number" class="trade-input" id="trade-amount" min="1" step="1" placeholder="e.g. 10">
+        </div>
+        <div class="trade-preview" id="trade-preview"></div>
+        <div class="trade-actions">
+            <button class="btn-trade cancel" id="trade-cancel">CANCEL</button>
+            <button class="btn-trade confirm" id="trade-confirm">CONFIRM</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="stock-toast" id="stock-toast"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/games/stocks/js/game.js"></script>
+</body>
+</html>
