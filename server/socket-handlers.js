@@ -46,7 +46,7 @@ function validateRoomCode(code) {
 
 function validateGameType(gameType) {
     if (typeof gameType !== 'string') return 'maexchen';
-    const allowed = ['maexchen', 'lobby', 'watchparty', 'stocks'];
+    const allowed = ['maexchen', 'lobby', 'watchparty', 'stocks', 'strictbrain'];
     const clean = gameType.replace(/[^a-z]/g, '').slice(0, 20);
     return allowed.includes(clean) ? clean : 'maexchen';
 }
@@ -148,6 +148,20 @@ function cleanupPictoForSocket(socketId) {
             pictoState.inProgress.delete(strokeId);
         }
     }
+}
+
+// ============== STRICT BRAIN STATE ==============
+
+const brainLeaderboard = new Map(); // playerName -> brainAge (best daily test)
+
+function getBrainLeaderboardSorted() {
+    const entries = [];
+    for (const [name, brainAge] of brainLeaderboard) {
+        entries.push({ name, brainAge });
+    }
+    // Sort by brain age ascending (lower = better)
+    entries.sort((a, b) => a.brainAge - b.brainAge);
+    return entries.slice(0, 10);
 }
 
 export function cleanupRateLimiters() {
@@ -1157,6 +1171,57 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
                 time: room.watchparty.time
             });
         } catch (err) { console.error('watchparty-request-sync error:', err.message); } });
+
+        // ============== STRICT BRAIN HANDLERS ==============
+
+        socket.on('brain-get-leaderboard', () => { try {
+            if (!checkRateLimit(socket.id)) return;
+            socket.emit('brain-leaderboard', getBrainLeaderboardSorted());
+        } catch (err) { console.error('brain-get-leaderboard error:', err.message); } });
+
+        socket.on('brain-submit-score', (data) => { try {
+            if (!checkRateLimit(socket.id)) return;
+            if (!data || typeof data.playerName !== 'string') return;
+            const name = sanitizeName(data.playerName);
+            if (!name) return;
+
+            const brainAge = Number(data.brainAge);
+            if (!Number.isFinite(brainAge) || brainAge < 20 || brainAge > 80) return;
+
+            const coins = Number(data.coins);
+            if (!Number.isFinite(coins) || coins < 0 || coins > 100) return;
+
+            // Update leaderboard (keep best score = lowest brain age)
+            const current = brainLeaderboard.get(name);
+            if (current === undefined || brainAge < current) {
+                brainLeaderboard.set(name, brainAge);
+            }
+
+            // Award coins
+            if (coins > 0) {
+                addBalance(name, coins);
+                socket.emit('balance-update', { balance: getBalance(name) });
+            }
+
+            // Broadcast updated leaderboard
+            io.emit('brain-leaderboard', getBrainLeaderboardSorted());
+        } catch (err) { console.error('brain-submit-score error:', err.message); } });
+
+        socket.on('brain-training-score', (data) => { try {
+            if (!checkRateLimit(socket.id)) return;
+            if (!data || typeof data.playerName !== 'string') return;
+            const name = sanitizeName(data.playerName);
+            if (!name) return;
+
+            const coins = Number(data.coins);
+            if (!Number.isFinite(coins) || coins < 0 || coins > 50) return;
+
+            // Award coins for free training
+            if (coins > 0) {
+                addBalance(name, coins);
+                socket.emit('balance-update', { balance: getBalance(name) });
+            }
+        } catch (err) { console.error('brain-training-score error:', err.message); } });
 
         // --- Leave Room ---
         socket.on('leave-room', () => { try {
