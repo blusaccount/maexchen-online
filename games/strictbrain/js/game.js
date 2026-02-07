@@ -646,22 +646,28 @@
 
         function scrambleWord(word) {
             const arr = word.split('');
-            for (let i = arr.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
-            }
-            // Don't return the original word
-            if (arr.join('') === word) {
-                const t = arr[0]; arr[0] = arr[1]; arr[1] = t;
-            }
+            if (arr.length <= 1) return arr.join('');
+            // Shuffle until different from original
+            let attempts = 0;
+            do {
+                for (let i = arr.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+                }
+                attempts++;
+            } while (arr.join('') === word && attempts < 10);
             return arr.join('');
         }
 
         function nextWord() {
+            // Reset used words pool when exhausted
+            if (usedWords.length >= WORDS.length) {
+                usedWords.length = 0;
+            }
             let word;
             do {
                 word = WORDS[Math.floor(Math.random() * WORDS.length)];
-            } while (usedWords.includes(word) && usedWords.length < WORDS.length);
+            } while (usedWords.includes(word));
             usedWords.push(word);
 
             const scrambled = scrambleWord(word);
