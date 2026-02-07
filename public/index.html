@@ -633,30 +633,29 @@
             </div>
         </div>
         <div class="picto-body">
-            <div class="picto-tools">
-                <div class="picto-tool-group">
-                    <button class="picto-tool active" data-tool="pen" type="button">Pen</button>
-                    <button class="picto-tool" data-tool="eraser" type="button">Eraser</button>
-                    <button class="picto-tool" data-tool="line" type="button">Line</button>
-                    <button class="picto-tool" data-tool="rect" type="button">Rect</button>
-                    <button class="picto-tool" data-tool="circle" type="button">Circle</button>
-                </div>
-                <div class="picto-tool-group">
-                    <button class="picto-tool" data-action="undo" type="button">Undo</button>
-                    <button class="picto-tool" data-action="redo" type="button">Redo</button>
-                    <button class="picto-tool" data-action="clear" type="button">Clear</button>
-                </div>
-                <div class="picto-size">
-                    <label for="picto-size">Size</label>
-                    <input id="picto-size" type="range" min="1" max="18" value="4">
-                </div>
-                <div class="picto-palette" id="picto-palette"></div>
-            </div>
             <div class="picto-canvas-area">
                 <div class="picto-canvas-wrap">
                     <canvas id="picto-canvas"></canvas>
                     <canvas id="picto-preview"></canvas>
                     <div id="picto-cursors"></div>
+                </div>
+                <div class="picto-tools">
+                    <div class="picto-tool-group">
+                        <button class="picto-tool active" data-tool="pen" type="button" title="Pen">✏️</button>
+                        <button class="picto-tool" data-tool="eraser" type="button" title="Eraser">🧹</button>
+                        <button class="picto-tool" data-tool="line" type="button" title="Line">📏</button>
+                        <button class="picto-tool" data-tool="rect" type="button" title="Rect">⬜</button>
+                        <button class="picto-tool" data-tool="circle" type="button" title="Circle">⭕</button>
+                    </div>
+                    <div class="picto-tool-group">
+                        <button class="picto-tool" data-action="undo" type="button" title="Undo">↩️</button>
+                        <button class="picto-tool" data-action="redo" type="button" title="Redo">↪️</button>
+                        <button class="picto-tool" data-action="clear" type="button" title="Clear">🗑️</button>
+                    </div>
+                    <div class="picto-size">
+                        <input id="picto-size" type="range" min="1" max="18" value="4" title="Brush Size">
+                    </div>
+                    <div class="picto-palette" id="picto-palette"></div>
                 </div>
                 <div class="picto-status" id="picto-status">Connecting...</div>
             </div>

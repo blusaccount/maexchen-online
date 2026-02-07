@@ -1454,7 +1454,7 @@ h3 { font-size: 1.3rem; color: var(--text-dim); letter-spacing: 2px; text-transf
 
 .picto-body {
     display: grid;
-    grid-template-columns: 170px minmax(0, 1fr) 220px;
+    grid-template-columns: minmax(0, 1fr) 220px;
     gap: 16px;
     position: relative;
     z-index: 1;
@@ -1462,13 +1462,14 @@ h3 { font-size: 1.3rem; color: var(--text-dim); letter-spacing: 2px; text-transf
 
 .picto-tools {
     display: flex;
-    flex-direction: column;
-    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
 }
 
 .picto-tool-group {
-    display: grid;
-    gap: 8px;
+    display: flex;
+    gap: 6px;
 }
 
 .picto-tool {
@@ -1476,8 +1477,8 @@ h3 { font-size: 1.3rem; color: var(--text-dim); letter-spacing: 2px; text-transf
     border: 1px solid var(--accent);
     color: var(--accent);
     padding: 8px 10px;
-    font-size: 0.75rem;
-    letter-spacing: 1px;
+    font-size: 1.25rem;
+    line-height: 1;
     cursor: pointer;
     transition: transform 0.15s, box-shadow 0.15s;
 }
@@ -1490,25 +1491,23 @@ h3 { font-size: 1.3rem; color: var(--text-dim); letter-spacing: 2px; text-transf
     box-shadow: 0 0 12px rgba(0,255,136,0.35);
 }
 
-.picto-size label {
-    display: block;
-    color: var(--text-dim);
-    font-size: 0.75rem;
-    margin-bottom: 4px;
+.picto-size {
+    display: flex;
+    align-items: center;
 }
 
 .picto-size input {
-    width: 100%;
+    width: 80px;
 }
 
 .picto-palette {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
+    display: flex;
+    gap: 4px;
 }
 
 .picto-swatch {
-    height: 26px;
+    width: 22px;
+    height: 22px;
     border: 2px solid rgba(255,255,255,0.2);
     cursor: pointer;
     transition: transform 0.1s, box-shadow 0.1s;
@@ -1645,13 +1644,7 @@ h3 { font-size: 1.3rem; color: var(--text-dim); letter-spacing: 2px; text-transf
     }
 
     .picto-tools {
-        flex-direction: row;
-        flex-wrap: wrap;
         justify-content: center;
-    }
-
-    .picto-tool-group {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 }
 
