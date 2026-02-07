@@ -8,11 +8,11 @@ import {
     rooms, onlinePlayers, socketToRoom,
     broadcastOnlinePlayers, getOpenLobbies, broadcastLobbies,
     generateRoomCode, getRoom, broadcastRoomState, sendTurnStart,
-    removePlayerFromRoom
+    removePlayerFromRoom, awardPotAndEndGame
 } from './room-manager.js';
 
 import { getBalance, addBalance, deductBalance } from './currency.js';
-import { buyStock, sellStock, getPortfolioSnapshot, getAllPortfolioPlayerNames } from './stock-game.js';
+import { buyStock, sellStock, getPortfolioSnapshot, getAllPortfolioPlayerNames, getLeaderboardSnapshot } from './stock-game.js';
 import { loadStrokes, saveStroke, deleteStroke, clearStrokes, loadMessages, saveMessage, clearMessages, PICTO_MAX_MESSAGES } from './pictochat-store.js';
 
 // ============== INPUT VALIDATION ==============
@@ -407,23 +407,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
             if (!player) return;
 
             const quotes = _fetchTickerQuotes ? await _fetchTickerQuotes() : [];
-            const playerNames = await getAllPortfolioPlayerNames();
-            const leaderboard = [];
-
-            for (const name of playerNames) {
-                const snap = await getPortfolioSnapshot(name, quotes);
-                const cash = await getBalance(name);
-                leaderboard.push({
-                    name,
-                    portfolioValue: snap.totalValue,
-                    cash,
-                    netWorth: parseFloat((snap.totalValue + cash).toFixed(2)),
-                    holdings: snap.holdings,
-                });
-            }
-
-            // Sort by net worth descending
-            leaderboard.sort((a, b) => b.netWorth - a.netWorth);
+            const leaderboard = await getLeaderboardSnapshot(quotes);
             socket.emit('stock-leaderboard', leaderboard);
         } catch (err) { console.error('stock-get-leaderboard error:', err.message); } });
 
@@ -1030,22 +1014,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
             const alive = getAlivePlayers(game);
             if (alive.length <= 1) {
                 const winnerName = alive[0]?.name || 'Niemand';
-                const pot = game.pot || 0;
-
-                // Award pot to winner
-                if (pot > 0 && alive[0]) {
-                    await addBalance(alive[0].name, pot, 'maexchen_pot_win', { roomCode: room.code });
-                    for (const p of room.players) {
-                        io.to(p.socketId).emit('balance-update', { balance: await getBalance(p.name) });
-                    }
-                }
-
-                io.to(room.code).emit('game-over', {
-                    winnerName,
-                    players: game.players.map(p => ({ name: p.name, lives: p.lives })),
-                    pot
-                });
-                room.game = null;
+                await awardPotAndEndGame(io, room, winnerName, alive);
                 return;
             }
 
@@ -1085,22 +1054,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
             const alive = getAlivePlayers(game);
             if (alive.length <= 1) {
                 const winnerName = alive[0]?.name || 'Niemand';
-                const pot = game.pot || 0;
-
-                // Award pot to winner
-                if (pot > 0 && alive[0]) {
-                    await addBalance(alive[0].name, pot, 'maexchen_pot_win', { roomCode: room.code });
-                    for (const p of room.players) {
-                        io.to(p.socketId).emit('balance-update', { balance: await getBalance(p.name) });
-                    }
-                }
-
-                io.to(room.code).emit('game-over', {
-                    winnerName,
-                    players: game.players.map(p => ({ name: p.name, lives: p.lives })),
-                    pot
-                });
-                room.game = null;
+                await awardPotAndEndGame(io, room, winnerName, alive);
                 return;
             }
 

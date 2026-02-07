@@ -95,6 +95,28 @@ export function sendTurnStart(io, room) {
     game.hasRolled = false;
 }
 
+// ============== POT PAYOUT HELPER ==============
+// Shared logic to award pot to winner and emit game-over
+
+export async function awardPotAndEndGame(io, room, winnerName, alive) {
+    const pot = room.game.pot || 0;
+
+    if (pot > 0 && alive[0]) {
+        await addBalance(alive[0].name, pot, 'maexchen_pot_win', { roomCode: room.code });
+        for (const p of room.players) {
+            const balance = await getBalance(p.name);
+            io.to(p.socketId).emit('balance-update', { balance });
+        }
+    }
+
+    io.to(room.code).emit('game-over', {
+        winnerName,
+        players: room.game.players.map(p => ({ name: p.name, lives: p.lives })),
+        pot
+    });
+    room.game = null;
+}
+
 // ============== REMOVE PLAYER FROM ROOM ==============
 // Shared logic for leave-room and disconnect handlers
 
@@ -135,23 +157,7 @@ export async function removePlayerFromRoom(io, socketId, room) {
                 const alive = getAlivePlayers(room.game);
                 if (alive.length <= 1) {
                     const winnerName = alive[0]?.name || 'Niemand';
-                    const pot = room.game.pot || 0;
-
-                    // Award pot to winner
-                    if (pot > 0 && alive[0]) {
-                        await addBalance(alive[0].name, pot, 'maexchen_pot_win', { roomCode: room.code });
-                        for (const p of room.players) {
-                            const balance = await getBalance(p.name);
-                            io.to(p.socketId).emit('balance-update', { balance });
-                        }
-                    }
-
-                    io.to(room.code).emit('game-over', {
-                        winnerName,
-                        players: room.game.players.map(p => ({ name: p.name, lives: p.lives })),
-                        pot
-                    });
-                    room.game = null;
+                    await awardPotAndEndGame(io, room, winnerName, alive);
                 } else {
                     sendTurnStart(io, room);
                 }

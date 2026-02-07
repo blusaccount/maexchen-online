@@ -60,12 +60,11 @@ export async function addBalance(playerName, amount, reason = 'adjustment', meta
     }
 
     const runner = client || { query };
-    const current = await getOrCreatePlayerBalance(playerName, runner);
-    const newBalance = normalizeMoney(current + amount);
+    await getOrCreatePlayerBalance(playerName, runner);
 
     const updated = await runner.query(
-        'update players set balance = $1, updated_at = now() where name = $2 returning id, balance',
-        [newBalance, playerName]
+        'update players set balance = round((balance + $1)::numeric, 2), updated_at = now() where name = $2 returning id, balance',
+        [amount, playerName]
     );
 
     const row = updated.rows[0];
