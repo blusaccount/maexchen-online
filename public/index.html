@@ -6,28 +6,51 @@
     <title>StrictHotel</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/shared/css/theme.css">
     <style>
+        /* ===== Inverted Nintendo DS Pixel Style ===== */
+        :root {
+            --ds-bg: #1a1a1a;
+            --ds-surface: #111111;
+            --ds-border: #cccccc;
+            --ds-text: #e8e8e8;
+            --ds-text-dim: #888888;
+            --ds-highlight: #333333;
+            --ds-radius: 0px;
+        }
+
+        body {
+            font-family: 'Press Start 2P', monospace !important;
+            font-size: 10px;
+            background: var(--ds-bg) !important;
+            color: var(--ds-text);
+            image-rendering: pixelated;
+            line-height: 1.8;
+        }
+
+        body::before {
+            display: none !important;
+        }
+
         .menu-container {
             text-align: center;
-            padding: 40px;
-            max-width: 1100px;
+            padding: 16px 12px 40px;
+            max-width: 800px;
             margin: 0 auto;
         }
 
         .arcade-title {
-            font-size: 3rem;
-            color: var(--accent);
-            text-shadow: 0 0 30px var(--accent);
-            margin-bottom: 10px;
-            letter-spacing: 4px;
+            font-size: 14px;
+            color: var(--ds-text);
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 3px solid var(--ds-border);
         }
 
         .arcade-subtitle {
-            color: var(--text-dim);
-            font-size: 1.2rem;
-            margin-bottom: 30px;
+            display: none;
         }
 
         /* Avatar Bar */
@@ -35,28 +58,28 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 15px;
-            margin-bottom: 40px;
-            padding: 15px 20px;
-            background: var(--surface);
-            border: 1px solid rgba(0,255,136,0.2);
-            border-radius: var(--radius);
+            gap: 10px;
+            margin-bottom: 16px;
+            padding: 10px;
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            border-radius: var(--ds-radius);
         }
 
         .avatar-preview {
             width: 48px;
             height: 48px;
             image-rendering: pixelated;
-            border: 2px solid var(--accent);
-            border-radius: 4px;
+            border: 2px solid var(--ds-border);
+            border-radius: 0;
             background: #000;
         }
 
         .avatar-placeholder {
             width: 48px;
             height: 48px;
-            border: 2px dashed var(--text-dim);
-            border-radius: 4px;
+            border: 2px dashed var(--ds-text-dim);
+            border-radius: 0;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -65,49 +88,57 @@
         }
 
         .avatar-name {
-            color: var(--accent);
-            font-size: 1rem;
+            color: var(--ds-text);
+            font-size: 9px;
             letter-spacing: 1px;
         }
 
         .avatar-name-input {
-            background: var(--bg);
-            border: 1px solid var(--accent);
-            color: var(--text);
-            font-family: 'Orbitron', monospace;
-            font-size: 0.85rem;
-            padding: 8px 12px;
-            border-radius: 4px;
+            background: var(--ds-bg);
+            border: 2px solid var(--ds-border);
+            color: var(--ds-text);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 8px;
+            padding: 8px 10px;
+            border-radius: 0;
             width: 140px;
         }
 
         .avatar-name-input:focus {
-            outline: none;
-            box-shadow: 0 0 10px rgba(0,255,136,0.3);
+            outline: 2px solid var(--ds-border);
+            outline-offset: 2px;
+            box-shadow: 3px 3px 0 var(--ds-border);
         }
 
         .btn-avatar {
-            background: var(--surface);
-            border: 1px solid var(--accent);
-            color: var(--accent);
-            font-family: 'Orbitron', monospace;
-            font-size: 0.7rem;
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            color: var(--ds-text);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 7px;
             padding: 8px 14px;
             cursor: pointer;
             letter-spacing: 1px;
-            transition: all 0.3s;
+            transition: all 0.15s;
+            border-radius: 0;
+        }
+
+        .btn-avatar:hover {
+            background: var(--ds-border);
+            color: var(--ds-surface);
+            box-shadow: 3px 3px 0 var(--ds-text-dim);
         }
 
         .currency-display {
             display: flex;
             align-items: center;
             gap: 6px;
-            background: var(--bg);
-            border: 1px solid var(--gold);
+            background: var(--ds-bg);
+            border: 2px solid var(--ds-border);
             padding: 6px 12px;
-            border-radius: 4px;
-            font-size: 0.85rem;
-            color: var(--gold);
+            border-radius: 0;
+            font-size: 9px;
+            color: var(--ds-text);
             letter-spacing: 1px;
             white-space: nowrap;
         }
@@ -117,44 +148,43 @@
         }
 
         .currency-amount {
-            font-family: 'Orbitron', monospace;
+            font-family: 'Press Start 2P', monospace;
             font-weight: 700;
-        }
-
-        .btn-avatar:hover {
-            background: var(--accent);
-            color: #000;
-            box-shadow: 0 0 15px rgba(0,255,136,0.4);
         }
 
         .game-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            max-width: 900px;
-            margin: 0 auto 30px;
+            gap: 8px;
+            max-width: 800px;
+            margin: 0 auto 16px;
         }
 
         .game-card {
-            background: var(--surface);
-            border: 1px solid var(--accent);
-            padding: 12px 16px;
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            padding: 10px;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.15s;
             text-decoration: none;
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 10px;
+            border-radius: 0;
         }
 
         .game-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(0,255,136,0.25);
-            border-color: var(--accent-glow);
+            box-shadow: 4px 4px 0 var(--ds-border);
+            transform: translate(-2px, -2px);
+        }
+
+        .game-card:active {
+            box-shadow: none;
+            transform: translate(0, 0);
         }
 
         .game-icon {
-            font-size: 2rem;
+            font-size: 1.8rem;
             flex-shrink: 0;
         }
 
@@ -163,15 +193,16 @@
         }
 
         .game-title {
-            font-size: 0.95rem;
-            color: var(--accent);
-            margin-bottom: 2px;
+            font-size: 9px;
+            color: var(--ds-text);
+            margin-bottom: 4px;
+            font-weight: 700;
         }
 
         .game-desc {
-            color: var(--text-dim);
-            font-size: 0.7rem;
-            line-height: 1.4;
+            color: var(--ds-text-dim);
+            font-size: 7px;
+            line-height: 1.8;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
@@ -180,8 +211,9 @@
 
         .game-players {
             margin-top: 4px;
-            font-size: 0.65rem;
-            color: var(--gold);
+            font-size: 6px;
+            color: var(--ds-text-dim);
+            letter-spacing: 1px;
         }
 
         .game-card.coming-soon {
@@ -196,34 +228,49 @@
         }
 
         .coming-soon-badge {
-            background: var(--danger);
-            color: white;
-            padding: 2px 8px;
-            font-size: 0.6rem;
+            background: var(--ds-border);
+            color: var(--ds-surface);
+            padding: 2px 6px;
+            font-size: 6px;
             letter-spacing: 1px;
             margin-top: 4px;
             display: inline-block;
         }
 
+        /* ===== Pixel Divider ===== */
+        .pixel-divider {
+            height: 2px;
+            background: repeating-linear-gradient(
+                90deg,
+                var(--ds-border) 0px,
+                var(--ds-border) 4px,
+                transparent 4px,
+                transparent 8px
+            );
+            margin: 12px 0;
+        }
+
         /* Online Players Section */
         .online-section {
-            max-width: 900px;
+            max-width: 800px;
             margin: 0 auto;
             text-align: left;
         }
 
         .online-section h3 {
-            color: var(--accent);
-            font-size: 0.9rem;
+            color: var(--ds-text);
+            font-size: 10px;
             letter-spacing: 2px;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             text-align: center;
+            padding: 6px 0;
+            border-bottom: 2px dashed var(--ds-border);
         }
 
         .online-list {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 8px;
             justify-content: center;
         }
 
@@ -231,11 +278,11 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            background: var(--surface);
-            border: 1px solid rgba(0,255,136,0.15);
-            padding: 6px 12px;
-            border-radius: var(--radius);
-            font-size: 0.75rem;
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            padding: 6px 10px;
+            border-radius: 0;
+            font-size: 8px;
         }
 
         .online-avatar img {
@@ -245,69 +292,249 @@
         }
 
         .online-status {
-            font-size: 0.6rem;
-            color: var(--text-dim);
+            font-size: 7px;
+            color: var(--ds-text-dim);
             letter-spacing: 1px;
         }
 
         .no-players {
-            color: var(--text-dim);
-            font-size: 0.8rem;
+            color: var(--ds-text-dim);
+            font-size: 8px;
             text-align: center;
+            padding: 16px;
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+        }
+
+        /* ===== Pictochat DS Override ===== */
+        .picto-section {
+            border: 2px solid var(--ds-border) !important;
+            background: var(--ds-surface) !important;
+            box-shadow: 4px 4px 0 var(--ds-border) !important;
+            border-radius: 0 !important;
+        }
+
+        .picto-section::before {
+            display: none !important;
+        }
+
+        .picto-title {
+            color: var(--ds-text) !important;
+            font-size: 10px !important;
+            letter-spacing: 2px;
+        }
+
+        .picto-subtitle {
+            color: var(--ds-text-dim) !important;
+            font-size: 7px !important;
+        }
+
+        .picto-tool {
+            background: var(--ds-bg) !important;
+            border: 2px solid var(--ds-border) !important;
+            color: var(--ds-text) !important;
+            font-family: 'Press Start 2P', monospace !important;
+            font-size: 7px !important;
+            border-radius: 0 !important;
+        }
+
+        .picto-tool.active,
+        .picto-tool:hover {
+            background: var(--ds-border) !important;
+            color: var(--ds-surface) !important;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .picto-size label {
+            color: var(--ds-text-dim) !important;
+            font-size: 7px !important;
+        }
+
+        .picto-swatch {
+            border: 2px solid var(--ds-border) !important;
+            border-radius: 0 !important;
+        }
+
+        .picto-swatch.active {
+            border-color: var(--ds-text) !important;
+            box-shadow: 2px 2px 0 var(--ds-border) !important;
+        }
+
+        .picto-canvas-wrap {
+            border: 2px solid var(--ds-border) !important;
+            border-radius: 0 !important;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1) !important;
+        }
+
+        .picto-chat {
+            background: var(--ds-bg) !important;
+            border: 2px solid var(--ds-border) !important;
+            border-radius: 0 !important;
+        }
+
+        .picto-chat-message {
+            background: var(--ds-surface) !important;
+            border-left: 3px solid var(--ds-border) !important;
+            font-size: 7px !important;
+        }
+
+        .picto-chat-message .name {
+            color: var(--ds-text) !important;
+        }
+
+        .picto-chat-input input {
+            background: var(--ds-surface) !important;
+            border: 2px solid var(--ds-border) !important;
+            color: var(--ds-text) !important;
+            font-family: 'Press Start 2P', monospace !important;
+            font-size: 7px !important;
+            border-radius: 0 !important;
+        }
+
+        .picto-chat-input input:focus {
+            box-shadow: 3px 3px 0 var(--ds-border) !important;
+        }
+
+        .picto-send {
+            background: var(--ds-border) !important;
+            color: var(--ds-surface) !important;
+            font-family: 'Press Start 2P', monospace !important;
+            font-size: 7px !important;
+            border: 2px solid var(--ds-border) !important;
+            border-radius: 0 !important;
+        }
+
+        .picto-send:hover {
+            box-shadow: 2px 2px 0 var(--ds-text-dim) !important;
+        }
+
+        .picto-status {
+            color: var(--ds-text-dim) !important;
+            font-size: 7px !important;
+        }
+
+        /* ===== Soundboard DS Override ===== */
+        .soundboard-section {
+            border: 2px solid var(--ds-border) !important;
+            background: var(--ds-surface) !important;
+            box-shadow: 4px 4px 0 var(--ds-border) !important;
+            border-radius: 0 !important;
+        }
+
+        .soundboard-section::before {
+            display: none !important;
+        }
+
+        .soundboard-title {
+            color: var(--ds-text) !important;
+            font-size: 10px !important;
+            letter-spacing: 2px;
+        }
+
+        .soundboard-subtitle {
+            color: var(--ds-text-dim) !important;
+            font-size: 7px !important;
+        }
+
+        .soundboard-mute {
+            background: var(--ds-bg) !important;
+            border: 2px solid var(--ds-border) !important;
+            color: var(--ds-text) !important;
+            border-radius: 0 !important;
+        }
+
+        .soundboard-mute:hover {
+            background: var(--ds-highlight) !important;
+        }
+
+        .soundboard-mute.muted {
+            border-color: var(--ds-text-dim) !important;
+            background: var(--ds-highlight) !important;
+        }
+
+        .soundboard-volume input[type=range] {
+            accent-color: var(--ds-border);
+        }
+
+        .soundboard-btn {
+            background: var(--ds-bg) !important;
+            border: 2px solid var(--ds-border) !important;
+            border-radius: 0 !important;
+            transition: all 0.15s !important;
+        }
+
+        .soundboard-btn:hover {
+            box-shadow: 3px 3px 0 var(--ds-border) !important;
+            transform: translate(-2px, -2px) !important;
+        }
+
+        .soundboard-btn:active {
+            transform: translate(0, 0) !important;
+            box-shadow: none !important;
+        }
+
+        .soundboard-btn-label {
+            color: var(--ds-text-dim) !important;
+            font-size: 6px !important;
+        }
+
+        .soundboard-btn.playing {
+            border-color: var(--ds-text) !important;
+            box-shadow: 3px 3px 0 var(--ds-border) !important;
+            animation: none !important;
+        }
+
+        .soundboard-toast {
+            background: var(--ds-surface) !important;
+            border: 2px solid var(--ds-border) !important;
+            border-radius: 0 !important;
+            color: var(--ds-text) !important;
+            font-size: 7px !important;
+        }
+
+        .soundboard-toast-name {
+            color: var(--ds-text) !important;
+            font-weight: 700;
+        }
+
+        /* ===== Stock Ticker DS Override ===== */
+        .stock-ticker-bar {
+            background: var(--ds-surface) !important;
+            border-top: 2px solid var(--ds-border) !important;
+        }
+
+        .ticker-symbol {
+            color: var(--ds-text) !important;
+        }
+
+        .ticker-price {
+            color: var(--ds-text-dim) !important;
         }
 
         /* Mobile responsive */
         @media (max-width: 768px) {
             .menu-container {
-                padding: 20px 15px;
+                padding: 10px 8px 32px;
             }
 
             .arcade-title {
-                font-size: 2rem;
-                letter-spacing: 2px;
-            }
-
-            .arcade-subtitle {
-                font-size: 1rem;
-                margin-bottom: 20px;
+                font-size: 11px;
             }
 
             .avatar-bar {
                 flex-wrap: wrap;
-                gap: 10px;
-                padding: 12px;
+                gap: 8px;
+                padding: 8px;
             }
 
             .game-grid {
                 grid-template-columns: 1fr;
-                gap: 10px;
+                gap: 8px;
             }
 
             .game-card {
-                padding: 10px 14px;
-            }
-
-            .game-icon {
-                font-size: 1.8rem;
-            }
-
-            .game-title {
-                font-size: 0.85rem;
-            }
-
-            .game-desc {
-                font-size: 0.65rem;
-            }
-        }
-
-        @media (max-width: 400px) {
-            .arcade-title {
-                font-size: 1.6rem;
-            }
-
-            .arcade-subtitle {
-                font-size: 0.85rem;
-                margin-bottom: 15px;
+                padding: 8px;
             }
 
             .game-icon {
@@ -315,7 +542,25 @@
             }
 
             .game-title {
-                font-size: 0.8rem;
+                font-size: 8px;
+            }
+
+            .game-desc {
+                font-size: 6px;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .arcade-title {
+                font-size: 9px;
+            }
+
+            .game-icon {
+                font-size: 1.3rem;
+            }
+
+            .game-title {
+                font-size: 7px;
             }
 
             .avatar-name-input {
