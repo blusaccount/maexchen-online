@@ -5,12 +5,14 @@
 
     var VIDEO_ID = '5k3uAtQ8vlg';
     var STORAGE_MUTE = 'ambience-muted';
+    var STORAGE_VOL = 'ambience-volume';
     var DEFAULT_VOLUME = 30; // 0-100
 
     // ============== STATE ==============
 
     var player = null;
     var isMuted = false;
+    var volume = DEFAULT_VOLUME;
     var ready = false;
     var userInteracted = false;
 
@@ -18,6 +20,7 @@
 
     var muteBtn = document.getElementById('ambience-mute');
     var muteIcon = muteBtn ? muteBtn.querySelector('.ambience-mute-icon') : null;
+    var volumeSlider = document.getElementById('ambience-volume');
 
     // ============== YOUTUBE IFRAME API ==============
 
@@ -60,7 +63,7 @@
 
     function onPlayerReady() {
         ready = true;
-        player.setVolume(DEFAULT_VOLUME);
+        player.setVolume(volume);
         if (isMuted) {
             player.mute();
         } else {
@@ -85,6 +88,14 @@
         if (saved === 'true') {
             isMuted = true;
         }
+        var savedVol = localStorage.getItem(STORAGE_VOL);
+        if (savedVol !== null) {
+            volume = parseInt(savedVol, 10);
+            if (isNaN(volume) || volume < 0 || volume > 100) volume = DEFAULT_VOLUME;
+        }
+        if (volumeSlider) {
+            volumeSlider.value = volume;
+        }
         updateMuteUI();
     }
 
@@ -108,6 +119,19 @@
         muteIcon.textContent = isMuted ? '🔇' : '🎵';
     }
 
+    // ============== VOLUME CONTROL ==============
+
+    function setupVolumeControl() {
+        if (!volumeSlider) return;
+        volumeSlider.addEventListener('input', function () {
+            volume = parseInt(volumeSlider.value, 10);
+            localStorage.setItem(STORAGE_VOL, volume);
+            if (ready && player) {
+                player.setVolume(volume);
+            }
+        });
+    }
+
     // ============== USER INTERACTION GATE ==============
 
     function onFirstInteraction() {
@@ -123,6 +147,7 @@
     // ============== INIT ==============
 
     restoreSettings();
+    setupVolumeControl();
 
     if (muteBtn) {
         muteBtn.addEventListener('click', toggleMute);

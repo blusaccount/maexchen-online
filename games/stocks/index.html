@@ -549,6 +549,20 @@
             bottom: 44px;
             right: 12px;
             z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ambience-volume {
+            display: flex;
+            align-items: center;
+        }
+
+        .ambience-volume input[type=range] {
+            width: 80px;
+            accent-color: var(--ds-border);
+            cursor: pointer;
         }
 
         .ambience-mute {
@@ -597,6 +611,9 @@
 
 <!-- Ambience mute button -->
 <div class="ambience-control">
+    <div class="ambience-volume">
+        <input id="ambience-volume" type="range" min="0" max="100" value="50">
+    </div>
     <button class="ambience-mute" id="ambience-mute" type="button" title="Toggle Music">
         <span class="ambience-mute-icon">🎵</span>
     </button>
@@ -710,15 +727,18 @@
     // https://www.youtube.com/watch?v=WwB8SQMyfls
     var VIDEO_ID = 'WwB8SQMyfls';
     var STORAGE_MUTE = 'stocks-music-muted';
+    var STORAGE_VOL = 'stocks-music-volume';
     var DEFAULT_VOLUME = 50; // 0-100 (0.5 volume)
 
     var player = null;
     var isMuted = false;
+    var volume = DEFAULT_VOLUME;
     var ready = false;
     var userInteracted = false;
 
     var muteBtn = document.getElementById('ambience-mute');
     var muteIcon = muteBtn ? muteBtn.querySelector('.ambience-mute-icon') : null;
+    var volumeSlider = document.getElementById('ambience-volume');
 
     function loadYouTubeAPI() {
         if (window.YT && window.YT.Player) {
@@ -758,7 +778,7 @@
 
     function onPlayerReady() {
         ready = true;
-        player.setVolume(DEFAULT_VOLUME);
+        player.setVolume(volume);
         if (isMuted) {
             player.mute();
         } else {
@@ -778,6 +798,14 @@
         var saved = localStorage.getItem(STORAGE_MUTE);
         if (saved === 'true') {
             isMuted = true;
+        }
+        var savedVol = localStorage.getItem(STORAGE_VOL);
+        if (savedVol !== null) {
+            volume = parseInt(savedVol, 10);
+            if (isNaN(volume) || volume < 0 || volume > 100) volume = DEFAULT_VOLUME;
+        }
+        if (volumeSlider) {
+            volumeSlider.value = volume;
         }
         updateMuteUI();
     }
@@ -802,6 +830,17 @@
         muteIcon.textContent = isMuted ? '🔇' : '🎵';
     }
 
+    function setupVolumeControl() {
+        if (!volumeSlider) return;
+        volumeSlider.addEventListener('input', function () {
+            volume = parseInt(volumeSlider.value, 10);
+            localStorage.setItem(STORAGE_VOL, volume);
+            if (ready && player) {
+                player.setVolume(volume);
+            }
+        });
+    }
+
     function onFirstInteraction() {
         if (userInteracted) return;
         userInteracted = true;
@@ -813,6 +852,7 @@
     }
 
     restoreSettings();
+    setupVolumeControl();
 
     if (muteBtn) {
         muteBtn.addEventListener('click', toggleMute);
