@@ -10,6 +10,7 @@ const yahooFinance = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
 
 import { rooms, onlinePlayers, socketToRoom, broadcastOnlinePlayers, broadcastLobbies } from './room-manager.js';
 import { registerSocketHandlers, cleanupRateLimiters } from './socket-handlers.js';
+import { getDailyLesson, buildQuiz } from './turkish-lessons.js';
 import { startDiscordBot } from './discord-bot.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -315,6 +316,14 @@ app.get('/api/stock-quote', async (req, res) => {
         console.error('[StockQuote] Error:', err.message);
         res.status(502).json({ error: 'Failed to fetch quote' });
     }
+});
+
+// ============== TURKISH DAILY LESSON API ==============
+
+app.get('/api/turkish/daily', (req, res) => {
+    const lesson = getDailyLesson();
+    const quiz = buildQuiz(lesson);
+    res.json({ id: lesson.id, topic: lesson.topic, words: lesson.words, quiz });
 });
 
 // ============== NOSTALGIABAIT CONFIG ==============

@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StrictHotel – Türkçe</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👽</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --ds-bg: #e8e8e8;
+            --ds-surface: #ffffff;
+            --ds-border: #222222;
+            --ds-text: #111111;
+            --ds-text-dim: #666666;
+            --ds-highlight: #cccccc;
+            --ds-accent: #3366cc;
+            --ds-positive: #228833;
+            --ds-negative: #cc3333;
+            --ds-radius: 0px;
+        }
+
+        body {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            background: var(--ds-bg);
+            color: var(--ds-text);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            image-rendering: pixelated;
+            line-height: 1.8;
+        }
+
+        .turkish-page {
+            max-width: 600px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 16px 12px 40px;
+        }
+
+        /* Header */
+        .turkish-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid var(--ds-border);
+        }
+
+        .turkish-title {
+            font-size: 16px;
+            letter-spacing: 2px;
+            cursor: pointer;
+        }
+
+        .btn-home {
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 14px;
+            padding: 8px 12px;
+            cursor: pointer;
+            text-decoration: none;
+            color: var(--ds-text);
+        }
+
+        .btn-home:hover {
+            background: var(--ds-border);
+            color: var(--ds-surface);
+        }
+
+        /* Screens */
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        /* Lesson Info */
+        .lesson-box {
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .lesson-topic {
+            font-size: 14px;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .lesson-day {
+            font-size: 9px;
+            color: var(--ds-text-dim);
+            margin-bottom: 12px;
+        }
+
+        /* Word Cards */
+        .word-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .word-card {
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .word-turkish {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--ds-accent);
+            min-width: 0;
+            flex-shrink: 0;
+        }
+
+        .word-meaning {
+            font-size: 10px;
+            color: var(--ds-text-dim);
+            text-align: right;
+        }
+
+        /* Start Quiz Button */
+        .btn-start {
+            display: block;
+            width: 100%;
+            background: var(--ds-border);
+            color: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 12px;
+            padding: 16px;
+            cursor: pointer;
+            letter-spacing: 2px;
+            text-align: center;
+        }
+
+        .btn-start:hover {
+            background: var(--ds-text-dim);
+        }
+
+        /* Timer Bar */
+        .timer-bar-wrap {
+            background: var(--ds-highlight);
+            border: 2px solid var(--ds-border);
+            height: 20px;
+            margin-bottom: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .timer-bar {
+            height: 100%;
+            background: var(--ds-accent);
+            transition: width 1s linear;
+        }
+
+        .timer-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 8px;
+            color: var(--ds-text);
+            z-index: 1;
+        }
+
+        /* Quiz */
+        .quiz-progress {
+            font-size: 9px;
+            color: var(--ds-text-dim);
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .quiz-question {
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 6px;
+            color: var(--ds-text);
+        }
+
+        .quiz-prompt {
+            font-size: 9px;
+            text-align: center;
+            color: var(--ds-text-dim);
+            margin-bottom: 16px;
+        }
+
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .quiz-option {
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            padding: 14px 16px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.15s;
+        }
+
+        .quiz-option:hover {
+            background: var(--ds-highlight);
+        }
+
+        .quiz-option.correct {
+            background: var(--ds-positive);
+            color: white;
+            border-color: var(--ds-positive);
+        }
+
+        .quiz-option.wrong {
+            background: var(--ds-negative);
+            color: white;
+            border-color: var(--ds-negative);
+        }
+
+        .quiz-option.disabled {
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        .quiz-feedback {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 10px;
+            min-height: 20px;
+        }
+
+        /* Results */
+        .result-box {
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            padding: 24px 16px;
+            text-align: center;
+        }
+
+        .result-emoji {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .result-title {
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .result-score {
+            font-size: 20px;
+            margin-bottom: 8px;
+            color: var(--ds-accent);
+        }
+
+        .result-detail {
+            font-size: 9px;
+            color: var(--ds-text-dim);
+            margin-bottom: 16px;
+            line-height: 2;
+        }
+
+        .btn-replay {
+            display: inline-block;
+            background: var(--ds-border);
+            color: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            padding: 12px 24px;
+            cursor: pointer;
+            letter-spacing: 1px;
+        }
+
+        .btn-replay:hover {
+            background: var(--ds-text-dim);
+        }
+
+        /* Mobile */
+        @media (max-width: 400px) {
+            .turkish-title { font-size: 13px; }
+            .word-card { flex-direction: column; align-items: flex-start; gap: 4px; }
+            .word-meaning { text-align: left; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="turkish-page">
+    <div class="turkish-header">
+        <a href="/" class="btn-home" title="Home">🏠</a>
+        <div class="turkish-title" onclick="location.reload()">TÜRKÇE</div>
+    </div>
+
+    <!-- LEARN SCREEN -->
+    <div class="screen active" id="screen-learn">
+        <div class="lesson-box">
+            <div class="lesson-topic" id="lesson-topic"></div>
+            <div class="lesson-day" id="lesson-day"></div>
+        </div>
+
+        <div class="word-list" id="word-list"></div>
+
+        <button class="btn-start" id="btn-start-quiz">START QUIZ ▶</button>
+    </div>
+
+    <!-- QUIZ SCREEN -->
+    <div class="screen" id="screen-quiz">
+        <div class="timer-bar-wrap">
+            <div class="timer-bar" id="timer-bar"></div>
+            <div class="timer-text" id="timer-text">60s</div>
+        </div>
+
+        <div class="quiz-progress" id="quiz-progress"></div>
+        <div class="quiz-question" id="quiz-question"></div>
+        <div class="quiz-prompt">What does this mean?</div>
+        <div class="quiz-options" id="quiz-options"></div>
+        <div class="quiz-feedback" id="quiz-feedback"></div>
+    </div>
+
+    <!-- RESULT SCREEN -->
+    <div class="screen" id="screen-result">
+        <div class="result-box">
+            <div class="result-emoji" id="result-emoji"></div>
+            <div class="result-title" id="result-title"></div>
+            <div class="result-score" id="result-score"></div>
+            <div class="result-detail" id="result-detail"></div>
+            <button class="btn-replay" id="btn-replay">REVIEW WORDS ↺</button>
+        </div>
+    </div>
+</div>
+
+<script src="/games/turkish/js/game.js"></script>
+
+</body>
+</html>
