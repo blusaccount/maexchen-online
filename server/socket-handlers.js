@@ -154,6 +154,16 @@ function cleanupPictoForSocket(socketId) {
 
 const brainLeaderboard = new Map(); // playerName -> brainAge (best daily test)
 const BRAIN_LEADERBOARD_MAX = 100;
+const VALID_BRAIN_GAME_IDS = ['math', 'stroop', 'chimp', 'reaction', 'scramble'];
+
+// Per-game leaderboards: gameId -> Map(playerName -> bestScore)
+const brainGameLeaderboards = {
+    math: new Map(),
+    stroop: new Map(),
+    chimp: new Map(),
+    reaction: new Map(),
+    scramble: new Map()
+};
 
 function getBrainLeaderboardSorted() {
     const entries = [];
@@ -163,6 +173,43 @@ function getBrainLeaderboardSorted() {
     // Sort by brain age ascending (lower = better)
     entries.sort((a, b) => a.brainAge - b.brainAge);
     return entries.slice(0, 10);
+}
+
+function getGameLeaderboardSorted(gameId) {
+    const board = brainGameLeaderboards[gameId];
+    if (!board) return [];
+    const entries = [];
+    for (const [name, score] of board) {
+        entries.push({ name, score });
+    }
+    // Sort by score descending (higher = better)
+    entries.sort((a, b) => b.score - a.score);
+    return entries.slice(0, 10);
+}
+
+function getAllGameLeaderboards() {
+    const result = {};
+    for (const gameId of Object.keys(brainGameLeaderboards)) {
+        result[gameId] = getGameLeaderboardSorted(gameId);
+    }
+    return result;
+}
+
+function updateGameScore(gameId, name, score) {
+    const board = brainGameLeaderboards[gameId];
+    if (!board) return;
+    const current = board.get(name);
+    if (current === undefined || score > current) {
+        board.set(name, score);
+    }
+    // Limit size
+    if (board.size > BRAIN_LEADERBOARD_MAX) {
+        const sorted = getGameLeaderboardSorted(gameId);
+        const keepNames = new Set(sorted.map(e => e.name));
+        for (const [n] of board) {
+            if (!keepNames.has(n)) board.delete(n);
+        }
+    }
 }
 
 export function cleanupRateLimiters() {
@@ -1199,6 +1246,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
         socket.on('brain-get-leaderboard', () => { try {
             if (!checkRateLimit(socket.id)) return;
             socket.emit('brain-leaderboard', getBrainLeaderboardSorted());
+            socket.emit('brain-game-leaderboards', getAllGameLeaderboards());
         } catch (err) { console.error('brain-get-leaderboard error:', err.message); } });
 
         socket.on('brain-submit-score', (data) => { try {
@@ -1236,6 +1284,19 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
 
             // Broadcast updated leaderboard
             io.emit('brain-leaderboard', getBrainLeaderboardSorted());
+
+            // Update per-game leaderboards from daily test games
+            if (Array.isArray(data.games)) {
+                for (const g of data.games) {
+                    if (g && VALID_BRAIN_GAME_IDS.includes(g.gameId)) {
+                        const s = Number(g.score);
+                        if (Number.isFinite(s) && s >= 0 && s <= 100) {
+                            updateGameScore(g.gameId, name, s);
+                        }
+                    }
+                }
+                io.emit('brain-game-leaderboards', getAllGameLeaderboards());
+            }
         } catch (err) { console.error('brain-submit-score error:', err.message); } });
 
         socket.on('brain-training-score', (data) => { try {
@@ -1246,6 +1307,15 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, yahooFinance } =
 
             const coins = Number(data.coins);
             if (!Number.isFinite(coins) || coins < 0 || coins > 50) return;
+
+            // Update per-game leaderboard
+            if (data.gameId && VALID_BRAIN_GAME_IDS.includes(data.gameId)) {
+                const s = Number(data.score);
+                if (Number.isFinite(s) && s >= 0 && s <= 100) {
+                    updateGameScore(data.gameId, name, s);
+                    io.emit('brain-game-leaderboards', getAllGameLeaderboards());
+                }
+            }
 
             // Award coins for free training
             if (coins > 0) {

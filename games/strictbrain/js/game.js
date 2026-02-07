@@ -52,6 +52,57 @@
         }).join('');
     });
 
+    // ============== PER-GAME LEADERBOARDS ==============
+
+    let gameLeaderboardData = {};
+    let activeGameTab = 'math';
+
+    const GAME_TAB_NAMES = {
+        math: '➗ Mathe-Blitz',
+        stroop: '🎨 Farbe vs. Wort',
+        chimp: '🔢 Zahlen-Memory',
+        reaction: '⚡ Reaktionstest',
+        scramble: '🔤 Wort-Scramble'
+    };
+
+    socket.on('brain-game-leaderboards', (data) => {
+        if (!data) return;
+        gameLeaderboardData = data;
+        renderGameLeaderboard(activeGameTab);
+    });
+
+    function renderGameLeaderboard(gameId) {
+        const list = $('game-lb-list');
+        const title = $('game-lb-title');
+        if (!list || !title) return;
+
+        title.textContent = GAME_TAB_NAMES[gameId] || gameId;
+
+        const entries = gameLeaderboardData[gameId];
+        if (!entries || entries.length === 0) {
+            list.innerHTML = '<div class="lb-row"><span style="color:var(--ds-text-dim)">Noch keine Ergebnisse</span></div>';
+            return;
+        }
+        list.innerHTML = entries.map((e, i) => {
+            const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
+            return '<div class="lb-row">' +
+                '<span class="lb-rank">' + medal + '</span>' +
+                '<span class="lb-name">' + escapeHtml(e.name) + '</span>' +
+                '<span class="lb-score">' + e.score + '/100</span>' +
+                '</div>';
+        }).join('');
+    }
+
+    // Tab click handlers
+    document.querySelectorAll('.game-lb-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.game-lb-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            activeGameTab = tab.dataset.game;
+            renderGameLeaderboard(activeGameTab);
+        });
+    });
+
     function escapeHtml(str) {
         const div = document.createElement('div');
         div.textContent = str;

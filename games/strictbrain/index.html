@@ -545,6 +545,46 @@
             font-size: 14px;
         }
 
+        /* ===== Game Leaderboard Tabs ===== */
+        .game-lb-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 8px;
+            justify-content: center;
+        }
+
+        .game-lb-tab {
+            background: var(--ds-bg);
+            border: 2px solid var(--ds-border);
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            line-height: 1;
+            transition: all 0.15s;
+        }
+
+        .game-lb-tab:hover {
+            background: var(--ds-highlight);
+        }
+
+        .game-lb-tab.active {
+            background: var(--ds-border);
+            box-shadow: 2px 2px 0 var(--ds-text-dim);
+        }
+
+        .game-lb-title {
+            text-align: center;
+            font-family: 'Patrick Hand', cursive;
+            font-size: 14px;
+            color: var(--ds-text-dim);
+            margin-bottom: 8px;
+        }
+
+        .lb-score {
+            font-family: 'Patrick Hand', cursive;
+            font-size: 14px;
+        }
+
         /* ===== Pixel Divider ===== */
         .pixel-divider {
             height: 2px;
@@ -608,6 +648,21 @@
         <div class="leaderboard" id="leaderboard-panel">
             <h3>🏆 GEHIRNALTER RANGLISTE</h3>
             <div id="leaderboard-list">
+                <div class="lb-row"><span style="color:var(--ds-text-dim)">Noch keine Ergebnisse</span></div>
+            </div>
+        </div>
+
+        <div class="leaderboard" id="game-leaderboards-panel" style="margin-top:12px;">
+            <h3>📊 SPIEL-RANGLISTEN</h3>
+            <div class="game-lb-tabs" id="game-lb-tabs">
+                <button class="game-lb-tab active" data-game="math">➗</button>
+                <button class="game-lb-tab" data-game="stroop">🎨</button>
+                <button class="game-lb-tab" data-game="chimp">🔢</button>
+                <button class="game-lb-tab" data-game="reaction">⚡</button>
+                <button class="game-lb-tab" data-game="scramble">🔤</button>
+            </div>
+            <div class="game-lb-title" id="game-lb-title">➗ Mathe-Blitz</div>
+            <div id="game-lb-list">
                 <div class="lb-row"><span style="color:var(--ds-text-dim)">Noch keine Ergebnisse</span></div>
             </div>
         </div>
