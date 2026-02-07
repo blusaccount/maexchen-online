@@ -65,11 +65,11 @@
 
     function playSound(soundId) {
         if (isMuted) return;
-        var audio = audioCache[soundId];
-        if (!audio) return;
-        var clone = audio.cloneNode();
-        clone.volume = volume;
-        clone.play().catch(function () { /* autoplay blocked */ });
+        var src = audioCache[soundId];
+        if (!src) return;
+        var audio = new Audio(src.src);
+        audio.volume = volume;
+        audio.play().catch(function () { /* autoplay blocked */ });
     }
 
     // ============== SETTINGS ==============
