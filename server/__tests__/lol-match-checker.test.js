@@ -63,7 +63,6 @@ describe('manualCheckBetStatus', () => {
             playerName,
             status: 'pending',
             puuid: 'test-puuid',
-            lastMatchId: 'match-1',
             betOnWin: true,
             amount: 100
         });
@@ -118,8 +117,7 @@ describe('manualCheckBetStatus', () => {
             id: betId,
             playerName: 'otherPlayer',
             status: 'pending',
-            puuid: 'test-puuid',
-            lastMatchId: 'match-1'
+            puuid: 'test-puuid'
         });
 
         const result = await manualCheckBetStatus(betId, 'testPlayer');
@@ -134,8 +132,7 @@ describe('manualCheckBetStatus', () => {
             id: betId,
             playerName: 'testPlayer',
             status: 'resolved',
-            puuid: 'test-puuid',
-            lastMatchId: 'match-1'
+            puuid: 'test-puuid'
         });
 
         const result = await manualCheckBetStatus(betId, 'testPlayer');
@@ -144,14 +141,13 @@ describe('manualCheckBetStatus', () => {
         expect(result.message).toContain('already resolved');
     });
 
-    it('returns error when bet is missing puuid or lastMatchId', async () => {
+    it('returns error when bet is missing puuid', async () => {
         const betId = betIdCounter++;
         mockGetBetById.mockResolvedValue({
             id: betId,
             playerName: 'testPlayer',
             status: 'pending',
-            puuid: null,
-            lastMatchId: null
+            puuid: null
         });
 
         const result = await manualCheckBetStatus(betId, 'testPlayer');
@@ -167,9 +163,9 @@ describe('manualCheckBetStatus', () => {
             playerName: 'testPlayer',
             status: 'pending',
             puuid: 'test-puuid',
-            lastMatchId: 'match-1',
             betOnWin: true,
-            amount: 100
+            amount: 100,
+            createdAt: '2024-01-01T00:00:00.000Z'
         });
 
         mockGetMatchHistory.mockResolvedValue([]);
@@ -180,20 +176,25 @@ describe('manualCheckBetStatus', () => {
         expect(result.message).toContain('No new match');
     });
 
-    it('returns no new match when lastMatchId is the most recent', async () => {
+    it('returns no new match when latest match ended before bet placement', async () => {
         const betId = betIdCounter++;
         mockGetBetById.mockResolvedValue({
             id: betId,
             playerName: 'testPlayer',
             status: 'pending',
             puuid: 'test-puuid',
-            lastMatchId: 'match-1',
             betOnWin: true,
-            amount: 100
+            amount: 100,
+            createdAt: '2024-01-02T00:00:00.000Z'
         });
 
-        // lastMatchId is the most recent match (index 0)
-        mockGetMatchHistory.mockResolvedValue(['match-1', 'match-0']);
+        mockGetMatchHistory.mockResolvedValue(['match-1']);
+        mockGetMatchDetails.mockResolvedValue({
+            info: {
+                gameEndTimestamp: 1704067200000, // 2024-01-01T00:00:00.000Z
+                participants: [{ puuid: 'test-puuid', win: true }]
+            }
+        });
 
         const result = await manualCheckBetStatus(betId, 'testPlayer');
         expect(result.success).toBe(true);
@@ -201,14 +202,13 @@ describe('manualCheckBetStatus', () => {
         expect(result.message).toContain('No new match');
     });
 
-    it('resolves bet when lastMatchId is most recent but match ended after bet placement', async () => {
+    it('resolves bet when most recent match ended after bet placement', async () => {
         const betId = betIdCounter++;
         const bet = {
             id: betId,
             playerName: 'testPlayer',
             status: 'pending',
             puuid: 'test-puuid',
-            lastMatchId: 'match-1',
             betOnWin: true,
             amount: 100,
             lolUsername: 'TestPlayer#NA1',
@@ -240,23 +240,24 @@ describe('manualCheckBetStatus', () => {
         expect(result.payout).toBe(200);
     });
 
-    it('resolves bet when new match is found and player won', async () => {
+    it('resolves bet when a match ended after bet placement and player won', async () => {
         const betId = betIdCounter++;
         const bet = {
             id: betId,
             playerName: 'testPlayer',
             status: 'pending',
             puuid: 'test-puuid',
-            lastMatchId: 'match-1',
             betOnWin: true,
             amount: 100,
-            lolUsername: 'TestPlayer#NA1'
+            lolUsername: 'TestPlayer#NA1',
+            createdAt: '2024-01-01T00:00:00.000Z'
         };
 
         mockGetBetById.mockResolvedValue(bet);
         mockGetMatchHistory.mockResolvedValue(['match-2', 'match-1']);
         mockGetMatchDetails.mockResolvedValue({
             info: {
+                gameEndTimestamp: 1704067800000,
                 participants: [
                     { puuid: 'test-puuid', win: true }
                 ]
@@ -280,17 +281,17 @@ describe('manualCheckBetStatus', () => {
         expect(mockGetMatchHistory).toHaveBeenCalledWith('test-puuid', 20);
     });
 
-    it('resolves bet when baseline match is outside a short history window', async () => {
+    it('resolves bet when newest match ended after bet placement', async () => {
         const betId = betIdCounter++;
         const bet = {
             id: betId,
             playerName: 'testPlayer',
             status: 'pending',
             puuid: 'test-puuid',
-            lastMatchId: 'older-baseline-match',
             betOnWin: false,
             amount: 100,
-            lolUsername: 'TestPlayer#NA1'
+            lolUsername: 'TestPlayer#NA1',
+            createdAt: '2024-01-01T00:00:00.000Z'
         };
 
         mockGetBetById.mockResolvedValue(bet);
@@ -302,6 +303,7 @@ describe('manualCheckBetStatus', () => {
         ]);
         mockGetMatchDetails.mockResolvedValue({
             info: {
+                gameEndTimestamp: 1704067800000,
                 participants: [
                     { puuid: 'test-puuid', win: false }
                 ]
@@ -324,14 +326,13 @@ describe('manualCheckBetStatus', () => {
     });
 
 
-    it('returns no new match when baseline is outside window but all matches ended before bet placement', async () => {
+    it('returns no new match when all matches ended before bet placement', async () => {
         const betId = betIdCounter++;
         const bet = {
             id: betId,
             playerName: 'testPlayer',
             status: 'pending',
             puuid: 'test-puuid',
-            lastMatchId: 'older-baseline-match',
             betOnWin: true,
             amount: 100,
             lolUsername: 'TestPlayer#NA1',
@@ -367,23 +368,24 @@ describe('manualCheckBetStatus', () => {
         expect(mockResolveBet).not.toHaveBeenCalled();
     });
 
-    it('resolves bet when new match is found and player lost', async () => {
+    it('resolves bet when a match ended after bet placement and player lost', async () => {
         const betId = betIdCounter++;
         const bet = {
             id: betId,
             playerName: 'testPlayer',
             status: 'pending',
             puuid: 'test-puuid',
-            lastMatchId: 'match-1',
             betOnWin: true,
             amount: 100,
-            lolUsername: 'TestPlayer#NA1'
+            lolUsername: 'TestPlayer#NA1',
+            createdAt: '2024-01-01T00:00:00.000Z'
         };
 
         mockGetBetById.mockResolvedValue(bet);
         mockGetMatchHistory.mockResolvedValue(['match-2', 'match-1']);
         mockGetMatchDetails.mockResolvedValue({
             info: {
+                gameEndTimestamp: 1704067800000,
                 participants: [
                     { puuid: 'test-puuid', win: false }
                 ]
@@ -412,9 +414,9 @@ describe('manualCheckBetStatus', () => {
             playerName: 'testPlayer',
             status: 'pending',
             puuid: 'test-puuid',
-            lastMatchId: 'match-1',
             betOnWin: true,
-            amount: 100
+            amount: 100,
+            createdAt: '2024-01-01T00:00:00.000Z'
         });
 
         mockGetMatchHistory.mockResolvedValue(['match-2', 'match-1']);
@@ -433,7 +435,6 @@ describe('manualCheckBetStatus', () => {
             playerName: 'testPlayer',
             status: 'pending',
             puuid: 'test-puuid',
-            lastMatchId: 'match-1',
             betOnWin: true,
             amount: 100
         });
@@ -460,7 +461,6 @@ describe('manualCheckBetStatus', () => {
             playerName: 'testPlayer',
             status: 'pending',
             puuid: 'test-puuid',
-            lastMatchId: 'match-1',
             betOnWin: true,
             amount: 100
         });
@@ -480,7 +480,6 @@ describe('manualCheckBetStatus', () => {
             playerName: 'testPlayer',
             status: 'pending',
             puuid: 'test-puuid',
-            lastMatchId: 'match-1',
             betOnWin: true,
             amount: 100
         });

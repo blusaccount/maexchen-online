@@ -1,3 +1,23 @@
+# HANDOFF - LoL Bet Resolution Reset (Timestamp-Only)
+
+## What Was Done
+- Removed `last_match_id` dependency from bet resolution.
+- Bets now resolve using the newest match that ended after `created_at`.
+- Backfill now only fills `puuid` (no match history lookup required).
+- Pending-bet queries now require only `puuid`.
+- Updated manual check + tests to reflect timestamp-only selection.
+
+## How to Verify
+1. `node --check server/lol-match-checker.js`
+2. `node --check server/lol-betting.js`
+3. `npm test -- server/__tests__/lol-match-checker.test.js`
+
+### Files Modified
+- `server/lol-match-checker.js`
+- `server/lol-betting.js`
+- `server/__tests__/lol-match-checker.test.js`
+- `PLANS.md`
+
 # HANDOFF - LoL Bet Resolution Timestamp Fallback
 
 ## What Was Done

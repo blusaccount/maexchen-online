@@ -146,14 +146,14 @@ export async function getPlayerBets(playerName, limit = 20) {
 export async function getPendingBetsForChecking() {
     if (!isDatabaseEnabled()) {
         return betsMemory
-            .filter(bet => bet.status === 'pending' && bet.puuid && bet.lastMatchId)
+            .filter(bet => bet.status === 'pending' && bet.puuid)
             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     }
 
     const result = await query(
         `select id, player_id, player_name, lol_username, bet_amount, bet_on_win, puuid, last_match_id, created_at
          from lol_bets
-         where status = 'pending' and puuid is not null and last_match_id is not null
+         where status = 'pending' and puuid is not null
          order by created_at asc
          limit 500`
     );
@@ -172,7 +172,7 @@ export async function getPendingBetsForChecking() {
 }
 
 /**
- * Get pending bets that are missing PUUID or lastMatchId
+ * Get pending bets that are missing PUUID
  * These bets were placed when the Riot API was unavailable and need backfilling
  */
 export async function getPendingBetsWithoutPuuid() {
@@ -181,14 +181,14 @@ export async function getPendingBetsWithoutPuuid() {
     
     if (!isDatabaseEnabled()) {
         return betsMemory
-            .filter(bet => bet.status === 'pending' && (!bet.puuid || !bet.lastMatchId))
+            .filter(bet => bet.status === 'pending' && !bet.puuid)
             .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
     }
 
     const result = await query(
         `select id, player_name, lol_username, bet_amount, bet_on_win, created_at
          from lol_bets
-         where status = 'pending' and (puuid is null or last_match_id is null)
+         where status = 'pending' and puuid is null
          order by created_at asc
          limit $1`,
         [MAX_BACKFILL_BATCH_SIZE]
@@ -214,15 +214,27 @@ export async function updateBetPuuid(betId, puuid, lastMatchId) {
             return false;
         }
         bet.puuid = puuid;
-        bet.lastMatchId = lastMatchId;
+        if (lastMatchId) {
+            bet.lastMatchId = lastMatchId;
+        }
         return true;
+    }
+
+    if (lastMatchId) {
+        const result = await query(
+            `update lol_bets
+             set puuid = $2, last_match_id = $3
+             where id = $1 and status = 'pending'`,
+            [betId, puuid, lastMatchId]
+        );
+        return result.rowCount > 0;
     }
 
     const result = await query(
         `update lol_bets
-         set puuid = $2, last_match_id = $3
+         set puuid = $2
          where id = $1 and status = 'pending'`,
-        [betId, puuid, lastMatchId]
+        [betId, puuid]
     );
 
     return result.rowCount > 0;

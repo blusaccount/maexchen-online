@@ -38,6 +38,46 @@ Summarize what shipped and what remains.
 
 ---
 
+## ExecPlan - LoL Bet Resolution Reset (Timestamp-Only)
+
+## Purpose
+Stop LoL bets from staying pending by resolving against the newest match that ended after the bet was placed, without relying on `last_match_id`.
+
+## Scope
+In scope: match checker + manual check resolution logic, backfill behavior, and tests.  
+Out of scope: DB schema changes, UI changes, admin tooling.
+
+## Context
+- `server/lol-match-checker.js`
+- `server/lol-betting.js`
+- `server/__tests__/lol-match-checker.test.js`
+
+## Plan of Work
+1. Remove `lastMatchId` dependency from resolution and backfill flow.
+2. Resolve bets by comparing match end timestamps to bet `createdAt`.
+3. Update tests and document changes.
+
+## Progress
+- [x] Start plan
+- [x] Implement changes
+- [ ] Verify behavior
+- [x] Update handoff notes
+
+## Decision Log
+- Decision: Resolve bets via match end timestamp only (ignore `last_match_id`).
+  Rationale: Prevents permanent stuck bets when baseline is missing or API calls fail.
+  Date: 2026-02-08
+
+## Verification
+- `node --check server/lol-match-checker.js`
+- `node --check server/lol-betting.js`
+- `npm test -- server/__tests__/lol-match-checker.test.js`
+
+## Outcomes
+- Pending (verification + handoff).
+
+---
+
 ## ExecPlan - Security + Performance Hardening
 
 ## Purpose
@@ -442,3 +482,47 @@ Automated checks passed via syntax validation; full runtime/manual verification 
 
 ## Outcomes
 Shipped with an additional follow-up: per-bet match selection with timestamp-aware scanning when baseline is outside the history window.
+
+---
+
+## ExecPlan - LoL Bet Resolution Stuck Bets
+
+## Purpose
+Ensure LoL bets resolve reliably by selecting the correct "next match" and making Riot account lookup resilient to transient 5xx errors.
+
+## Scope
+In scope: match-selection logic for multi-match gaps, Riot account lookup retries, targeted tests.
+Out of scope: new admin tooling, UI changes, or major refactors.
+
+## Context
+- `server/lol-match-checker.js`
+- `server/riot-api.js`
+- `server/__tests__/lol-match-checker.test.js`
+
+## Plan of Work
+1. Adjust match selection to pick the first match after the baseline (not the most recent).
+2. Add retry/backoff to Riot account lookups for transient failures.
+3. Update tests to cover multi-match gaps.
+4. Update handoff notes.
+
+## Progress
+- [x] Start plan
+- [ ] Implement changes
+- [ ] Verify behavior
+- [ ] Update handoff notes
+
+## Surprises and Discoveries
+- None yet.
+
+## Decision Log
+- Decision: Resolve to the immediate match after the baseline when multiple new matches exist.
+  Rationale: Bets target the next match after placement, not the most recent match.
+  Date: 2026-02-08
+
+## Verification
+- `node --check server/riot-api.js`
+- `node --check server/lol-match-checker.js`
+- `npm test -- server/__tests__/lol-match-checker.test.js`
+
+## Outcomes
+- Pending.

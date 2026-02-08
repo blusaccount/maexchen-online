@@ -58,7 +58,7 @@ export function stopMatchChecker() {
 }
 
 /**
- * Backfill PUUID and lastMatchId for bets that were placed without them
+ * Backfill PUUID for bets that were placed without it
  * NOTE: This runs on every polling cycle. For production systems with high volume,
  * consider adding a retry counter or last_attempt timestamp to avoid repeatedly
  * attempting to backfill bets that consistently fail validation.
@@ -83,17 +83,8 @@ async function backfillMissingPuuids() {
                     continue;
                 }
 
-                // Fetch last match ID
-                const matchHistory = await getMatchHistory(validation.puuid, 1);
-                if (matchHistory.length === 0) {
-                    console.warn(`[LoL Match Checker] No match history for ${bet.lolUsername} (bet ${bet.id})`);
-                    continue;
-                }
-
-                const lastMatchId = matchHistory[0];
-                
-                // Update bet with PUUID and lastMatchId
-                const success = await updateBetPuuid(bet.id, validation.puuid, lastMatchId);
+                // Update bet with PUUID only (resolution is timestamp-based)
+                const success = await updateBetPuuid(bet.id, validation.puuid, null);
                 
                 if (success) {
                     console.log(`[LoL Match Checker] Backfilled bet ${bet.id}: ${bet.lolUsername} -> ${validation.puuid}`);
@@ -124,10 +115,10 @@ async function checkPendingBets() {
             return;
         }
 
-        // STEP 1: Backfill PUUID and lastMatchId for bets that were placed without them
+        // STEP 1: Backfill PUUID for bets that were placed without it
         await backfillMissingPuuids();
 
-        // STEP 2: Check bets that have PUUID and lastMatchId
+        // STEP 2: Check bets that have PUUID
         const pendingBets = await getPendingBetsForChecking();
         
         if (pendingBets.length === 0) {
@@ -219,53 +210,28 @@ async function getCachedMatchDetails(matchId, cache) {
 }
 
 async function selectResolvingMatchForBet(bet, matchIds, matchDetailsCache) {
-    if (!bet || !bet.lastMatchId || matchIds.length === 0) {
+    if (!bet || matchIds.length === 0) {
         return { matchId: null, matchDetails: null };
     }
 
-    const baselineMatchIndex = matchIds.indexOf(bet.lastMatchId);
-
-    if (baselineMatchIndex > 0) {
+    if (!bet.createdAt) {
         const matchId = matchIds[0];
         const matchDetails = await getCachedMatchDetails(matchId, matchDetailsCache);
         return { matchId, matchDetails };
     }
 
-    if (baselineMatchIndex === 0) {
-        if (!bet.createdAt) {
-            return { matchId: null, matchDetails: null };
-        }
-
-        const createdAtMs = Date.parse(bet.createdAt);
-        if (!Number.isFinite(createdAtMs)) {
-            return { matchId: null, matchDetails: null };
-        }
-
-        const latestMatchId = matchIds[0];
-        const matchDetails = await getCachedMatchDetails(latestMatchId, matchDetailsCache);
-        const matchEndMs = getMatchEndTimestamp(matchDetails);
-        if (matchEndMs && matchEndMs > createdAtMs) {
-            return { matchId: latestMatchId, matchDetails };
-        }
-
-        return { matchId: null, matchDetails: null };
+    const createdAtMs = Date.parse(bet.createdAt);
+    if (!Number.isFinite(createdAtMs)) {
+        const matchId = matchIds[0];
+        const matchDetails = await getCachedMatchDetails(matchId, matchDetailsCache);
+        return { matchId, matchDetails };
     }
 
-    // Baseline not present in current history window:
-    // choose the newest match that ended after bet placement (if timestamp exists).
+    // Choose the newest match that ended after bet placement.
     for (const matchId of matchIds) {
         const matchDetails = await getCachedMatchDetails(matchId, matchDetailsCache);
         if (!matchDetails || !matchDetails.info || !matchDetails.info.participants) {
             continue;
-        }
-
-        if (!bet.createdAt) {
-            return { matchId, matchDetails };
-        }
-
-        const createdAtMs = Date.parse(bet.createdAt);
-        if (!Number.isFinite(createdAtMs)) {
-            return { matchId, matchDetails };
         }
 
         const matchEndMs = getMatchEndTimestamp(matchDetails);
@@ -434,7 +400,7 @@ export async function manualCheckBetStatus(betId, playerName) {
         }
 
         // Check if bet has required data
-        if (!bet.puuid || !bet.lastMatchId) {
+        if (!bet.puuid) {
             return {
                 success: false,
                 error: 'MISSING_DATA',
