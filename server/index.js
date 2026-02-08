@@ -20,6 +20,7 @@ import { registerSocketHandlers, cleanupRateLimiters } from './socket-handlers.j
 import { getDailyLesson, buildQuiz, getDailySeed } from './turkish-lessons.js';
 import { recordDailyCompletion, getTurkishLeaderboard } from './turkish-streaks.js';
 import { startDiscordBot } from './discord-bot.js';
+import { initSchema } from './db.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -474,6 +475,13 @@ server.listen(PORT, async () => {
     console.log(`✓ StrictHotel Server: http://localhost:${PORT}`);
     if (!GAME_ENABLED) {
         console.log('⚠ GAME_ENABLED=false: stock game APIs and socket trades are disabled');
+    }
+
+    // Initialise database schema (creates tables if they don't exist)
+    try {
+        await initSchema();
+    } catch (err) {
+        console.error('Database schema init error:', err.message);
     }
 
     // Discord Bot starten

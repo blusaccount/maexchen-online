@@ -1,3 +1,26 @@
+# HANDOFF - Auto-initialise Database Schema on Startup
+
+## What Was Done
+
+### Bug Fix: `lol_bets` table missing in production database
+
+The `lol_bets` table definition existed in `server/sql/persistence.sql` but was never automatically applied to the production database. Every LoL betting operation failed with `relation "lol_bets" does not exist`.
+
+Added automatic schema initialisation: `server/db.js` now exports an `initSchema()` function that reads `persistence.sql` and executes it against the database pool. The SQL uses `CREATE TABLE IF NOT EXISTS` so it is safe to run on every startup. `server/index.js` calls `initSchema()` during server startup (before the Discord bot), with a try/catch so a schema error does not crash the server.
+
+## Files Changed
+
+- `server/db.js` — added `initSchema()` that reads and runs `server/sql/persistence.sql`
+- `server/index.js` — imported and called `initSchema()` on server startup
+
+## Verification
+
+- `npm test` — all 122 tests pass
+- `node --check server/db.js && node --check server/index.js` — no syntax errors
+- All SQL statements use `CREATE TABLE IF NOT EXISTS` / `CREATE INDEX IF NOT EXISTS`, so re-running on an existing database is idempotent
+
+---
+
 # HANDOFF - Fix LoL Betting "Failed to place bet" Error
 
 ## What Was Done
