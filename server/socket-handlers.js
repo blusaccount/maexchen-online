@@ -134,6 +134,7 @@ const loopState = {
     bpm: 120,
     isPlaying: false,
     currentStep: 0,
+    masterVolume: 1.0,
     listeners: new Map(),  // socketId -> playerName
     synth: {
         waveform: 'square',
@@ -2103,7 +2104,8 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
                 bpm: loopState.bpm,
                 isPlaying: loopState.isPlaying,
                 listeners: Array.from(loopState.listeners.values()),
-                synth: loopState.synth
+                synth: loopState.synth,
+                masterVolume: loopState.masterVolume
             });
 
             // Broadcast updated listener list to all
@@ -2233,6 +2235,23 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
             console.log(`[LoopMachine] Synth settings updated: ${waveform} @ ${frequency}Hz`);
         } catch (err) { console.error('loop-set-synth error:', err.message); } });
 
+        socket.on('loop-set-master-volume', (data) => { try {
+            if (!checkRateLimit(socket, 5)) return;
+
+            const volume = typeof data.masterVolume === 'number'
+                ? Math.max(0, Math.min(1, data.masterVolume))
+                : 1.0;
+
+            loopState.masterVolume = volume;
+
+            // Broadcast to all listeners
+            io.to(LOOP_ROOM).emit('loop-master-volume-updated', {
+                masterVolume: loopState.masterVolume
+            });
+
+            console.log(`[LoopMachine] Master volume set to ${Math.round(loopState.masterVolume * 100)}%`);
+        } catch (err) { console.error('loop-set-master-volume error:', err.message); } });
+
         socket.on('loop-clear', () => { try {
             if (!checkRateLimit(socket, 3)) return;
 
@@ -2258,7 +2277,8 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
                 bpm: loopState.bpm,
                 isPlaying: loopState.isPlaying,
                 listeners: Array.from(loopState.listeners.values()),
-                synth: loopState.synth
+                synth: loopState.synth,
+                masterVolume: loopState.masterVolume
             });
 
             console.log('[LoopMachine] Grid cleared');

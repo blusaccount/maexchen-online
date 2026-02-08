@@ -505,6 +505,12 @@
                 <label class="control-label" for="bpm-input">BPM (60-200):</label>
                 <input type="number" id="bpm-input" class="bpm-input" min="60" max="200" value="120" disabled>
             </div>
+            <div class="controls-row">
+                <label class="control-label" for="master-volume">MASTER VOL:</label>
+                <input type="range" id="master-volume" class="synth-slider" 
+                       min="0" max="100" step="1" value="100" disabled style="flex: 1;">
+                <span class="synth-value" id="master-volume-value">100%</span>
+            </div>
         </div>
 
         <!-- Synth Lab -->

@@ -16,7 +16,8 @@ const state = {
     bpm: 120,
     isPlaying: false,
     currentStep: 0,
-    listeners: []
+    listeners: [],
+    masterVolume: 1.0
 };
 
 const synthSettings = {
@@ -31,17 +32,24 @@ const synthSettings = {
 
 // ===== Audio Context & Synthesis =====
 let audioContext;
+let masterGainNode;
 let isAudioInitialized = false;
 
 function initAudio() {
     if (isAudioInitialized) return;
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // Create master gain node for volume control
+    masterGainNode = audioContext.createGain();
+    masterGainNode.gain.value = 1.0; // Default 100%
+    masterGainNode.connect(audioContext.destination);
+    
     isAudioInitialized = true;
     console.log('[LoopMachine] Audio context initialized');
 }
 
 function playKick() {
-    if (!audioContext) return;
+    if (!audioContext || !masterGainNode) return;
     const now = audioContext.currentTime;
     
     // Oscillator for punch
@@ -55,14 +63,14 @@ function playKick() {
     gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
     
     osc.connect(gain);
-    gain.connect(audioContext.destination);
+    gain.connect(masterGainNode);
     
     osc.start(now);
     osc.stop(now + 0.3);
 }
 
 function playSnare() {
-    if (!audioContext) return;
+    if (!audioContext || !masterGainNode) return;
     const now = audioContext.currentTime;
     
     // White noise + oscillator
@@ -86,7 +94,7 @@ function playSnare() {
     
     noise.connect(noiseFilter);
     noiseFilter.connect(noiseGain);
-    noiseGain.connect(audioContext.destination);
+    noiseGain.connect(masterGainNode);
     
     // Oscillator component
     const osc = audioContext.createOscillator();
@@ -99,7 +107,7 @@ function playSnare() {
     oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
     
     osc.connect(oscGain);
-    oscGain.connect(audioContext.destination);
+    oscGain.connect(masterGainNode);
     
     noise.start(now);
     noise.stop(now + 0.2);
@@ -108,7 +116,7 @@ function playSnare() {
 }
 
 function playHihat() {
-    if (!audioContext) return;
+    if (!audioContext || !masterGainNode) return;
     const now = audioContext.currentTime;
     
     // High-frequency filtered noise
@@ -132,14 +140,14 @@ function playHihat() {
     
     noise.connect(filter);
     filter.connect(gain);
-    gain.connect(audioContext.destination);
+    gain.connect(masterGainNode);
     
     noise.start(now);
     noise.stop(now + 0.1);
 }
 
 function playClap() {
-    if (!audioContext) return;
+    if (!audioContext || !masterGainNode) return;
     const now = audioContext.currentTime;
     
     // Filtered noise with envelope
@@ -164,14 +172,14 @@ function playClap() {
     
     noise.connect(filter);
     filter.connect(gain);
-    gain.connect(audioContext.destination);
+    gain.connect(masterGainNode);
     
     noise.start(now);
     noise.stop(now + 0.15);
 }
 
 function playBass() {
-    if (!audioContext) return;
+    if (!audioContext || !masterGainNode) return;
     const now = audioContext.currentTime;
     
     const osc = audioContext.createOscillator();
@@ -184,14 +192,14 @@ function playBass() {
     gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
     
     osc.connect(gain);
-    gain.connect(audioContext.destination);
+    gain.connect(masterGainNode);
     
     osc.start(now);
     osc.stop(now + 0.3);
 }
 
 function playSynth() {
-    if (!audioContext) return;
+    if (!audioContext || !masterGainNode) return;
     const now = audioContext.currentTime;
     
     const osc = audioContext.createOscillator();
@@ -217,7 +225,7 @@ function playSynth() {
     
     osc.connect(filter);
     filter.connect(gain);
-    gain.connect(audioContext.destination);
+    gain.connect(masterGainNode);
     
     const duration = synthSettings.attack + synthSettings.decay;
     osc.start(now);
@@ -378,6 +386,7 @@ socket.on('disconnect', () => {
     document.getElementById('play-pause-btn').disabled = true;
     document.getElementById('clear-btn').disabled = true;
     document.getElementById('bpm-input').disabled = true;
+    document.getElementById('master-volume').disabled = true;
     enableSynthControls(false);
 });
 
@@ -392,6 +401,16 @@ socket.on('loop-sync', (data) => {
     // Update BPM
     state.bpm = data.bpm;
     document.getElementById('bpm-input').value = data.bpm;
+    
+    // Update master volume
+    if (typeof data.masterVolume === 'number') {
+        state.masterVolume = data.masterVolume;
+        if (masterGainNode) {
+            masterGainNode.gain.value = data.masterVolume;
+        }
+        document.getElementById('master-volume').value = Math.round(data.masterVolume * 100);
+        document.getElementById('master-volume-value').textContent = Math.round(data.masterVolume * 100) + '%';
+    }
     
     // Update synth settings
     if (data.synth) {
@@ -420,6 +439,7 @@ socket.on('loop-sync', (data) => {
     document.getElementById('play-pause-btn').disabled = false;
     document.getElementById('clear-btn').disabled = false;
     document.getElementById('bpm-input').disabled = false;
+    document.getElementById('master-volume').disabled = false;
     enableSynthControls(true);
     
     setStatus('Synced', 'success');
@@ -464,6 +484,16 @@ socket.on('loop-synth-updated', (data) => {
     console.log('[LoopMachine] Synth updated', data);
     Object.assign(synthSettings, data);
     updateSynthUI();
+});
+
+socket.on('loop-master-volume-updated', (data) => {
+    console.log('[LoopMachine] Master volume updated', data);
+    state.masterVolume = data.masterVolume;
+    if (masterGainNode) {
+        masterGainNode.gain.value = data.masterVolume;
+    }
+    document.getElementById('master-volume').value = Math.round(data.masterVolume * 100);
+    document.getElementById('master-volume-value').textContent = Math.round(data.masterVolume * 100) + '%';
 });
 
 // ===== Synth Helpers =====
@@ -545,6 +575,22 @@ document.getElementById('bpm-input').addEventListener('change', (e) => {
     e.target.value = bpm;
     socket.emit('loop-set-bpm', { bpm });
 });
+
+// Master volume slider
+const masterVolumeSlider = document.getElementById('master-volume');
+const masterVolumeValue = document.getElementById('master-volume-value');
+if (masterVolumeSlider && masterVolumeValue) {
+    masterVolumeSlider.addEventListener('input', (e) => {
+        initAudio();
+        const volume = parseInt(e.target.value, 10) / 100;
+        state.masterVolume = volume;
+        if (masterGainNode) {
+            masterGainNode.gain.value = volume;
+        }
+        masterVolumeValue.textContent = e.target.value + '%';
+        socket.emit('loop-set-master-volume', { masterVolume: volume });
+    });
+}
 
 // ===== Synth Controls =====
 // Collapsible toggle
