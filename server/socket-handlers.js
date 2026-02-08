@@ -114,6 +114,7 @@ const clubState = {
     queuedBy: null,
     isPlaying: false,
     startedAt: null,
+    queue: [],              // { videoId, title, queuedBy }
     listeners: new Map() // socketId -> name
 };
 
@@ -1824,6 +1825,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
                 title: clubState.title,
                 queuedBy: clubState.queuedBy,
                 isPlaying: clubState.isPlaying,
+                queue: clubState.queue,
                 listeners: Array.from(clubState.listeners.values())
             });
 
@@ -1859,17 +1861,31 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
             const player = onlinePlayers.get(socket.id);
             const playerName = player?.name || 'Guest';
 
-            clubState.videoId = id;
-            clubState.title = 'YouTube Track';
-            clubState.queuedBy = playerName;
-            clubState.isPlaying = true;
-            clubState.startedAt = Date.now();
+            const entry = { videoId: id, title: 'YouTube Track', queuedBy: playerName };
 
-            // Broadcast to all listeners
-            io.to(CLUB_ROOM).emit('club-play', {
-                videoId: id,
-                title: clubState.title,
-                queuedBy: clubState.queuedBy
+            if (!clubState.videoId) {
+                // Nothing playing — start immediately
+                clubState.videoId = entry.videoId;
+                clubState.title = entry.title;
+                clubState.queuedBy = entry.queuedBy;
+                clubState.isPlaying = true;
+                clubState.startedAt = Date.now();
+
+                io.to(CLUB_ROOM).emit('club-play', {
+                    videoId: entry.videoId,
+                    title: entry.title,
+                    queuedBy: entry.queuedBy
+                });
+            } else {
+                // Something is playing — add to queue (max 20 entries)
+                if (clubState.queue.length < 20) {
+                    clubState.queue.push(entry);
+                }
+            }
+
+            // Broadcast updated queue to all listeners
+            io.to(CLUB_ROOM).emit('club-queue-update', {
+                queue: clubState.queue
             });
 
             console.log(`[StrictClub] ${playerName} queued: ${id}`);
@@ -1898,20 +1914,40 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
             const player = onlinePlayers.get(socket.id);
             const playerName = player?.name || 'Guest';
 
-            // Clear current track
-            clubState.videoId = null;
-            clubState.title = null;
-            clubState.queuedBy = null;
-            clubState.isPlaying = false;
-            clubState.startedAt = null;
+            // Play next from queue or clear
+            const next = clubState.queue.shift();
+            if (next) {
+                clubState.videoId = next.videoId;
+                clubState.title = next.title;
+                clubState.queuedBy = next.queuedBy;
+                clubState.isPlaying = true;
+                clubState.startedAt = Date.now();
 
-            // Broadcast sync to all (clears the player)
+                io.to(CLUB_ROOM).emit('club-play', {
+                    videoId: next.videoId,
+                    title: next.title,
+                    queuedBy: next.queuedBy
+                });
+            } else {
+                clubState.videoId = null;
+                clubState.title = null;
+                clubState.queuedBy = null;
+                clubState.isPlaying = false;
+                clubState.startedAt = null;
+            }
+
+            // Broadcast updated state and queue to all
             io.to(CLUB_ROOM).emit('club-sync', {
-                videoId: null,
-                title: null,
-                queuedBy: null,
-                isPlaying: false,
+                videoId: clubState.videoId,
+                title: clubState.title,
+                queuedBy: clubState.queuedBy,
+                isPlaying: clubState.isPlaying,
+                queue: clubState.queue,
                 listeners: Array.from(clubState.listeners.values())
+            });
+
+            io.to(CLUB_ROOM).emit('club-queue-update', {
+                queue: clubState.queue
             });
 
             console.log(`[StrictClub] ${playerName} skipped track`);

@@ -21,6 +21,8 @@
     var nowPlayingQueued = $('now-playing-queued');
     var listenersList = $('listeners-list');
     var listenersCount = $('listeners-count');
+    var queueList = $('queue-list');
+    var queueCount = $('queue-count');
 
     // ====== Extract YouTube Video ID ======
     function extractYouTubeId(input) {
@@ -159,6 +161,13 @@
             loadVideo(data.videoId, data.title, data.queuedBy);
         }
 
+        if (!data.videoId && currentVideoId) {
+            currentVideoId = null;
+            if (nowPlayingTitle) nowPlayingTitle.textContent = 'No track playing';
+            if (nowPlayingQueued) nowPlayingQueued.textContent = '';
+            if (playerReady && player) player.stopVideo();
+        }
+
         isPlaying = data.isPlaying;
         
         if (playerReady && player) {
@@ -171,6 +180,10 @@
 
         if (data.listeners) {
             updateListeners(data.listeners);
+        }
+
+        if (data.queue) {
+            updateQueue(data.queue);
         }
     });
 
@@ -200,6 +213,11 @@
     // Server broadcasts listener list updates
     socket.on('club-listeners', function (data) {
         updateListeners(data.listeners || []);
+    });
+
+    // Server broadcasts queue updates
+    socket.on('club-queue-update', function (data) {
+        updateQueue(data.queue || []);
     });
 
     // ====== Helper Functions ======
@@ -236,6 +254,40 @@
             item.className = 'listener-item';
             item.textContent = listener;
             listenersList.appendChild(item);
+        });
+    }
+
+    function updateQueue(queue) {
+        if (!queueList || !queueCount) return;
+
+        queueCount.textContent = queue.length;
+
+        if (queue.length === 0) {
+            queueList.innerHTML = '<div class="queue-item empty">Queue is empty</div>';
+            return;
+        }
+
+        queueList.innerHTML = '';
+        queue.forEach(function (entry, index) {
+            var item = document.createElement('div');
+            item.className = 'queue-item';
+
+            var pos = document.createElement('span');
+            pos.className = 'queue-position';
+            pos.textContent = (index + 1) + '.';
+
+            var title = document.createElement('span');
+            title.className = 'queue-title';
+            title.textContent = ' ' + (entry.title || 'YouTube Track');
+
+            var by = document.createElement('span');
+            by.className = 'queue-by';
+            by.textContent = ' \u2014 ' + (entry.queuedBy || 'Guest');
+
+            item.appendChild(pos);
+            item.appendChild(title);
+            item.appendChild(by);
+            queueList.appendChild(item);
         });
     }
 

@@ -16,6 +16,7 @@
     var animationId = null;
     var isPlaying = false;
     var simulatedLevel = 0;
+    var hasRealAudio = false;
 
     // Resize canvas to match display size
     function resizeCanvas() {
@@ -55,9 +56,11 @@
             var source = audioContext.createMediaElementSource(iframe.contentWindow.document.querySelector('video'));
             source.connect(analyser);
             analyser.connect(audioContext.destination);
+            hasRealAudio = true;
             return true;
         } catch (err) {
-            console.warn('Could not connect Web Audio API (CORS):', err.message);
+            console.warn('Could not connect Web Audio API (CORS), using simulated visualizer');
+            hasRealAudio = false;
             return false;
         }
     }
@@ -81,7 +84,7 @@
         for (var i = 0; i < barCount; i++) {
             var barHeight;
 
-            if (dataArray && analyser && isPlaying) {
+            if (hasRealAudio && dataArray && analyser && isPlaying) {
                 // Real audio data
                 analyser.getByteFrequencyData(dataArray);
                 var index = Math.floor((i / barCount) * bufferLength);

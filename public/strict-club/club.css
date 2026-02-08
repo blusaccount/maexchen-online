@@ -25,6 +25,7 @@ body {
     height: 100%;
     z-index: -1;
     background: linear-gradient(135deg, #87CEEB 0%, #0077BE 50%, #4CAF50 100%);
+    background-size: 200% 200%;
     animation: gradient-shift 15s ease infinite;
 }
 
@@ -38,12 +39,16 @@ body {
 .bubble {
     position: absolute;
     border-radius: 50%;
-    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.2));
+    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.15) 60%, rgba(255, 255, 255, 0.05));
     box-shadow: 
         inset 0 -10px 20px rgba(255, 255, 255, 0.3),
-        0 10px 30px rgba(0, 0, 0, 0.2);
+        inset 0 5px 15px rgba(255, 255, 255, 0.4),
+        0 10px 30px rgba(0, 0, 0, 0.15);
     animation: float-up linear infinite;
-    opacity: 0.7;
+    opacity: 0.6;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.35);
 }
 
 .bubble-1 {
@@ -108,14 +113,41 @@ body {
 
 /* ====== Glass Panel Mixin ====== */
 .glass-panel {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.20) 0%,
+        rgba(255, 255, 255, 0.08) 50%,
+        rgba(255, 255, 255, 0.15) 100%
+    );
+    backdrop-filter: blur(28px) saturate(1.4);
+    -webkit-backdrop-filter: blur(28px) saturate(1.4);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-top: 1px solid rgba(255, 255, 255, 0.5);
+    border-left: 1px solid rgba(255, 255, 255, 0.4);
     border-radius: 20px;
-    box-shadow: 
-        0 8px 32px rgba(0, 0, 0, 0.2),
-        inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.glass-panel::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50%;
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.12) 0%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    border-radius: 20px 20px 0 0;
+    pointer-events: none;
+    z-index: 1;
 }
 
 /* ====== Home Button ====== */
@@ -125,10 +157,15 @@ body {
     left: 20px;
     width: 60px;
     height: 60px;
-    background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
-    border: 1px solid rgba(255, 255, 255, 0.4);
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.3) 0%,
+        rgba(255, 255, 255, 0.12) 100%
+    );
+    backdrop-filter: blur(24px) saturate(1.3);
+    -webkit-backdrop-filter: blur(24px) saturate(1.3);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    border-top: 1px solid rgba(255, 255, 255, 0.6);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -137,17 +174,23 @@ body {
     text-decoration: none;
     box-shadow: 
         0 4px 15px rgba(0, 0, 0, 0.2),
-        inset 0 1px 0 rgba(255, 255, 255, 0.5);
+        inset 0 1px 0 rgba(255, 255, 255, 0.6),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.15);
     transition: all 0.3s ease;
     z-index: 1000;
 }
 
 .home-button:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.4) 0%,
+        rgba(255, 255, 255, 0.2) 100%
+    );
     transform: scale(1.1);
     box-shadow: 
-        0 6px 20px rgba(0, 0, 0, 0.3),
-        0 0 20px rgba(255, 255, 255, 0.5);
+        0 6px 20px rgba(0, 0, 0, 0.25),
+        0 0 30px rgba(255, 255, 255, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 /* ====== Main Container ====== */
@@ -252,8 +295,15 @@ body {
 
 .url-input {
     flex: 1;
-    background: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.22) 0%,
+        rgba(255, 255, 255, 0.10) 100%
+    );
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-top: 1px solid rgba(255, 255, 255, 0.45);
     border-radius: 30px;
     padding: 12px 20px;
     font-family: 'M PLUS Rounded 1c', sans-serif;
@@ -261,6 +311,7 @@ body {
     color: #ffffff;
     outline: none;
     transition: all 0.3s ease;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .url-input::placeholder {
@@ -268,9 +319,15 @@ body {
 }
 
 .url-input:focus {
-    background: rgba(255, 255, 255, 0.25);
-    border-color: rgba(255, 255, 255, 0.5);
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.30) 0%,
+        rgba(255, 255, 255, 0.15) 100%
+    );
+    border-color: rgba(255, 255, 255, 0.55);
+    box-shadow:
+        0 0 20px rgba(255, 255, 255, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
 .playback-controls {
@@ -281,9 +338,15 @@ body {
 
 /* ====== Buttons ====== */
 .control-button {
-    background: rgba(255, 255, 255, 0.25);
-    backdrop-filter: blur(10px);
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.30) 0%,
+        rgba(255, 255, 255, 0.12) 100%
+    );
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
     border: 1px solid rgba(255, 255, 255, 0.4);
+    border-top: 1px solid rgba(255, 255, 255, 0.55);
     border-radius: 30px;
     padding: 12px 24px;
     font-family: 'M PLUS Rounded 1c', sans-serif;
@@ -293,16 +356,22 @@ body {
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 
-        0 4px 15px rgba(0, 0, 0, 0.2),
-        inset 0 1px 0 rgba(255, 255, 255, 0.4);
+        0 4px 15px rgba(0, 0, 0, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .control-button:hover {
-    background: rgba(255, 255, 255, 0.35);
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.42) 0%,
+        rgba(255, 255, 255, 0.20) 100%
+    );
     transform: translateY(-2px);
     box-shadow: 
-        0 6px 20px rgba(0, 0, 0, 0.3),
-        0 0 20px rgba(255, 255, 255, 0.4);
+        0 6px 20px rgba(0, 0, 0, 0.2),
+        0 0 25px rgba(255, 255, 255, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .control-button:active {
@@ -311,17 +380,106 @@ body {
 }
 
 .primary-btn {
-    background: linear-gradient(135deg, rgba(0, 119, 190, 0.6), rgba(76, 175, 80, 0.6));
+    background: linear-gradient(
+        135deg,
+        rgba(0, 119, 190, 0.5) 0%,
+        rgba(76, 175, 80, 0.4) 50%,
+        rgba(0, 119, 190, 0.5) 100%
+    );
+    border-top: 1px solid rgba(255, 255, 255, 0.5);
 }
 
 .primary-btn:hover {
-    background: linear-gradient(135deg, rgba(0, 119, 190, 0.8), rgba(76, 175, 80, 0.8));
+    background: linear-gradient(
+        135deg,
+        rgba(0, 119, 190, 0.65) 0%,
+        rgba(76, 175, 80, 0.55) 50%,
+        rgba(0, 119, 190, 0.65) 100%
+    );
 }
 
 .icon-btn {
     font-size: 1.5rem;
     padding: 12px 20px;
     min-width: 60px;
+}
+
+/* ====== Queue Panel ====== */
+.queue-panel {
+    padding: 20px 25px;
+}
+
+.queue-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.queue-icon {
+    font-size: 1.5rem;
+}
+
+.queue-title-label {
+    flex: 1;
+}
+
+.queue-count {
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.28) 0%,
+        rgba(255, 255, 255, 0.12) 100%
+    );
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.queue-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.queue-item {
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.18) 0%,
+        rgba(255, 255, 255, 0.08) 100%
+    );
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    padding: 10px 16px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 300;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-top: 1px solid rgba(255, 255, 255, 0.32);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.queue-item.empty {
+    color: rgba(255, 255, 255, 0.6);
+    font-style: italic;
+}
+
+.queue-position {
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.7);
+    min-width: 24px;
+}
+
+.queue-by {
+    color: rgba(255, 255, 255, 0.6);
+    margin-left: auto;
+    white-space: nowrap;
 }
 
 /* ====== Listeners Panel ====== */
@@ -347,10 +505,16 @@ body {
 }
 
 .listeners-count {
-    background: rgba(255, 255, 255, 0.2);
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.28) 0%,
+        rgba(255, 255, 255, 0.12) 100%
+    );
     padding: 4px 12px;
     border-radius: 20px;
     font-size: 0.9rem;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .listeners-list {
@@ -360,12 +524,20 @@ body {
 }
 
 .listener-item {
-    background: rgba(255, 255, 255, 0.2);
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.25) 0%,
+        rgba(255, 255, 255, 0.10) 100%
+    );
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     padding: 8px 16px;
     border-radius: 20px;
     font-size: 0.9rem;
     font-weight: 300;
     border: 1px solid rgba(255, 255, 255, 0.3);
+    border-top: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 /* ====== Responsive ====== */

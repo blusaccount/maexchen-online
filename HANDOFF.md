@@ -1,3 +1,76 @@
+# HANDOFF - Strict Club: Enhanced glassmorphism effects
+
+## What Was Done
+
+### Enhancement: Made all Strict Club UI elements more glassy
+
+Upgraded the Frutiger Aero glass effects throughout the Strict Club page for a more polished, premium glass look.
+
+**Changes to `.glass-panel`:**
+- Background changed from flat `rgba()` to a directional `linear-gradient` with varying opacity (bright top-left, subtle center, medium bottom-right) for realistic glass refraction
+- Backdrop-filter increased from `blur(20px)` to `blur(28px) saturate(1.4)` for deeper frosted glass
+- Added differentiated border edges: brighter `border-top` and `border-left` to simulate light source
+- Added `inset 0 -1px 0` bottom highlight for glass thickness
+- Added `::before` pseudo-element with top-half gradient overlay for glass reflection/sheen
+
+**Other elements enhanced:**
+- Home button: gradient background, stronger blur, brighter top border, dual inset shadows
+- Control buttons: gradient glass background, stronger blur with `saturate(1.2)`, differentiated top border
+- Primary button: three-stop gradient for more depth
+- URL input: gradient glass background, `backdrop-filter: blur(12px)`, inset top highlight
+- Queue/listener items: gradient backgrounds, `backdrop-filter: blur(8px)`, differentiated borders, inset highlights
+- Count badges: gradient background, glass border, inset highlight
+- Floating bubbles: enhanced radial gradient with three stops, `backdrop-filter: blur(4px)`, glass border, dual inset shadows
+- Background: added `background-size: 200% 200%` so gradient animation actually shifts
+
+## Files Modified
+
+- `public/strict-club/club.css` — All glass effect enhancements (CSS only, no HTML/JS changes)
+- `HANDOFF.md` — This file
+
+## Verification
+
+- `npm test` — all 128 tests pass
+- Navigate to Strict Club — all panels show enhanced glass effects with visible background blur, gradient reflections, and differentiated borders
+
+---
+
+# HANDOFF - Strict Club: Fix audio visualizer and add visible queue
+
+## What Was Done
+
+### Fix: Audio visualizer now works with simulated mode
+
+The visualizer was broken because it attempted to use real Web Audio API frequency data from the YouTube iframe, which always fails due to CORS. The `analyser` object was always created (non-null) so the draw loop entered the "real audio" branch and rendered all-zero data (invisible bars). Added a `hasRealAudio` flag that is only set to `true` when `connectToPlayer()` succeeds, ensuring the simulated visualizer is used as the default.
+
+### Feature: Queue visible to everyone
+
+Previously, queuing a track immediately replaced whatever was playing. Now tracks are added to a FIFO queue (max 20 entries) that is broadcast to all listeners via a new `club-queue-update` socket event. A new Queue panel in the UI shows all pending tracks with position number, title, and who queued them. When a track ends or is skipped, the next track from the queue plays automatically.
+
+## Files Modified
+
+- `public/strict-club/visualizer.js` - Added `hasRealAudio` flag; draw loop uses simulated mode unless real audio connected
+- `public/strict-club/club.js` - Added queue UI update logic, `club-queue-update` handler, `updateQueue()` function; improved sync to clear UI when no track
+- `public/strict-club/index.html` - Added Queue panel between controls and listeners
+- `public/strict-club/club.css` - Added queue panel styles matching Frutiger Aero design
+- `server/socket-handlers.js` - Added `queue` array to `clubState`; `club-queue` adds to queue when track playing; `club-skip` plays next from queue; `club-sync` includes queue; new `club-queue-update` event
+- `HANDOFF.md` - This file
+
+## New Socket Events
+
+- `club-queue-update` (server -> client) - Broadcasts updated queue array to all listeners
+
+## Verification
+
+- `npm test` - all 128 tests pass
+- Navigate to Strict Club - Queue panel visible with "Queue is empty" state
+- Queue a track when nothing playing - plays immediately, queue stays empty
+- Queue additional tracks while one plays - they appear in the queue panel for all listeners
+- Skip track - next from queue starts playing automatically
+- New user joining sees current queue state
+
+---
+
 # HANDOFF - Fix lol-place-bet error: missing puuid column
 # HANDOFF - Add Strict Club (Multiplayer YouTube Audio Listening Room)
 
