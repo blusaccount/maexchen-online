@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseRiotId, getMatchHistory, getMatchDetails } from '../riot-api.js';
+import { parseRiotId, getMatchHistory, getMatchDetails, getRiotApiDisabledReason, isRiotApiEnabled } from '../riot-api.js';
 
 describe('riot-api: parseRiotId', () => {
     it('parses a valid Riot ID', () => {
@@ -84,5 +84,18 @@ describe('riot-api: getMatchDetails', () => {
         await expect(getMatchDetails(null)).rejects.toThrow('Valid match ID is required');
         await expect(getMatchDetails('')).rejects.toThrow('Valid match ID is required');
         await expect(getMatchDetails(123)).rejects.toThrow('Valid match ID is required');
+    });
+});
+
+describe('riot-api: getRiotApiDisabledReason', () => {
+    it('returns empty string when no auth failure has occurred', () => {
+        expect(getRiotApiDisabledReason()).toBe('');
+    });
+});
+
+describe('riot-api: isRiotApiEnabled', () => {
+    it('returns false when RIOT_API_KEY is not set', () => {
+        // In test env RIOT_API_KEY is not set, so should be false
+        expect(isRiotApiEnabled()).toBe(false);
     });
 });

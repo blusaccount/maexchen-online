@@ -5,6 +5,9 @@ const RIOT_REGION = process.env.RIOT_REGION || 'europe';
 
 const VALID_REGIONS = ['americas', 'europe', 'asia', 'esports'];
 
+// Set when API responds with 401/403 to prevent further futile calls
+let riotApiDisabledReason = '';
+
 /**
  * Parse a Riot ID string (e.g. "Player#EUW") into gameName and tagLine.
  * Returns null if the format is invalid.
@@ -28,7 +31,14 @@ export function parseRiotId(riotId) {
  * Check whether the Riot API integration is configured.
  */
 export function isRiotApiEnabled() {
-    return RIOT_API_KEY.length > 0;
+    return RIOT_API_KEY.length > 0 && !riotApiDisabledReason;
+}
+
+/**
+ * Returns a reason string if the API key was rejected (401/403), or empty string if OK.
+ */
+export function getRiotApiDisabledReason() {
+    return riotApiDisabledReason;
 }
 
 /**
@@ -45,6 +55,10 @@ export async function lookupRiotAccount(gameName, tagLine) {
     });
 
     if (res.status === 404) return null;
+    if (res.status === 401 || res.status === 403) {
+        riotApiDisabledReason = `Riot API key rejected (${res.status})`;
+        throw new Error(riotApiDisabledReason);
+    }
     if (res.status === 429) throw new Error('Riot API rate limit exceeded, try again later');
     if (!res.ok) throw new Error(`Riot API error (${res.status})`);
 
@@ -102,6 +116,10 @@ export async function getMatchHistory(puuid, count = 5) {
     });
 
     if (res.status === 404) return [];
+    if (res.status === 401 || res.status === 403) {
+        riotApiDisabledReason = `Riot API key rejected (${res.status})`;
+        throw new Error(riotApiDisabledReason);
+    }
     if (res.status === 429) throw new Error('Riot API rate limit exceeded, try again later');
     if (!res.ok) throw new Error(`Riot API error (${res.status})`);
 
@@ -128,6 +146,10 @@ export async function getMatchDetails(matchId) {
     });
 
     if (res.status === 404) return null;
+    if (res.status === 401 || res.status === 403) {
+        riotApiDisabledReason = `Riot API key rejected (${res.status})`;
+        throw new Error(riotApiDisabledReason);
+    }
     if (res.status === 429) throw new Error('Riot API rate limit exceeded, try again later');
     if (!res.ok) throw new Error(`Riot API error (${res.status})`);
 
