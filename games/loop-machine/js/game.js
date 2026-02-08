@@ -19,6 +19,16 @@ const state = {
     listeners: []
 };
 
+const synthSettings = {
+    waveform: 'square',
+    frequency: 440,
+    cutoff: 2000,
+    resonance: 1,
+    attack: 0.01,
+    decay: 0.2,
+    volume: 0.3
+};
+
 // ===== Audio Context & Synthesis =====
 let audioContext;
 let isAudioInitialized = false;
@@ -188,22 +198,30 @@ function playSynth() {
     const gain = audioContext.createGain();
     const filter = audioContext.createBiquadFilter();
     
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(440, now);
+    // Use synthSettings
+    osc.type = synthSettings.waveform;
+    osc.frequency.setValueAtTime(synthSettings.frequency, now);
     
     filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(2000, now);
-    filter.frequency.exponentialRampToValueAtTime(800, now + 0.2);
+    filter.frequency.setValueAtTime(synthSettings.cutoff, now);
+    filter.frequency.exponentialRampToValueAtTime(
+        Math.max(50, synthSettings.cutoff * 0.4), 
+        now + synthSettings.attack + synthSettings.decay
+    );
+    filter.Q.value = synthSettings.resonance;
     
-    gain.gain.setValueAtTime(0.3, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+    // Envelope: attack then decay
+    gain.gain.setValueAtTime(0.01, now);
+    gain.gain.linearRampToValueAtTime(synthSettings.volume, now + synthSettings.attack);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + synthSettings.attack + synthSettings.decay);
     
     osc.connect(filter);
     filter.connect(gain);
     gain.connect(audioContext.destination);
     
+    const duration = synthSettings.attack + synthSettings.decay;
     osc.start(now);
-    osc.stop(now + 0.2);
+    osc.stop(now + duration);
 }
 
 const instrumentPlayers = {
@@ -360,6 +378,7 @@ socket.on('disconnect', () => {
     document.getElementById('play-pause-btn').disabled = true;
     document.getElementById('clear-btn').disabled = true;
     document.getElementById('bpm-input').disabled = true;
+    enableSynthControls(false);
 });
 
 socket.on('loop-sync', (data) => {
@@ -373,6 +392,12 @@ socket.on('loop-sync', (data) => {
     // Update BPM
     state.bpm = data.bpm;
     document.getElementById('bpm-input').value = data.bpm;
+    
+    // Update synth settings
+    if (data.synth) {
+        Object.assign(synthSettings, data.synth);
+        updateSynthUI();
+    }
     
     // Update playing state
     state.isPlaying = data.isPlaying;
@@ -395,6 +420,7 @@ socket.on('loop-sync', (data) => {
     document.getElementById('play-pause-btn').disabled = false;
     document.getElementById('clear-btn').disabled = false;
     document.getElementById('bpm-input').disabled = false;
+    enableSynthControls(true);
     
     setStatus('Synced', 'success');
 });
@@ -434,6 +460,72 @@ socket.on('loop-listeners', (data) => {
     updateListeners(data.listeners);
 });
 
+socket.on('loop-synth-updated', (data) => {
+    console.log('[LoopMachine] Synth updated', data);
+    Object.assign(synthSettings, data);
+    updateSynthUI();
+});
+
+// ===== Synth Helpers =====
+function emitSynthSettings() {
+    socket.emit('loop-set-synth', { ...synthSettings });
+}
+
+function updateSynthUI() {
+    // Update wave buttons
+    document.querySelectorAll('.wave-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.wave === synthSettings.waveform);
+    });
+    
+    // Update note dropdown
+    const noteSelect = document.getElementById('synth-note');
+    if (noteSelect) noteSelect.value = synthSettings.frequency;
+    
+    // Update sliders and their value displays
+    const cutoffSlider = document.getElementById('synth-cutoff');
+    const cutoffValue = document.getElementById('synth-cutoff-value');
+    if (cutoffSlider) cutoffSlider.value = synthSettings.cutoff;
+    if (cutoffValue) cutoffValue.textContent = synthSettings.cutoff;
+    
+    const resoSlider = document.getElementById('synth-resonance');
+    const resoValue = document.getElementById('synth-resonance-value');
+    if (resoSlider) resoSlider.value = Math.round(synthSettings.resonance * 10);
+    if (resoValue) resoValue.textContent = (synthSettings.resonance).toFixed(1);
+    
+    const attackSlider = document.getElementById('synth-attack');
+    const attackValue = document.getElementById('synth-attack-value');
+    if (attackSlider) attackSlider.value = Math.round(synthSettings.attack * 100);
+    if (attackValue) attackValue.textContent = (synthSettings.attack).toFixed(2) + 's';
+    
+    const decaySlider = document.getElementById('synth-decay');
+    const decayValue = document.getElementById('synth-decay-value');
+    if (decaySlider) decaySlider.value = Math.round(synthSettings.decay * 100);
+    if (decayValue) decayValue.textContent = (synthSettings.decay).toFixed(2) + 's';
+    
+    const volSlider = document.getElementById('synth-volume');
+    const volValue = document.getElementById('synth-volume-value');
+    if (volSlider) volSlider.value = Math.round(synthSettings.volume * 100);
+    if (volValue) volValue.textContent = Math.round(synthSettings.volume * 100) + '%';
+}
+
+function enableSynthControls(enabled) {
+    // Enable/disable wave buttons
+    document.querySelectorAll('.wave-btn').forEach(btn => {
+        btn.disabled = !enabled;
+    });
+    
+    // Enable/disable note dropdown
+    const noteSelect = document.getElementById('synth-note');
+    if (noteSelect) noteSelect.disabled = !enabled;
+    
+    // Enable/disable all sliders
+    const sliders = ['synth-cutoff', 'synth-resonance', 'synth-attack', 'synth-decay', 'synth-volume'];
+    sliders.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = !enabled;
+    });
+}
+
 // ===== Controls =====
 document.getElementById('play-pause-btn').addEventListener('click', () => {
     initAudio(); // Initialize audio on first interaction
@@ -453,6 +545,99 @@ document.getElementById('bpm-input').addEventListener('change', (e) => {
     e.target.value = bpm;
     socket.emit('loop-set-bpm', { bpm });
 });
+
+// ===== Synth Controls =====
+// Collapsible toggle
+const synthHeader = document.getElementById('synth-header');
+const synthControls = document.getElementById('synth-controls');
+if (synthHeader && synthControls) {
+    synthHeader.addEventListener('click', () => {
+        const isHidden = synthControls.style.display === 'none';
+        synthControls.style.display = isHidden ? '' : 'none';
+        synthHeader.classList.toggle('collapsed', !isHidden);
+    });
+}
+
+// Wave buttons
+document.querySelectorAll('.wave-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        if (btn.disabled) return;
+        initAudio();
+        synthSettings.waveform = btn.dataset.wave;
+        updateSynthUI();
+        emitSynthSettings();
+    });
+});
+
+// Note dropdown
+const noteSelect = document.getElementById('synth-note');
+if (noteSelect) {
+    noteSelect.addEventListener('change', (e) => {
+        initAudio();
+        synthSettings.frequency = parseFloat(e.target.value);
+        emitSynthSettings();
+    });
+}
+
+// Cutoff slider
+const cutoffSlider = document.getElementById('synth-cutoff');
+const cutoffValue = document.getElementById('synth-cutoff-value');
+if (cutoffSlider && cutoffValue) {
+    cutoffSlider.addEventListener('input', (e) => {
+        initAudio();
+        synthSettings.cutoff = parseInt(e.target.value, 10);
+        cutoffValue.textContent = synthSettings.cutoff;
+        emitSynthSettings();
+    });
+}
+
+// Resonance slider
+const resoSlider = document.getElementById('synth-resonance');
+const resoValue = document.getElementById('synth-resonance-value');
+if (resoSlider && resoValue) {
+    resoSlider.addEventListener('input', (e) => {
+        initAudio();
+        synthSettings.resonance = parseInt(e.target.value, 10) / 10;
+        resoValue.textContent = synthSettings.resonance.toFixed(1);
+        emitSynthSettings();
+    });
+}
+
+// Attack slider
+const attackSlider = document.getElementById('synth-attack');
+const attackValue = document.getElementById('synth-attack-value');
+if (attackSlider && attackValue) {
+    attackSlider.addEventListener('input', (e) => {
+        initAudio();
+        synthSettings.attack = parseInt(e.target.value, 10) / 100;
+        attackValue.textContent = synthSettings.attack.toFixed(2) + 's';
+        emitSynthSettings();
+    });
+}
+
+// Decay slider
+const decaySlider = document.getElementById('synth-decay');
+const decayValue = document.getElementById('synth-decay-value');
+if (decaySlider && decayValue) {
+    decaySlider.addEventListener('input', (e) => {
+        initAudio();
+        synthSettings.decay = parseInt(e.target.value, 10) / 100;
+        decayValue.textContent = synthSettings.decay.toFixed(2) + 's';
+        emitSynthSettings();
+    });
+}
+
+// Volume slider
+const volSlider = document.getElementById('synth-volume');
+const volValue = document.getElementById('synth-volume-value');
+if (volSlider && volValue) {
+    volSlider.addEventListener('input', (e) => {
+        initAudio();
+        synthSettings.volume = parseInt(e.target.value, 10) / 100;
+        volValue.textContent = Math.round(synthSettings.volume * 100) + '%';
+        emitSynthSettings();
+    });
+}
 
 // ===== Cleanup =====
 window.addEventListener('beforeunload', () => {
