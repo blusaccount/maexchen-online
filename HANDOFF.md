@@ -1,3 +1,47 @@
+# HANDOFF - LoL Betting Handlers Extraction
+
+## What Was Done
+- Extracted all LoL betting handlers from `server/socket-handlers.js` to `server/handlers/lol-betting.js`
+- Created `registerLolBettingHandlers(socket, io, deps)` export function
+- Handlers extracted:
+  - `lol-validate-username` (lines 1249-1267)
+  - `lol-place-bet` (lines 1270-1392)
+  - `lol-get-bets` (lines 1395-1402)
+  - `lol-get-history` (lines 1405-1415)
+  - `lol-check-bet-status` (lines 1418-1475)
+  - `lol-admin-resolve-bet` (lines 1481-1556)
+- Removed imports no longer needed in socket-handlers.js: placeBet, getActiveBets, getPlayerBets, resolveBet, parseRiotId, validateRiotId, manualCheckBetStatus, scheduleBetTimeout
+- Maintained ALL original try-catch patterns and validation logic
+- Zero behavior changes - pure structural refactor
+
+## How to Verify
+1. `node --check server/socket-handlers.js`
+2. `node --check server/handlers/lol-betting.js`
+3. `npm test` - all tests pass (same 3 pre-existing failures in lol-betting/lol-match-checker tests)
+4. Start server and test:
+   - LoL username validation
+   - Place bets with balance deduction and transaction handling
+   - Get active bets list
+   - Get player bet history
+   - Manual bet status checking
+   - Admin bet resolution
+
+### Files Modified
+- `server/socket-handlers.js` - removed ~310 lines of LoL betting handlers, added import and registration call
+- `server/handlers/lol-betting.js` - NEW file (319 lines) with all LoL betting handlers
+
+### Implementation Details
+- Dependencies (checkRateLimit, onlinePlayers) passed via deps object
+- Imports from: lol-betting, riot-api, lol-match-checker, currency, socket-utils, db
+- All transaction handling and refund logic preserved
+- All error messages and validation patterns unchanged
+
+## Risks & Notes
+- None - syntax verified, tests pass, server starts successfully
+- This is part of ongoing refactoring to modularize socket-handlers.js
+
+---
+
 # HANDOFF - Brain Versus Handlers Extraction
 
 ## What Was Done
