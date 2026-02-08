@@ -44,7 +44,7 @@ import {
 import { recordSnapshot, getHistory } from './portfolio-history.js';
 import { loadStrokes, saveStroke, deleteStroke, clearStrokes, loadMessages, saveMessage, clearMessages, PICTO_MAX_MESSAGES } from './pictochat-store.js';
 import { placeBet, getActiveBets, getPlayerBets } from './lol-betting.js';
-import { validateRiotId } from './riot-api.js';
+import { parseRiotId, validateRiotId } from './riot-api.js';
 
 // ============== INPUT VALIDATION ==============
 
@@ -1644,13 +1644,13 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
 
             const { lolUsername, amount, betOnWin } = data;
 
-            // Validate Riot ID via API
-            const validation = await validateRiotId(lolUsername);
-            if (!validation.valid) {
-                socket.emit('lol-bet-error', { message: validation.reason || 'Invalid Riot ID' });
+            // Validate Riot ID format (API lookup already happened in lol-validate-username)
+            const parsed = parseRiotId(lolUsername);
+            if (!parsed) {
+                socket.emit('lol-bet-error', { message: 'Invalid Riot ID format. Use Name#Tag' });
                 return;
             }
-            const resolvedName = validation.gameName + '#' + validation.tagLine;
+            const resolvedName = parsed.gameName + '#' + parsed.tagLine;
 
             const betAmount = Number(amount);
             if (!Number.isFinite(betAmount) || !Number.isInteger(betAmount) || betAmount <= 0 || betAmount > 1000) {

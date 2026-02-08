@@ -711,3 +711,25 @@ Three client-side bugs in `public/pictochat.js` prevented undo, redo, and clear 
 - `npm test` (86 tests pass, no regressions)
 - Server-side handlers are unchanged; all fixes are client-only
 
+---
+
+# HANDOFF - Fix LoL Bet Placement Failure
+
+## What Was Done
+
+### Bug Fix: Bet placement failing after successful username validation
+
+The `lol-place-bet` socket handler was making a redundant Riot API call (`validateRiotId()`) to re-validate the Riot ID, even though it was already validated in the separate `lol-validate-username` step. This second API call could fail due to rate limiting (the same account was just looked up moments earlier), causing bet placement to fail with "Failed to place bet" despite the username showing as valid.
+
+**Fix: Remove redundant API call** — Replaced `validateRiotId()` (full API lookup) with `parseRiotId()` (format-only validation) in the `lol-place-bet` handler. The Riot API validation already happened in `lol-validate-username` and doesn't need to be repeated.
+
+## Files Changed
+
+- `server/socket-handlers.js` — import `parseRiotId`, replace API call with format validation in `lol-place-bet`
+- `server/__tests__/lol-betting.test.js` — additional tests for incrementing IDs, sort order, and limit
+
+## Verification
+
+- `npm test` — all tests pass
+- CodeQL: 0 alerts
+
