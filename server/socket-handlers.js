@@ -1199,7 +1199,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
             const player = room.players.find(p => p.socketId === socket.id);
             if (!player) return;
 
-            const sanitizedText = text.replace(/[<>&]/g, '').slice(0, 100).trim();
+            const sanitizedText = text.replace(/[<>&"'`]/g, '').slice(0, 100).trim();
             if (!sanitizedText) return;
 
             io.to(room.code).emit('chat-broadcast', {

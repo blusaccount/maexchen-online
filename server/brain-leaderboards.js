@@ -54,6 +54,7 @@ async function getOrCreatePlayerId(playerName, client = null) {
 }
 
 export async function updateBrainAgeLeaderboard(playerName, brainAge) {
+    if (typeof playerName !== 'string' || !playerName) return;
     if (!Number.isFinite(brainAge)) return;
 
     if (!isDatabaseEnabled()) {
@@ -82,6 +83,7 @@ export async function updateBrainAgeLeaderboard(playerName, brainAge) {
 
 export async function updateGameLeaderboard(gameId, playerName, score) {
     if (!VALID_BRAIN_GAME_IDS.includes(gameId)) return;
+    if (typeof playerName !== 'string' || !playerName) return;
     if (!Number.isFinite(score)) return;
 
     if (!isDatabaseEnabled()) {

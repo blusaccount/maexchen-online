@@ -10,6 +10,19 @@ let nextBetId = 1;
  * Place a bet on a League of Legends player's next match
  */
 export async function placeBet(playerName, lolUsername, amount, betOnWin, client = null) {
+    if (typeof playerName !== 'string' || !playerName) {
+        throw new Error('Invalid player name');
+    }
+    if (typeof lolUsername !== 'string' || !lolUsername) {
+        throw new Error('Invalid LoL username');
+    }
+    if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) {
+        throw new Error('Invalid bet amount');
+    }
+    if (typeof betOnWin !== 'boolean') {
+        throw new Error('Invalid bet type');
+    }
+
     if (!isDatabaseEnabled()) {
         const bet = {
             id: nextBetId++,
@@ -89,11 +102,13 @@ export async function getActiveBets() {
  * Get player's bet history
  */
 export async function getPlayerBets(playerName, limit = 20) {
+    const safeLimit = Math.max(1, Math.min(100, Math.floor(Number(limit)) || 20));
+
     if (!isDatabaseEnabled()) {
         return betsMemory
             .filter(bet => bet.playerName === playerName)
             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-            .slice(0, limit);
+            .slice(0, safeLimit);
     }
 
     const result = await query(
@@ -102,7 +117,7 @@ export async function getPlayerBets(playerName, limit = 20) {
          where player_name = $1
          order by created_at desc
          limit $2`,
-        [playerName, limit]
+        [playerName, safeLimit]
     );
 
     return result.rows.map(row => ({

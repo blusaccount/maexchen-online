@@ -11,6 +11,10 @@ const history = new Map();
  * Record a portfolio snapshot for a player.
  */
 export function recordSnapshot(playerName, portfolioValue, cash) {
+    if (typeof playerName !== 'string' || !playerName) return;
+    if (typeof portfolioValue !== 'number' || !Number.isFinite(portfolioValue)) return;
+    if (typeof cash !== 'number' || !Number.isFinite(cash)) return;
+
     if (!history.has(playerName)) {
         history.set(playerName, []);
     }

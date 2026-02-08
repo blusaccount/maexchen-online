@@ -9,7 +9,7 @@ create table if not exists players (
 create table if not exists stock_positions (
   player_id bigint not null references players(id) on delete cascade,
   symbol text not null,
-  shares numeric(20,8) not null,
+  shares numeric(20,8) not null check (shares > 0),
   avg_cost numeric(14,4) not null,
   primary key (player_id, symbol)
 );
@@ -76,7 +76,7 @@ create table if not exists lol_bets (
   player_id bigint not null references players(id) on delete cascade,
   player_name text not null,
   lol_username text not null,
-  bet_amount numeric(14,2) not null,
+  bet_amount numeric(14,2) not null check (bet_amount > 0),
   bet_on_win boolean not null,
   status text not null default 'pending',
   game_id text,
@@ -90,3 +90,9 @@ create index if not exists lol_bets_status_idx
 
 create index if not exists lol_bets_player_idx
   on lol_bets (player_id, created_at desc);
+
+create index if not exists lol_bets_player_name_idx
+  on lol_bets (player_name);
+
+create index if not exists wallet_ledger_player_created_idx
+  on wallet_ledger (player_id, created_at desc);
