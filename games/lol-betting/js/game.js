@@ -29,6 +29,9 @@ const validationStatus = document.getElementById('validation-status');
 function init() {
     // Setup event listeners
     setupEventListeners();
+    
+    // Setup socket listeners for manual bet checking
+    setupBetCheckListeners();
 }
 
 // Register player and request data on socket connection
@@ -276,6 +279,55 @@ socket.on('lol-bet-resolved', (data) => {
     socket.emit('lol-get-bets');
 });
 
+// ============== BET CHECK SOCKET LISTENERS ==============
+
+function setupBetCheckListeners() {
+    socket.on('lol-bet-check-result', (result) => {
+        const { success, resolved, wonBet, payout, lolUsername, message, error } = result;
+        
+        if (success && resolved) {
+            // Bet was resolved - show win/loss notification
+            showNotification(message, wonBet ? 'success' : 'error');
+            
+            // Request updated bets list
+            socket.emit('lol-get-bets');
+        } else if (success && !resolved) {
+            // No new match found - show info notification
+            showNotification(message, 'info');
+        } else {
+            // Error occurred - show error notification
+            showNotification(message, 'error');
+        }
+    });
+}
+
+/**
+ * Handle manual bet status check request
+ * Sends a socket request to check if a bet should be resolved and manages button states
+ * @param {number} betId - The ID of the bet to check
+ */
+function handleCheckBetStatus(betId) {
+    // Disable all check buttons temporarily
+    const allCheckButtons = document.querySelectorAll('.check-bet-btn');
+    allCheckButtons.forEach(btn => {
+        btn.disabled = true;
+        if (btn.dataset.betId === String(betId)) {
+            btn.textContent = '🔄 Checking...';
+        }
+    });
+    
+    // Send check request
+    socket.emit('lol-check-bet-status', { betId });
+    
+    // Re-enable buttons after a delay
+    setTimeout(() => {
+        allCheckButtons.forEach(btn => {
+            btn.disabled = false;
+            btn.textContent = '🔄 Check Status';
+        });
+    }, 1000);
+}
+
 // ============== UI RENDERING ==============
 
 function renderBetsList(bets) {
@@ -284,9 +336,12 @@ function renderBetsList(bets) {
         return;
     }
     
+    const myName = localStorage.getItem(NAME_KEY) || '';
+    
     betsList.innerHTML = bets.map(bet => {
         const predictionText = bet.betOnWin ? 'WILL WIN' : 'WILL LOSE';
         const predictionIcon = bet.betOnWin ? '✅' : '❌';
+        const isMyBet = bet.playerName === myName;
         
         return `
             <div class="bet-item">
@@ -295,10 +350,24 @@ function renderBetsList(bets) {
                     <div class="bet-target">⚔️ ${escapeHtml(bet.lolUsername)}</div>
                     <div class="bet-prediction">${predictionIcon} ${predictionText}</div>
                 </div>
-                <div class="bet-amount">${bet.amount} SC</div>
+                <div class="bet-right">
+                    <div class="bet-amount">${bet.amount} SC</div>
+                    ${isMyBet ? `<button class="check-bet-btn" data-bet-id="${bet.id}">🔄 Check Status</button>` : ''}
+                </div>
             </div>
         `;
     }).join('');
+    
+    // Add click handlers to check buttons
+    if (myName) {
+        const checkButtons = document.querySelectorAll('.check-bet-btn');
+        checkButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const betId = parseInt(btn.dataset.betId);
+                handleCheckBetStatus(betId);
+            });
+        });
+    }
 }
 
 function showSuccessMessage() {
@@ -357,6 +426,40 @@ function showBetResolutionNotification(data) {
     
     setTimeout(() => {
         document.body.removeChild(notificationDiv);
+    }, 5000);
+}
+
+function showNotification(message, type = 'info') {
+    const colors = {
+        success: '#4caf50',
+        error: '#f44336',
+        info: '#2196f3'
+    };
+    
+    const notificationDiv = document.createElement('div');
+    notificationDiv.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: ${colors[type] || colors.info};
+        color: white;
+        padding: 30px 50px;
+        border: 3px solid white;
+        font-size: 1.1em;
+        z-index: 1000;
+        text-align: center;
+        max-width: 80%;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    `;
+    
+    notificationDiv.textContent = message;
+    document.body.appendChild(notificationDiv);
+    
+    setTimeout(() => {
+        if (document.body.contains(notificationDiv)) {
+            document.body.removeChild(notificationDiv);
+        }
     }, 5000);
 }
 

@@ -6,7 +6,7 @@ vi.mock('../db.js', () => ({
     query: vi.fn()
 }));
 
-const { placeBet, getActiveBets, getPlayerBets, resolveBet, getPendingBetsForChecking, getPendingBetsWithoutPuuid, updateBetPuuid } = await import('../lol-betting.js');
+const { placeBet, getActiveBets, getPlayerBets, resolveBet, getPendingBetsForChecking, getPendingBetsWithoutPuuid, updateBetPuuid, getBetById } = await import('../lol-betting.js');
 
 describe('lol-betting (in-memory mode)', () => {
     describe('placeBet', () => {
@@ -169,6 +169,35 @@ describe('lol-betting (in-memory mode)', () => {
             
             const success = await updateBetPuuid(bet.id, 'new-puuid', 'new-match');
             expect(success).toBe(false);
+        });
+    });
+
+    describe('getBetById', () => {
+        it('returns bet by ID', async () => {
+            const bet = await placeBet('rachel', 'FetchTest#NA1', 100, true, 'puuid-123', 'match-456');
+            
+            const fetched = await getBetById(bet.id);
+            expect(fetched).toBeDefined();
+            expect(fetched.id).toBe(bet.id);
+            expect(fetched.playerName).toBe('rachel');
+            expect(fetched.lolUsername).toBe('FetchTest#NA1');
+            expect(fetched.puuid).toBe('puuid-123');
+            expect(fetched.lastMatchId).toBe('match-456');
+            expect(fetched.status).toBe('pending');
+        });
+
+        it('returns null for non-existent bet ID', async () => {
+            const fetched = await getBetById(999999);
+            expect(fetched).toBeNull();
+        });
+
+        it('returns resolved bets', async () => {
+            const bet = await placeBet('sam', 'ResolvedFetch#NA1', 100, true, 'puuid', 'match');
+            await resolveBet(bet.id, true);
+            
+            const fetched = await getBetById(bet.id);
+            expect(fetched).toBeDefined();
+            expect(fetched.status).toBe('resolved');
         });
     });
 });
