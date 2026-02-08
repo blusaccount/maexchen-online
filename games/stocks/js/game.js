@@ -685,14 +685,12 @@
         fetchMarket();
         socket.emit('stock-get-portfolio');
         socket.emit('stock-get-leaderboard');
-        socket.emit('stock-get-portfolio-history');
     }, 60 * 1000);
 
     socket.on('connect', function () {
         setTimeout(function () {
             socket.emit('stock-get-portfolio');
             socket.emit('stock-get-leaderboard');
-            socket.emit('stock-get-portfolio-history');
         }, 500);
     });
 })();

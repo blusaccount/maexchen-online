@@ -412,6 +412,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
             const snapshot = await getPortfolioSnapshot(player.name, quotes);
             socket.emit('stock-portfolio', snapshot);
             recordSnapshot(player.name, snapshot.totalValue, result.newBalance);
+            socket.emit('stock-portfolio-history', getHistory(player.name));
         } catch (err) { console.error('stock-buy error:', err.message); } });
 
         // --- Stock Game: Sell ---
@@ -458,6 +459,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
             const snapshot = await getPortfolioSnapshot(player.name, quotes);
             socket.emit('stock-portfolio', snapshot);
             recordSnapshot(player.name, snapshot.totalValue, result.newBalance);
+            socket.emit('stock-portfolio-history', getHistory(player.name));
         } catch (err) { console.error('stock-sell error:', err.message); } });
 
         // --- Stock Game: Get Portfolio ---
@@ -475,6 +477,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
             socket.emit('stock-portfolio', snapshot);
             const cash = await getBalance(player.name);
             recordSnapshot(player.name, snapshot.totalValue, cash);
+            socket.emit('stock-portfolio-history', getHistory(player.name));
         } catch (err) { console.error('stock-get-portfolio error:', err.message); } });
 
         // --- Stock Game: Get Portfolio History ---
