@@ -305,3 +305,56 @@
 
 - `node --check games/turkish/js/game.js`
 
+
+---
+
+# HANDOFF - MVP Umsetzungs-Checkliste (Self-hosted Stock-Game)
+
+## What Was Done
+
+- Added `docs/mvp-umsetzungs-checkliste.md` with a concrete, file-by-file implementation plan for the agreed MVP direction:
+  - Self-hosted-first setup hardening
+  - Stock command validation
+  - Leaderboard/net-worth consistency
+  - ENV feature toggles
+  - Lightweight license-key flow
+  - Minimal conversion tracking events
+- Included per-step DoD and explicit verification commands to support small PR sequencing.
+
+## Files Changed
+
+- `docs/mvp-umsetzungs-checkliste.md`
+- `HANDOFF.md`
+
+## Verification
+
+- Reviewed checklist structure and command list for consistency with current repo modules.
+
+---
+
+# HANDOFF - PR #1 Self-hosting Baseline (Docker + Docs)
+
+## What Was Done
+
+- Added containerization baseline without touching game or socket logic:
+  - `Dockerfile` for production-style Node runtime
+  - `.dockerignore` to keep image context small and avoid leaking local env files
+  - `docker-compose.yml` for one-command startup and `/health` healthcheck
+- Expanded `.env.example` with clearer required/optional grouping and forward-compatible keys (`GAME_*`, `LICENSE_*`) while keeping current `DISCORD_TOKEN` behavior intact.
+- Updated `README.md` with a Docker quickstart and a short troubleshooting section (bot token, DB URL, host port conflict).
+- Updated `PLANS.md` with an ExecPlan section for this multi-file setup task and recorded outcomes.
+
+## Files Changed
+
+- `Dockerfile`
+- `.dockerignore`
+- `docker-compose.yml`
+- `.env.example`
+- `README.md`
+- `PLANS.md`
+- `HANDOFF.md`
+
+## Verification
+
+- Attempted: `docker compose config` (environment limitation: docker not installed in this runtime)
+- Attempted: `npm test` (environment limitation: `vitest` binary missing because dependencies are not installed in this runtime)

@@ -32,6 +32,27 @@ npm run dev
 ```
 Server runs at `http://localhost:3000`.
 
+## Self-Hosted Quickstart (Docker)
+1. Copy env template and fill required values:
+   ```bash
+   cp .env.example .env
+   ```
+2. Build and start:
+   ```bash
+   docker compose up -d --build
+   ```
+3. Open `http://localhost:3000`.
+4. Health check:
+   ```bash
+   docker compose ps
+   curl http://localhost:3000/health
+   ```
+
+### Troubleshooting
+- **Bot not starting**: ensure `DISCORD_TOKEN` is set in `.env`.
+- **Database errors**: verify `DATABASE_URL` format and DB network access.
+- **Port already in use**: change host mapping in `docker-compose.yml` (left side of `3000:3000`).
+
 ## Configuration (Env)
 - `SESSION_SECRET` (required in production)
 - `SITE_PASSWORD` (login password, default: ADMIN)
