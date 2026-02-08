@@ -1553,6 +1553,7 @@ h3 { font-size: 1.3rem; color: var(--text-dim); letter-spacing: 2px; text-transf
     inset: 0;
     width: 100%;
     height: 100%;
+    touch-action: none;
 }
 
 #picto-preview {

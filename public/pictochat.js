@@ -449,6 +449,7 @@
     function setupCanvas() {
         if (!canvas) return;
         canvas.addEventListener('pointerdown', function (e) {
+            e.preventDefault();
             if (e.button !== 0) return;
             var point = normPointFromEvent(e);
             canvas.setPointerCapture(e.pointerId);
@@ -460,6 +461,7 @@
         });
 
         canvas.addEventListener('pointermove', function (e) {
+            e.preventDefault();
             var point = normPointFromEvent(e);
             sendCursor(point);
             if (!isDrawing) return;
