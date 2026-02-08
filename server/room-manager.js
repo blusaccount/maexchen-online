@@ -1,5 +1,5 @@
 import { getAlivePlayers, nextAlivePlayerIndex } from './game-logic.js';
-import { addBalance, getBalance } from './currency.js';
+import { addBalance } from './currency.js';
 
 // ============== ROOM MANAGEMENT ==============
 
@@ -102,10 +102,9 @@ export async function awardPotAndEndGame(io, room, winnerName, alive) {
     const pot = room.game.pot || 0;
 
     if (pot > 0 && alive[0]) {
-        await addBalance(alive[0].name, pot, 'maexchen_pot_win', { roomCode: room.code });
-        for (const p of room.players) {
-            const balance = await getBalance(p.name);
-            io.to(p.socketId).emit('balance-update', { balance });
+        const newBalance = await addBalance(alive[0].name, pot, 'maexchen_pot_win', { roomCode: room.code });
+        if (newBalance !== null && alive[0].socketId) {
+            io.to(alive[0].socketId).emit('balance-update', { balance: newBalance });
         }
     }
 

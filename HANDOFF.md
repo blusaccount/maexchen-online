@@ -357,6 +357,32 @@
 
 ---
 
+# HANDOFF - Review Feedback Fixes
+
+## What Was Done
+
+- Added IP-based socket rate limiting and cleanup for rate limiter maps.
+- Enforced minimum name length in server validation.
+- Added brain daily cooldown (UTC) using wallet ledger entries and throttled leaderboard broadcasts.
+- Hardened pictochat message sanitizing and avoided blocking hydration on join.
+- Added stock quote caching for trades and limited Postgres pool configuration.
+- Reduced extra balance-update DB queries in brain rewards and Mäxchen pot/bet flows.
+
+## Files Changed
+- `server/socket-handlers.js`
+- `server/room-manager.js`
+- `server/index.js`
+- `server/db.js`
+- `PLANS.md`
+
+## Verification
+- Not run here. Suggested:
+  - `node --check server/socket-handlers.js`
+  - `node --check server/db.js`
+  - Manual: brain daily test twice in the same UTC day should only award once.
+
+---
+
 # HANDOFF - Turkish Quiz State Machine Stabilization
 
 ## What Was Done

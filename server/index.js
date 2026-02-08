@@ -36,7 +36,9 @@ const loginRateLimiter = new Map(); // ip -> { count, resetAt }
 
 function sanitizePlayerName(name) {
     if (typeof name !== 'string') return '';
-    return name.replace(/[<>&"'/]/g, '').trim().slice(0, 20);
+    const clean = name.replace(/[<>&"'/]/g, '').trim().slice(0, 20);
+    if (clean.length < 2) return '';
+    return clean;
 }
 
 // Trust proxy (Render terminates SSL at the proxy layer)

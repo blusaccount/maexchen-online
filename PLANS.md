@@ -123,6 +123,51 @@ Out of scope: new auth flows, full anti-cheat system, translations beyond existi
 ## Outcomes
 Turkish daily quiz is deterministic; streak rewards and leaderboard are wired end-to-end.
 
+## ExecPlan - Review Feedback Fixes
+
+## Purpose
+Address security/performance review items around rate limiting, brain daily cooldowns, pictochat sanitizing/hydration, DB pool limits, and stock quote overhead.
+
+## Scope
+In scope: socket rate limiting by IP, name validation, brain daily cooldown, pictochat message sanitizing + hydration UX, leaderboard broadcast throttling, stock quote caching, DB pool limits, balance update query reductions.
+Out of scope: full session store migration or large refactors of socket logic.
+
+## Context
+- `server/socket-handlers.js` rate limiting, brain logic, pictochat, stock trades
+- `server/db.js` Postgres pool config
+- `server/room-manager.js` pot payouts
+- `server/index.js` name validation
+
+## Plan of Work
+1. Add IP-based socket rate limiting and cleanup for rate limiter maps.
+2. Enforce minimum name length in server validation.
+3. Add brain daily cooldown (UTC) and throttle leaderboard broadcasts.
+4. Harden pictochat message sanitizing and avoid hydration blocking.
+5. Add stock quote cache and DB pool limits; reduce balance update queries.
+6. Update handoff notes.
+
+## Progress
+- [x] Start plan
+- [x] Implement changes
+- [ ] Verify behavior
+- [x] Update handoff notes
+
+## Surprises and Discoveries
+- None.
+
+## Decision Log
+- Decision: Use wallet ledger entries (`brain_daily`) to enforce daily cooldown when DB is enabled.
+  Rationale: Persisted enforcement avoids restarts resetting cooldowns.
+  Date: 2026-02-08
+
+## Verification
+- `node --check server/socket-handlers.js`
+- `node --check server/db.js`
+- Manual: attempt brain daily twice in UTC day and verify no second coin award.
+
+## Outcomes
+Review items addressed with targeted server-side hardening and performance optimizations.
+
 ## ExecPlan - Docker Bot Runtime Fixes
 
 ## Purpose

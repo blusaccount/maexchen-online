@@ -20,7 +20,10 @@ let pool = null;
 if (hasDatabase) {
     pool = new Pool({
         connectionString,
-        ssl: sslEnabled ? { rejectUnauthorized: sslRejectUnauthorized } : false
+        ssl: sslEnabled ? { rejectUnauthorized: sslRejectUnauthorized } : false,
+        max: Number(process.env.DATABASE_POOL_MAX) || 10,
+        idleTimeoutMillis: Number(process.env.DATABASE_POOL_IDLE_MS) || 30000,
+        connectionTimeoutMillis: Number(process.env.DATABASE_POOL_CONN_MS) || 5000
     });
 
     pool.on('error', (err) => {
