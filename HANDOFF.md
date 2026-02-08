@@ -1,3 +1,59 @@
+# HANDOFF - Brain Versus Handlers Extraction
+
+## What Was Done
+- Extracted all StrictBrain game handlers from `server/socket-handlers.js` to `server/handlers/brain-versus.js`
+- Created `registerBrainVersusHandlers(socket, io, deps)` export function
+- Created `cleanupBrainVersusOnDisconnect(socket, room, io)` export function for disconnect cleanup
+- Handlers extracted:
+  - `brain-get-leaderboard` (lines 1313-1319)
+  - `brain-submit-score` (lines 1321-1364)
+  - `brain-training-score` (lines 1366-1393)
+  - `brain-versus-create` (lines 1397-1419)
+  - `brain-versus-join` (lines 1421-1444)
+  - `brain-versus-start` (lines 1446-1464)
+  - `brain-versus-score-update` (lines 1466-1479)
+  - `brain-versus-finished` (lines 1481-1540)
+  - `brain-versus-leave` (lines 1542-1582)
+- Helper functions extracted:
+  - `brainDailyCooldown` Map
+  - `BRAIN_LEADERBOARD_THROTTLE_MS` constant
+  - `calculateBrainCoins(brainAge)`
+  - `calculateTrainingCoins(score)`
+  - `getUtcDayNumber(date)`
+  - `hasBrainDailyReward(name)`
+  - `markBrainDailyReward(name, day)`
+  - `scheduleBrainLeaderboardBroadcast()`
+  - `scheduleBrainGameLeaderboardsBroadcast()`
+- Removed unused brain-leaderboards imports from socket-handlers.js
+- Maintained ALL original try-catch patterns and validation logic
+- Zero behavior changes - pure structural refactor
+
+## How to Verify
+1. `node --check server/socket-handlers.js`
+2. `node --check server/handlers/brain-versus.js`
+3. `npm test` - all tests pass (same 3 pre-existing failures in lol-betting/lol-match-checker)
+4. Start server and test:
+   - Brain test submission and leaderboard updates
+   - Brain training mode with coin rewards
+   - Brain versus mode: create room, join, start game, score updates, forfeit
+
+### Files Modified
+- `server/socket-handlers.js` - removed ~270 lines of brain handlers + helpers, added import and registration call
+- `server/handlers/brain-versus.js` - NEW file (365 lines) with all StrictBrain handlers
+
+### Implementation Details
+- All handler state (cooldowns, timers) is maintained within brain-versus.js module
+- Dependencies (checkRateLimit, sanitizeName, validateRoomCode) passed via deps object
+- Disconnect handler calls `cleanupBrainVersusOnDisconnect` for brain forfeit logic
+- Imports from: brain-leaderboards, currency, room-manager, socket-utils, db
+
+## Risks & Notes
+- None - this is a zero-behavior refactor
+- All brain-related socket events still work identically
+- Handler registration happens in same order as before
+
+---
+
 # HANDOFF - Mäxchen Handlers Extraction
 
 ## What Was Done
