@@ -201,6 +201,45 @@ describe('manualCheckBetStatus', () => {
         expect(result.message).toContain('No new match');
     });
 
+    it('resolves bet when lastMatchId is most recent but match ended after bet placement', async () => {
+        const betId = betIdCounter++;
+        const bet = {
+            id: betId,
+            playerName: 'testPlayer',
+            status: 'pending',
+            puuid: 'test-puuid',
+            lastMatchId: 'match-1',
+            betOnWin: true,
+            amount: 100,
+            lolUsername: 'TestPlayer#NA1',
+            createdAt: '2024-01-01T00:00:00.000Z'
+        };
+
+        mockGetBetById.mockResolvedValue(bet);
+        mockGetMatchHistory.mockResolvedValue(['match-1']);
+        mockGetMatchDetails.mockResolvedValue({
+            info: {
+                gameEndTimestamp: 1704067800000,
+                participants: [
+                    { puuid: 'test-puuid', win: true }
+                ]
+            }
+        });
+        mockResolveBet.mockResolvedValue({
+            playerId: 1,
+            playerName: 'testPlayer',
+            wonBet: true,
+            payout: 200
+        });
+        mockAddBalance.mockResolvedValue(300);
+
+        const result = await manualCheckBetStatus(betId, 'testPlayer');
+        expect(result.success).toBe(true);
+        expect(result.resolved).toBe(true);
+        expect(result.wonBet).toBe(true);
+        expect(result.payout).toBe(200);
+    });
+
     it('resolves bet when new match is found and player won', async () => {
         const betId = betIdCounter++;
         const bet = {

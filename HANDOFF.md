@@ -1,3 +1,18 @@
+# HANDOFF - LoL Bet Resolution Timestamp Fallback
+
+## What Was Done
+- Added a timestamp-based fallback so bets resolve when the stored lastMatchId is still the latest match but that match ended after the bet was placed.
+- Applied the same fallback to the background checker and manual bet checks.
+- Added test coverage for the fallback resolution path.
+
+## How to Verify
+1. Run `npm test -- server/__tests__/lol-match-checker.test.js`.
+2. Manually place a LoL bet, complete a match, and use the manual check; it should resolve even if lastMatchId matches the latest match and the match ended after the bet was placed.
+
+### Files Modified
+- `server/lol-match-checker.js`
+- `server/__tests__/lol-match-checker.test.js`
+
 # HANDOFF - Diamond Shop & Make It Rain Features
 
 ## What Was Done
@@ -1580,4 +1595,3 @@ Performed a full-codebase review covering security, correctness, performance, an
 
 - `npm test` — 122 tests pass (89 original + 33 new)
 - All existing tests remain green
-

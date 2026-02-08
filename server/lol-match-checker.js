@@ -206,13 +206,44 @@ async function checkPlayerMatches(puuid, bets) {
         newMatches = matchIds.slice(0, baselineMatchIndex);
     }
 
+    let cachedMatchDetails = null;
+    let betsToResolve = bets;
     if (newMatches.length === 0) {
-        return; // No new matches
+        const latestMatchId = matchIds[0];
+        const betsWithLatestBaseline = bets.filter(bet => bet.lastMatchId === latestMatchId && bet.createdAt);
+        if (betsWithLatestBaseline.length === 0) {
+            return; // No new matches
+        }
+
+        cachedMatchDetails = await getMatchDetails(latestMatchId);
+        if (!cachedMatchDetails || !cachedMatchDetails.info || !cachedMatchDetails.info.participants) {
+            console.warn(`[LoL Match Checker] Invalid match data for ${latestMatchId}`);
+            return;
+        }
+
+        const matchEndMs = getMatchEndTimestamp(cachedMatchDetails);
+        if (!matchEndMs) {
+            return; // Unable to determine match end time
+        }
+
+        const eligibleBets = betsWithLatestBaseline.filter(bet => {
+            const createdAtMs = Date.parse(bet.createdAt);
+            return Number.isFinite(createdAtMs) && matchEndMs > createdAtMs;
+        });
+
+        if (eligibleBets.length === 0) {
+            return; // No new matches
+        }
+
+        newMatches = [latestMatchId];
+        betsToResolve = eligibleBets;
     }
 
     // Process the most recent new match
     const mostRecentMatchId = newMatches[0];
-    const matchDetails = await getMatchDetails(mostRecentMatchId);
+    const matchDetails = cachedMatchDetails && mostRecentMatchId === matchIds[0]
+        ? cachedMatchDetails
+        : await getMatchDetails(mostRecentMatchId);
     
     if (!matchDetails || !matchDetails.info || !matchDetails.info.participants) {
         console.warn(`[LoL Match Checker] Invalid match data for ${mostRecentMatchId}`);
@@ -229,7 +260,7 @@ async function checkPlayerMatches(puuid, bets) {
     const didPlayerWin = participant.win === true;
     
     // Resolve all pending bets for this player
-    for (const bet of bets) {
+    for (const bet of betsToResolve) {
         await resolveBetAndNotify(bet, didPlayerWin, mostRecentMatchId);
     }
 }
@@ -288,6 +319,22 @@ async function resolveBetAndNotify(bet, didPlayerWin, matchId) {
  */
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function getMatchEndTimestamp(matchDetails) {
+    if (!matchDetails || !matchDetails.info) {
+        return null;
+    }
+
+    if (Number.isFinite(matchDetails.info.gameEndTimestamp)) {
+        return matchDetails.info.gameEndTimestamp;
+    }
+
+    if (Number.isFinite(matchDetails.info.gameCreation) && Number.isFinite(matchDetails.info.gameDuration)) {
+        return matchDetails.info.gameCreation + Math.round(matchDetails.info.gameDuration * 1000);
+    }
+
+    return null;
 }
 
 /**
@@ -409,6 +456,18 @@ export async function manualCheckBetStatus(betId, playerName) {
             newMatches = matchIds.slice(0, baselineMatchIndex);
         }
 
+        let cachedMatchDetails = null;
+        if (newMatches.length === 0 && baselineMatchIndex === 0 && bet.createdAt) {
+            const createdAtMs = Date.parse(bet.createdAt);
+            if (Number.isFinite(createdAtMs)) {
+                cachedMatchDetails = await getMatchDetails(matchIds[0]);
+                const matchEndMs = getMatchEndTimestamp(cachedMatchDetails);
+                if (matchEndMs && matchEndMs > createdAtMs) {
+                    newMatches = [matchIds[0]];
+                }
+            }
+        }
+
         if (newMatches.length === 0) {
             return {
                 success: true,
@@ -419,7 +478,9 @@ export async function manualCheckBetStatus(betId, playerName) {
 
         // Process the most recent new match
         const mostRecentMatchId = newMatches[0];
-        const matchDetails = await getMatchDetails(mostRecentMatchId);
+        const matchDetails = cachedMatchDetails && mostRecentMatchId === matchIds[0]
+            ? cachedMatchDetails
+            : await getMatchDetails(mostRecentMatchId);
         
         if (!matchDetails || !matchDetails.info || !matchDetails.info.participants) {
             return {
