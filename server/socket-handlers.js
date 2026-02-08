@@ -45,6 +45,7 @@ import { recordSnapshot, getHistory } from './portfolio-history.js';
 import { loadStrokes, saveStroke, deleteStroke, clearStrokes, loadMessages, saveMessage, clearMessages, PICTO_MAX_MESSAGES } from './pictochat-store.js';
 import { placeBet, getActiveBets, getPlayerBets, resolveBet } from './lol-betting.js';
 import { parseRiotId, validateRiotId, getMatchHistory, isRiotApiEnabled } from './riot-api.js';
+import { manualCheckBetStatus } from './lol-match-checker.js';
 
 // ============== INPUT VALIDATION ==============
 
@@ -1869,6 +1870,66 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
             socket.emit('lol-history-update', { history });
         } catch (err) {
             console.error('lol-get-history error:', err.message);
+        } });
+
+        // --- Manual Check Bet Status ---
+        socket.on('lol-check-bet-status', async (data) => { try {
+            if (!checkRateLimit(socket, 5)) {
+                socket.emit('lol-bet-check-result', { 
+                    success: false, 
+                    error: 'RATE_LIMITED',
+                    message: 'Too many requests, please wait' 
+                });
+                return;
+            }
+
+            if (!data || typeof data !== 'object') return;
+
+            const player = onlinePlayers.get(socket.id);
+            if (!player) {
+                socket.emit('lol-bet-check-result', { 
+                    success: false, 
+                    error: 'NOT_LOGGED_IN',
+                    message: 'Not logged in' 
+                });
+                return;
+            }
+
+            const { betId } = data;
+            const safeBetId = Number(betId);
+            if (!Number.isInteger(safeBetId) || safeBetId <= 0) {
+                socket.emit('lol-bet-check-result', { 
+                    success: false, 
+                    error: 'INVALID_BET_ID',
+                    message: 'Invalid bet ID' 
+                });
+                return;
+            }
+
+            // Call the manual check function
+            const result = await manualCheckBetStatus(safeBetId, player.name);
+
+            // Send result to the requesting player
+            socket.emit('lol-bet-check-result', result);
+
+            // If bet was resolved, broadcast updated bets list to all clients
+            if (result.success && result.resolved) {
+                const allBets = await getActiveBets();
+                io.emit('lol-bets-update', { bets: allBets });
+
+                // Update player's balance
+                if (result.wonBet && result.payout > 0) {
+                    const newBalance = await getBalance(player.name);
+                    socket.emit('balance-update', { balance: newBalance });
+                }
+            }
+        } catch (err) {
+            console.error('lol-check-bet-status error:', err.message);
+            socket.emit('lol-bet-check-result', { 
+                success: false, 
+                error: 'SERVER_ERROR',
+                message: 'Failed to check bet status' 
+            });
         } });
 
         // --- Admin Resolve LoL Bet ---

@@ -1,6 +1,6 @@
 // ============== LOL MATCH CHECKER ==============
 
-import { getPendingBetsForChecking, resolveBet, getActiveBets, getPendingBetsWithoutPuuid, updateBetPuuid } from './lol-betting.js';
+import { getPendingBetsForChecking, resolveBet, getActiveBets, getPendingBetsWithoutPuuid, updateBetPuuid, getBetById } from './lol-betting.js';
 import { addBalance } from './currency.js';
 import { getMatchHistory, getMatchDetails, isRiotApiEnabled, validateRiotId, getRiotApiDisabledReason } from './riot-api.js';
 import { withTransaction } from './db.js';
@@ -15,6 +15,10 @@ const CHECK_INTERVAL_MS = Number(process.env.LOL_CHECK_INTERVAL_MS) || 60000;
 // Track last check time per PUUID to avoid excessive API calls
 const lastCheckTime = new Map(); // puuid -> timestamp
 const MIN_CHECK_INTERVAL_PER_PUUID = 30000; // 30 seconds minimum between checks for same PUUID
+
+// Track last manual check time per bet ID to prevent abuse
+const lastManualCheckTime = new Map(); // betId -> timestamp
+const MIN_MANUAL_CHECK_INTERVAL = 10000; // 10 seconds minimum between manual checks for same bet
 
 /**
  * Start the background match checker
@@ -291,4 +295,182 @@ function delay(ms) {
  */
 export function isCheckerRunning() {
     return isRunning;
+}
+
+/**
+ * Manually check the status of a specific bet
+ * Returns a result object with status, message, and optional bet data
+ */
+export async function manualCheckBetStatus(betId, playerName) {
+    // Rate limiting check
+    const lastCheck = lastManualCheckTime.get(betId) || 0;
+    const now = Date.now();
+    if (now - lastCheck < MIN_MANUAL_CHECK_INTERVAL) {
+        return {
+            success: false,
+            error: 'RATE_LIMITED',
+            message: 'Please wait before checking this bet again (cooldown active).'
+        };
+    }
+
+    // Check if Riot API is enabled
+    if (!isRiotApiEnabled()) {
+        const reason = getRiotApiDisabledReason();
+        if (reason) {
+            // API key was rejected
+            return {
+                success: false,
+                error: 'API_REJECTED',
+                message: 'Riot API key was rejected. Please contact an administrator.'
+            };
+        } else {
+            // API key not configured
+            return {
+                success: false,
+                error: 'API_NOT_CONFIGURED',
+                message: 'Riot API is not configured. Please contact an administrator.'
+            };
+        }
+    }
+
+    try {
+        // Fetch the bet
+        const bet = await getBetById(betId);
+        
+        if (!bet) {
+            return {
+                success: false,
+                error: 'BET_NOT_FOUND',
+                message: 'Bet not found or already resolved.'
+            };
+        }
+
+        // Verify bet belongs to player
+        if (bet.playerName !== playerName) {
+            return {
+                success: false,
+                error: 'PERMISSION_DENIED',
+                message: 'You can only check your own bets.'
+            };
+        }
+
+        // Check if bet is still pending
+        if (bet.status !== 'pending') {
+            return {
+                success: false,
+                error: 'BET_NOT_PENDING',
+                message: 'Bet not found or already resolved.'
+            };
+        }
+
+        // Check if bet has required data
+        if (!bet.puuid || !bet.lastMatchId) {
+            return {
+                success: false,
+                error: 'MISSING_DATA',
+                message: 'This bet is missing player information and cannot be checked automatically.'
+            };
+        }
+
+        // Update rate limit timestamp before making API calls
+        lastManualCheckTime.set(betId, now);
+
+        // Fetch match history
+        const matchIds = await getMatchHistory(bet.puuid, 5);
+        
+        if (matchIds.length === 0) {
+            return {
+                success: true,
+                resolved: false,
+                message: 'No new match found yet. The player hasn\'t completed a game since this bet was placed.'
+            };
+        }
+
+        // Check if there's a new match since the bet was placed
+        const baselineMatchIndex = matchIds.indexOf(bet.lastMatchId);
+        
+        let newMatches = [];
+        if (baselineMatchIndex === -1) {
+            // lastMatchId not in recent 5 - check most recent match only
+            newMatches = [matchIds[0]];
+        } else if (baselineMatchIndex > 0) {
+            // Found lastMatchId, get all matches before it
+            newMatches = matchIds.slice(0, baselineMatchIndex);
+        }
+
+        if (newMatches.length === 0) {
+            return {
+                success: true,
+                resolved: false,
+                message: 'No new match found yet. The player hasn\'t completed a game since this bet was placed.'
+            };
+        }
+
+        // Process the most recent new match
+        const mostRecentMatchId = newMatches[0];
+        const matchDetails = await getMatchDetails(mostRecentMatchId);
+        
+        if (!matchDetails || !matchDetails.info || !matchDetails.info.participants) {
+            return {
+                success: false,
+                error: 'INVALID_MATCH_DATA',
+                message: 'Match data is incomplete or invalid. Please try again later.'
+            };
+        }
+
+        // Find the player's participant entry
+        const participant = matchDetails.info.participants.find(p => p.puuid === bet.puuid);
+        if (!participant) {
+            return {
+                success: false,
+                error: 'PLAYER_NOT_FOUND',
+                message: 'Player not found in match data.'
+            };
+        }
+
+        const didPlayerWin = participant.win === true;
+        
+        // Resolve the bet
+        await resolveBetAndNotify(bet, didPlayerWin, mostRecentMatchId);
+
+        const wonBet = bet.betOnWin === didPlayerWin;
+        const payout = wonBet ? bet.amount * 2 : 0;
+
+        return {
+            success: true,
+            resolved: true,
+            wonBet,
+            payout,
+            lolUsername: bet.lolUsername,
+            matchId: mostRecentMatchId,
+            message: wonBet 
+                ? `✅ Bet resolved! You won ${payout} SC!`
+                : '❌ Bet resolved. You lost this bet.'
+        };
+    } catch (err) {
+        console.error('[Manual Check] Error:', err.message);
+        
+        // Handle specific error types
+        if (err.message.includes('rate limit')) {
+            return {
+                success: false,
+                error: 'RATE_LIMIT_EXCEEDED',
+                message: 'Riot API rate limit exceeded. Please try again in a few minutes.'
+            };
+        }
+        
+        if (err.message.includes('401') || err.message.includes('403')) {
+            return {
+                success: false,
+                error: 'API_REJECTED',
+                message: 'Riot API key was rejected. Please contact an administrator.'
+            };
+        }
+
+        return {
+            success: false,
+            error: 'API_ERROR',
+            message: 'Riot API error. Please try again later.'
+        };
+    }
 }

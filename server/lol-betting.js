@@ -229,6 +229,40 @@ export async function updateBetPuuid(betId, puuid, lastMatchId) {
 }
 
 /**
+ * Get a specific bet by ID
+ */
+export async function getBetById(betId) {
+    if (!isDatabaseEnabled()) {
+        const bet = betsMemory.find(b => b.id === betId);
+        return bet || null;
+    }
+
+    const result = await query(
+        `select id, player_name, lol_username, bet_amount, bet_on_win, puuid, last_match_id, status, created_at
+         from lol_bets
+         where id = $1`,
+        [betId]
+    );
+
+    if (result.rows.length === 0) {
+        return null;
+    }
+
+    const row = result.rows[0];
+    return {
+        id: row.id,
+        playerName: row.player_name,
+        lolUsername: row.lol_username,
+        amount: Number(row.bet_amount),
+        betOnWin: row.bet_on_win,
+        puuid: row.puuid,
+        lastMatchId: row.last_match_id,
+        status: row.status,
+        createdAt: row.created_at
+    };
+}
+
+/**
  * Mock function to simulate resolving a bet
  * In production, this would integrate with Riot Games API
  * Note: This function is not exposed via socket handlers - it's for future admin/API use
