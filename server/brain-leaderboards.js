@@ -10,9 +10,29 @@ const gameLeaderboardsMemory = {
 };
 
 const VALID_BRAIN_GAME_IDS = ['math', 'stroop', 'chimp', 'reaction', 'scramble'];
+const MEMORY_LIMIT = 100;
 
 function isReaction(gameId) {
     return gameId === 'reaction';
+}
+
+function pruneMemoryBoard(board, gameId = null) {
+    if (board.size <= MEMORY_LIMIT) return;
+    const entries = [];
+    for (const [name, score] of board) {
+        entries.push({ name, score });
+    }
+    if (gameId && isReaction(gameId)) {
+        entries.sort((a, b) => a.score - b.score || a.name.localeCompare(b.name));
+    } else if (gameId) {
+        entries.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+    } else {
+        entries.sort((a, b) => a.score - b.score || a.name.localeCompare(b.name));
+    }
+    const keep = new Set(entries.slice(0, MEMORY_LIMIT).map(e => e.name));
+    for (const name of board.keys()) {
+        if (!keep.has(name)) board.delete(name);
+    }
 }
 
 async function getOrCreatePlayerId(playerName, client = null) {
@@ -41,6 +61,7 @@ export async function updateBrainAgeLeaderboard(playerName, brainAge) {
         if (current === undefined || brainAge < current) {
             brainLeaderboardMemory.set(playerName, brainAge);
         }
+        pruneMemoryBoard(brainLeaderboardMemory);
         return;
     }
 
@@ -68,6 +89,7 @@ export async function updateGameLeaderboard(gameId, playerName, score) {
         const current = board.get(playerName);
         if (current === undefined) {
             board.set(playerName, score);
+            pruneMemoryBoard(board, gameId);
             return;
         }
         if (isReaction(gameId)) {
@@ -75,6 +97,7 @@ export async function updateGameLeaderboard(gameId, playerName, score) {
         } else if (score > current) {
             board.set(playerName, score);
         }
+        pruneMemoryBoard(board, gameId);
         return;
     }
 

@@ -453,6 +453,24 @@
 
 ---
 
+# HANDOFF - Leaderboard Hardening (All)
+
+## What Was Done
+
+- Added DB indexes to speed leaderboard queries (brain + turkish).
+- Added in-memory pruning for Strict Brain leaderboard fallbacks.
+
+## Files Changed
+- `server/sql/persistence.sql`
+- `server/brain-leaderboards.js`
+- `PLANS.md`
+
+## Verification
+- Not run here. Suggested:
+  - `node --check server/brain-leaderboards.js`
+
+---
+
 # HANDOFF - Turkish Quiz State Machine Stabilization
 
 ## What Was Done

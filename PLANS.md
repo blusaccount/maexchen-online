@@ -246,6 +246,44 @@ Out of scope: UI changes, new gameplay mechanics.
 ## Outcomes
 Strict Brain leaderboards are persisted in DB with a safe in-memory fallback.
 
+## ExecPlan - Leaderboard Hardening (All)
+
+## Purpose
+Harden all leaderboards with DB indexing and bounded in-memory fallbacks.
+
+## Scope
+In scope: add DB indexes for brain/turkish leaderboards and prune in-memory fallback maps.
+Out of scope: behavioral changes or UI changes.
+
+## Context
+- `server/sql/persistence.sql`
+- `server/brain-leaderboards.js`
+
+## Plan of Work
+1. Add DB indexes for leaderboard queries.
+2. Add in-memory pruning for leaderboards in dev fallback.
+3. Update handoff notes.
+
+## Progress
+- [x] Start plan
+- [x] Implement changes
+- [ ] Verify behavior
+- [x] Update handoff notes
+
+## Surprises and Discoveries
+- None.
+
+## Decision Log
+- Decision: Cap in-memory leaderboards at 100 entries.
+  Rationale: Prevent unbounded growth while preserving top scores.
+  Date: 2026-02-08
+
+## Verification
+- `node --check server/brain-leaderboards.js`
+
+## Outcomes
+All leaderboards now have DB indexes and bounded in-memory fallbacks.
+
 ## ExecPlan - Docker Bot Runtime Fixes
 
 ## Purpose
