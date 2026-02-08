@@ -12,7 +12,7 @@ import {
 } from './room-manager.js';
 
 import { getBalance, addBalance, deductBalance } from './currency.js';
-import { isDatabaseEnabled, query } from './db.js';
+import { isDatabaseEnabled, query, withTransaction } from './db.js';
 import {
     updateBrainAgeLeaderboard,
     updateGameLeaderboard,
@@ -1670,14 +1670,50 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
                 return;
             }
 
-            // Deduct bet amount
-            const newBalance = await deductBalance(playerName, betAmount, 'lol_bet', {
-                lolUsername: resolvedName,
-                betOnWin
-            });
+            let newBalance;
+            let bet;
 
-            // Place bet
-            const bet = await placeBet(playerName, resolvedName, betAmount, betOnWin);
+            if (isDatabaseEnabled()) {
+                // DB mode: wrap deduction + bet in a single transaction so
+                // both succeed or both roll back — no lost currency on failure.
+                const txResult = await withTransaction(async (client) => {
+                    const bal = await deductBalance(playerName, betAmount, 'lol_bet', {
+                        lolUsername: resolvedName,
+                        betOnWin
+                    }, client);
+                    if (bal === null) {
+                        return { ok: false };
+                    }
+                    const b = await placeBet(playerName, resolvedName, betAmount, betOnWin, client);
+                    return { ok: true, newBalance: bal, bet: b };
+                });
+                if (!txResult.ok) {
+                    socket.emit('lol-bet-error', { message: 'Insufficient balance' });
+                    return;
+                }
+                newBalance = txResult.newBalance;
+                bet = txResult.bet;
+            } else {
+                // In-memory mode: deduct first, refund if bet placement fails.
+                newBalance = await deductBalance(playerName, betAmount, 'lol_bet', {
+                    lolUsername: resolvedName,
+                    betOnWin
+                });
+                if (newBalance === null) {
+                    socket.emit('lol-bet-error', { message: 'Insufficient balance' });
+                    return;
+                }
+                try {
+                    bet = await placeBet(playerName, resolvedName, betAmount, betOnWin);
+                } catch (betErr) {
+                    // Refund the deducted amount on failure
+                    await addBalance(playerName, betAmount, 'lol_bet_refund', {
+                        lolUsername: resolvedName,
+                        reason: betErr.message
+                    });
+                    throw betErr;
+                }
+            }
 
             // Send confirmation to player
             socket.emit('lol-bet-placed', {

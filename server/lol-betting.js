@@ -9,7 +9,7 @@ let nextBetId = 1;
 /**
  * Place a bet on a League of Legends player's next match
  */
-export async function placeBet(playerName, lolUsername, amount, betOnWin) {
+export async function placeBet(playerName, lolUsername, amount, betOnWin, client = null) {
     if (!isDatabaseEnabled()) {
         const bet = {
             id: nextBetId++,
@@ -24,8 +24,10 @@ export async function placeBet(playerName, lolUsername, amount, betOnWin) {
         return bet;
     }
 
+    const queryRunner = client || { query };
+
     // Get player ID
-    const playerResult = await query(
+    const playerResult = await queryRunner.query(
         'select id from players where name = $1',
         [playerName]
     );
@@ -37,7 +39,7 @@ export async function placeBet(playerName, lolUsername, amount, betOnWin) {
     const playerId = playerResult.rows[0].id;
 
     // Insert bet
-    const result = await query(
+    const result = await queryRunner.query(
         `insert into lol_bets (player_id, player_name, lol_username, bet_amount, bet_on_win, status)
          values ($1, $2, $3, $4, $5, 'pending')
          returning id, player_name, lol_username, bet_amount, bet_on_win, status, created_at`,

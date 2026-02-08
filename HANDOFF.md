@@ -651,23 +651,38 @@ Users must now enter a valid Riot ID (Name#Tag format) when placing LoL bets. Th
 
 ---
 
-# HANDOFF - Pictochat Mobile Touch Scroll Fix
+# HANDOFF - Currency System Resilience (LoL Betting)
 
 ## What Was Done
 
-- Fixed the pictochat canvas scrolling the page when users try to draw on mobile devices.
-- Added `touch-action: none` CSS property to `#picto-canvas` and `#picto-preview` to prevent browser default touch behaviors (scrolling, pinch-zoom) on the canvas.
-- Added `e.preventDefault()` in `pointerdown` and `pointermove` handlers as defense-in-depth.
+### Bug Fix: Currency deducted even when bet placement fails
 
-## Files Changed
+When a player placed a LoL bet, the currency was deducted first (`deductBalance`) and then the bet was created (`placeBet`). If `placeBet` threw an error, the catch block only emitted an error message — it never refunded the deducted currency. This caused permanent currency loss on failed bets.
 
-- `shared/css/theme.css` — added `touch-action: none` to canvas elements
-- `public/pictochat.js` — added `preventDefault()` in pointer event handlers
-- `HANDOFF.md`
+### Changes
+
+**`server/currency.js`**
+- `addBalance` and `deductBalance` now wrap the balance update + ledger insert in a database transaction when no external client is provided. This prevents the balance from changing without a corresponding ledger entry.
+- Extracted `_addBalanceDB` and `_deductBalanceDB` helpers to keep the logic DRY when used with or without an external transaction client.
+
+**`server/lol-betting.js`**
+- `placeBet` now accepts an optional `client` parameter so it can participate in an external database transaction.
+
+**`server/socket-handlers.js`**
+- The `lol-place-bet` handler now uses `withTransaction` (DB mode) to atomically deduct the balance and place the bet. If either step fails, the entire transaction rolls back — no currency is lost.
+- In-memory mode: if `placeBet` throws after `deductBalance` succeeds, the handler refunds the deducted amount via `addBalance` before re-throwing.
+
+**`server/__tests__/currency.test.js`**
+- Added "deduct + refund resilience" tests verifying balance restoration after a failed downstream operation and that balance stays unchanged when deduction itself fails.
+
+**`server/__tests__/lol-betting.test.js`** (new)
+- Unit tests for `placeBet`, `getActiveBets`, and `getPlayerBets` in in-memory mode.
+- Verifies the optional `client` parameter is accepted without error.
 
 ## Verification
 
-- All 79 tests pass (`npm test`)
-- `touch-action: none` confirmed applied via computed style check in browser
-- Server starts and pictochat renders correctly on mobile viewport
+- `npm test` (86 tests pass — 79 original + 7 new)
+- `node --check server/currency.js`
+- `node --check server/lol-betting.js`
+- `node --check server/socket-handlers.js`
 
