@@ -1,6 +1,6 @@
 // ============== CURRENCY MANAGEMENT ==============
 
-import { isDatabaseEnabled, query } from './db.js';
+import { isDatabaseEnabled, query, withTransaction } from './db.js';
 
 const STARTING_BALANCE = 1000;
 
@@ -59,10 +59,20 @@ export async function addBalance(playerName, amount, reason = 'adjustment', meta
         return newBalance;
     }
 
-    const runner = client || { query };
-    await getOrCreatePlayerBalance(playerName, runner);
+    // When no external client is provided, wrap in a transaction so
+    // balance update + ledger insert are atomic.
+    if (!client) {
+        return withTransaction(async (txClient) => {
+            return _addBalanceDB(playerName, amount, reason, metadata, txClient);
+        });
+    }
+    return _addBalanceDB(playerName, amount, reason, metadata, client);
+}
 
-    const updated = await runner.query(
+async function _addBalanceDB(playerName, amount, reason, metadata, client) {
+    await getOrCreatePlayerBalance(playerName, client);
+
+    const updated = await client.query(
         'update players set balance = round((balance + $1)::numeric, 2), updated_at = now() where name = $2 returning id, balance',
         [amount, playerName]
     );
@@ -70,7 +80,7 @@ export async function addBalance(playerName, amount, reason = 'adjustment', meta
     const row = updated.rows[0];
     if (!row) return null;
 
-    await runner.query(
+    await client.query(
         `insert into wallet_ledger (player_id, delta, reason, metadata)
          values ($1, $2, $3, $4)`,
         [row.id, amount, reason, metadata]
@@ -91,10 +101,20 @@ export async function deductBalance(playerName, amount, reason = 'adjustment', m
         return newBalance;
     }
 
-    const runner = client || { query };
-    await getOrCreatePlayerBalance(playerName, runner);
+    // When no external client is provided, wrap in a transaction so
+    // balance update + ledger insert are atomic.
+    if (!client) {
+        return withTransaction(async (txClient) => {
+            return _deductBalanceDB(playerName, amount, reason, metadata, txClient);
+        });
+    }
+    return _deductBalanceDB(playerName, amount, reason, metadata, client);
+}
 
-    const updated = await runner.query(
+async function _deductBalanceDB(playerName, amount, reason, metadata, client) {
+    await getOrCreatePlayerBalance(playerName, client);
+
+    const updated = await client.query(
         `update players
          set balance = round((balance - $1)::numeric, 2), updated_at = now()
          where name = $2 and balance >= $1
@@ -105,7 +125,7 @@ export async function deductBalance(playerName, amount, reason = 'adjustment', m
     const row = updated.rows[0];
     if (!row) return null;
 
-    await runner.query(
+    await client.query(
         `insert into wallet_ledger (player_id, delta, reason, metadata)
          values ($1, $2, $3, $4)`,
         [row.id, -amount, reason, metadata]

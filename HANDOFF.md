@@ -651,6 +651,68 @@ Users must now enter a valid Riot ID (Name#Tag format) when placing LoL bets. Th
 
 ---
 
+# HANDOFF - Currency System Resilience (LoL Betting)
+
+## What Was Done
+
+### Bug Fix: Currency deducted even when bet placement fails
+
+When a player placed a LoL bet, the currency was deducted first (`deductBalance`) and then the bet was created (`placeBet`). If `placeBet` threw an error, the catch block only emitted an error message — it never refunded the deducted currency. This caused permanent currency loss on failed bets.
+
+### Changes
+
+**`server/currency.js`**
+- `addBalance` and `deductBalance` now wrap the balance update + ledger insert in a database transaction when no external client is provided. This prevents the balance from changing without a corresponding ledger entry.
+- Extracted `_addBalanceDB` and `_deductBalanceDB` helpers to keep the logic DRY when used with or without an external transaction client.
+
+**`server/lol-betting.js`**
+- `placeBet` now accepts an optional `client` parameter so it can participate in an external database transaction.
+
+**`server/socket-handlers.js`**
+- The `lol-place-bet` handler now uses `withTransaction` (DB mode) to atomically deduct the balance and place the bet. If either step fails, the entire transaction rolls back — no currency is lost.
+- In-memory mode: if `placeBet` throws after `deductBalance` succeeds, the handler refunds the deducted amount via `addBalance` before re-throwing.
+
+**`server/__tests__/currency.test.js`**
+- Added "deduct + refund resilience" tests verifying balance restoration after a failed downstream operation and that balance stays unchanged when deduction itself fails.
+
+**`server/__tests__/lol-betting.test.js`** (new)
+- Unit tests for `placeBet`, `getActiveBets`, and `getPlayerBets` in in-memory mode.
+- Verifies the optional `client` parameter is accepted without error.
+
+## Verification
+
+- `npm test` (86 tests pass — 79 original + 7 new)
+- `node --check server/currency.js`
+- `node --check server/lol-betting.js`
+- `node --check server/socket-handlers.js`
+
+---
+
+# HANDOFF - Pictochat Undo/Redo/Clear Fixes
+
+## What Was Done
+
+### Bug Fix: Undo/redo/clear not working in pictochat
+
+Three client-side bugs in `public/pictochat.js` prevented undo, redo, and clear from working correctly:
+
+1. **Shapes not undoable**: The `picto-shape` client handler applied shapes to the canvas but never added their `strokeId` to the `undoStack`. This meant shapes (line, rect, circle) could never be undone or redone. Fixed by updating the handler to push to `undoStack` and clear `redoStack` when the shape was authored by the current user (matching the `picto-stroke-commit` pattern).
+
+2. **Clear left stale undo/redo stacks for other users**: The `picto-clear` handler only cleared `undoStack` and `redoStack` for the user who initiated the clear (`data.byId === socket.id`). Other users retained stale stroke IDs in their stacks, causing silent failures on subsequent undo/redo attempts. Fixed by clearing both stacks unconditionally for all users on clear.
+
+3. **Reconnect left stale undo/redo stacks**: The `picto-state` handler (fired on join/reconnect) reset the `strokes` array but did not reset `undoStack` and `redoStack`. After reconnecting, the user could have stale entries. Fixed by clearing both stacks when new state is received.
+
+## Files Changed
+
+- `public/pictochat.js`
+
+## Verification
+
+- `npm test` (86 tests pass, no regressions)
+- Server-side handlers are unchanged; all fixes are client-only
+
+---
+
 # HANDOFF - Fix LoL Bet Placement Failure
 
 ## What Was Done
@@ -659,17 +721,15 @@ Users must now enter a valid Riot ID (Name#Tag format) when placing LoL bets. Th
 
 The `lol-place-bet` socket handler was making a redundant Riot API call (`validateRiotId()`) to re-validate the Riot ID, even though it was already validated in the separate `lol-validate-username` step. This second API call could fail due to rate limiting (the same account was just looked up moments earlier), causing bet placement to fail with "Failed to place bet" despite the username showing as valid.
 
-**Fix 1: Remove redundant API call** — Replaced `validateRiotId()` (full API lookup) with `parseRiotId()` (format-only validation) in the `lol-place-bet` handler. The Riot API validation already happened in `lol-validate-username` and doesn't need to be repeated.
-
-**Fix 2: Add deductBalance null guard** — Added a null check on the `deductBalance()` return value. Previously, if balance deduction failed (e.g., race condition between balance check and deduction), the bet would still be placed and `null` balance would be sent to the client, causing a client-side crash.
+**Fix: Remove redundant API call** — Replaced `validateRiotId()` (full API lookup) with `parseRiotId()` (format-only validation) in the `lol-place-bet` handler. The Riot API validation already happened in `lol-validate-username` and doesn't need to be repeated.
 
 ## Files Changed
 
-- `server/socket-handlers.js` — import `parseRiotId`, replace API call with format validation, add deductBalance null check
-- `server/__tests__/lol-betting.test.js` — new test file with 5 unit tests for lol-betting in-memory operations
+- `server/socket-handlers.js` — import `parseRiotId`, replace API call with format validation in `lol-place-bet`
+- `server/__tests__/lol-betting.test.js` — additional tests for incrementing IDs, sort order, and limit
 
 ## Verification
 
-- `npm test` (84 tests pass, including 5 new lol-betting tests)
+- `npm test` — all tests pass
 - CodeQL: 0 alerts
 
