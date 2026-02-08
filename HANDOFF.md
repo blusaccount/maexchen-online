@@ -1,3 +1,25 @@
+# HANDOFF - Fix Pictochat Continuous Drawing Not Visible to Others
+
+## What Was Done
+
+### Bug Fix: Cursor events consuming stroke-segment rate-limit budget
+
+When a user draws continuously (holding the mouse button down), the client sends both `picto-cursor` and `picto-stroke-segment` events on every pointer move. These share a single per-socket rate-limit counter on the server. The combined event rate (~50/sec) exceeded the stroke-segment limit of 30/sec, causing stroke data to be silently dropped and not broadcast to other users.
+
+Fixed by skipping cursor updates while actively drawing. Stroke segments already convey the user's position, so cursor events are redundant during drawing.
+
+## Files Changed
+
+- `public/pictochat.js` — Only send `picto-cursor` when not actively drawing (`isDrawing` is false)
+
+## Verification
+
+- `npm test` — all 122 tests pass
+- Open pictochat in two browser tabs; continuous drawing in one tab now appears in real-time for the other
+- Cursor tracking still works when hovering without drawing
+
+---
+
 # HANDOFF - Auto-initialise Database Schema on Startup
 
 ## What Was Done

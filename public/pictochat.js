@@ -463,7 +463,7 @@
         canvas.addEventListener('pointermove', function (e) {
             e.preventDefault();
             var point = normPointFromEvent(e);
-            sendCursor(point);
+            if (!isDrawing) sendCursor(point);
             if (!isDrawing) return;
             if (currentTool === 'pen' || currentTool === 'eraser') {
                 continueStroke(point);
