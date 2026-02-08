@@ -239,6 +239,45 @@
             margin: 12px 0;
         }
 
+        /* ===== Make It Rain Button ===== */
+        .rain-button-container {
+            text-align: center;
+            margin: 16px auto 20px;
+        }
+
+        .btn-make-it-rain {
+            background: linear-gradient(135deg, #ffdd00 0%, #ffa500 100%);
+            border: 3px solid #ffdd00;
+            color: #1a1a1a;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 11px;
+            padding: 14px 24px;
+            cursor: pointer;
+            letter-spacing: 1px;
+            transition: all 0.15s;
+            border-radius: 0;
+            box-shadow: 4px 4px 0 rgba(255, 221, 0, 0.5);
+            font-weight: 700;
+        }
+
+        .btn-make-it-rain:hover:not(:disabled) {
+            background: linear-gradient(135deg, #ffa500 0%, #ffdd00 100%);
+            box-shadow: 6px 6px 0 rgba(255, 221, 0, 0.5);
+            transform: translate(-2px, -2px);
+        }
+
+        .btn-make-it-rain:active:not(:disabled) {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0 rgba(255, 221, 0, 0.5);
+        }
+
+        .btn-make-it-rain:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #888888;
+            border-color: #666666;
+        }
+
         /* Mobile responsive */
         /* Using body scoping for specificity over theme.css (no !important) */
         body .picto-section {
@@ -617,6 +656,13 @@
         <button class="btn-avatar" id="btn-create-character">CHARAKTER ERSTELLEN</button>
     </div>
 
+    <!-- Make It Rain Button -->
+    <div class="rain-button-container">
+        <button class="btn-make-it-rain" id="btn-make-it-rain" disabled>
+            MAKE IT RAIN 💸 (20 Coins)
+        </button>
+    </div>
+
     <div class="game-grid">
         <a href="/games/maexchen/" class="game-card">
             <div class="game-icon">🎲</div>
@@ -685,6 +731,13 @@
             <div class="game-icon">📇</div>
             <div class="game-card-info">
                 <div class="game-title">Contacts</div>
+            </div>
+        </a>
+
+        <a href="/shop.html" class="game-card">
+            <div class="game-icon">💎</div>
+            <div class="game-card-info">
+                <div class="game-title">Shop</div>
             </div>
         </a>
     </div>

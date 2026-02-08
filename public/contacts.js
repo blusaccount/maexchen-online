@@ -19,6 +19,9 @@
 
     var NAME_KEY = 'stricthotel-name';
     var Creator = window.StrictHotelCreator || window.MaexchenCreator;
+    
+    // Store diamond counts fetched from server
+    var playerDiamonds = new Map(); // playerName -> diamond count
 
     // Register this player so they show up as online
     function registerSelf() {
@@ -44,15 +47,27 @@
                 ? '<span class="contact-avatar"><img src="' + escapeAttr(p.character.dataURL) + '" alt=""></span>'
                 : '<span class="contact-avatar"><div class="contact-avatar-placeholder">👽</div></span>';
             var statusText = p.game === 'lobby' ? 'Lobby' : p.game || '';
+            
+            // Get diamond count for this player
+            var diamonds = playerDiamonds.get(p.name) || 0;
+            var diamondHtml = diamonds > 0 
+                ? '<span class="contact-diamonds">💎×' + diamonds + '</span>' 
+                : '';
+            
             return '<div class="contact-card" data-name="' + escapeAttr(p.name) + '">' +
                 avatarHtml +
                 '<div class="contact-info">' +
-                '<div class="contact-name">' + escapeHtml(p.name) + '</div>' +
+                '<div class="contact-name">' + escapeHtml(p.name) + diamondHtml + '</div>' +
                 (statusText ? '<div class="contact-status">' + escapeHtml(statusText) + '</div>' : '') +
                 '</div>' +
                 '<div class="contact-online-dot"></div>' +
                 '</div>';
         }).join('');
+        
+        // Request diamond data for all players
+        players.forEach(function(p) {
+            socket.emit('get-player-character', { name: p.name });
+        });
     });
 
     // --- Click on a contact to view character ---
@@ -70,6 +85,30 @@
     // --- Receive character details ---
     socket.on('player-character', function (data) {
         if (!data || !data.name) return;
+        
+        // Store diamond count
+        if (typeof data.diamonds === 'number') {
+            playerDiamonds.set(data.name, data.diamonds);
+            // Update the display if the contact list is already rendered
+            var card = document.querySelector('.contact-card[data-name="' + escapeAttr(data.name) + '"]');
+            if (card) {
+                var nameEl = card.querySelector('.contact-name');
+                if (nameEl) {
+                    // Remove existing diamond display
+                    var existingDiamond = nameEl.querySelector('.contact-diamonds');
+                    if (existingDiamond) existingDiamond.remove();
+                    
+                    // Add new diamond display if > 0
+                    if (data.diamonds > 0) {
+                        var diamondSpan = document.createElement('span');
+                        diamondSpan.className = 'contact-diamonds';
+                        diamondSpan.textContent = '💎×' + data.diamonds;
+                        nameEl.appendChild(diamondSpan);
+                    }
+                }
+            }
+        }
+        
         showCharacterModal(data);
     });
 

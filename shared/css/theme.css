@@ -2627,3 +2627,57 @@ h3 { font-size: 1.3rem; color: var(--text-dim); letter-spacing: 2px; text-transf
         padding: 30px;
     }
 }
+
+/* ===== Make It Rain Effect ===== */
+.money-rain-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+    overflow: hidden;
+}
+
+.falling-coin {
+    position: absolute;
+    top: -50px;
+    font-size: 2rem;
+    animation: fall linear forwards;
+    filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.8));
+}
+
+@keyframes fall {
+    to {
+        transform: translateY(110vh) rotate(720deg);
+        opacity: 0;
+    }
+}
+
+.rain-toast {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 215, 0, 0.95);
+    border: 3px solid #ffd700;
+    padding: 12px 24px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px;
+    color: #1a1a1a;
+    z-index: 10000;
+    animation: slideDownToast 0.5s ease-out;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes slideDownToast {
+    from {
+        transform: translateX(-50%) translateY(-100px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+    }
+}

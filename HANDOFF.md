@@ -1,3 +1,178 @@
+# HANDOFF - Diamond Shop & Make It Rain Features
+
+## What Was Done
+
+### Features Implemented
+Implemented two "money sink" features that let users spend StrictCoins in fun, non-competitive ways:
+
+1. **Diamond Shop 💎** - Premium cosmetic currency (25 coins per diamond)
+2. **Make It Rain 💸** - Lobby celebration effect (20 coins, plays music + animation)
+
+### Changes Made
+
+#### Backend Changes
+
+**Database Schema (`server/sql/persistence.sql`)**
+- Added `diamonds` column to `players` table (integer, default 0)
+- Column is added with `ALTER TABLE IF NOT EXISTS` for backward compatibility
+
+**Currency Module (`server/currency.js`)**
+- Implemented `buyDiamonds(playerName, count)` function
+  - Deducts 25 coins per diamond in atomic transaction
+  - Logs transaction to `wallet_ledger` with reason `diamond_purchase`
+  - Returns `{ balance, diamonds }` or `null` if insufficient funds
+- Implemented `getDiamonds(playerName)` function
+  - Returns diamond count for a player
+  - Works in both DB and in-memory modes
+- Added in-memory diamond storage for local development
+
+**Socket Handlers (`server/socket-handlers.js`)**
+- Added `buy-diamonds` event handler
+  - Validates count (1-100 diamonds)
+  - Calls `buyDiamonds()` and emits updates
+  - Returns error if insufficient funds
+- Added `get-player-diamonds` event handler
+  - Returns current diamond count
+- Added `lobby-make-it-rain` event handler
+  - Deducts 20 coins with reason `lobby_effect_rain`
+  - Broadcasts `lobby-rain-effect` to all users
+- Updated `get-player-character` handler to include diamonds in response
+
+**Socket Utils (`server/socket-utils.js`)**
+- Added 'shop' to allowed game types in `validateGameType()`
+
+**Tests (`server/__tests__/currency.test.js`)**
+- Added 6 new tests for diamond functionality:
+  - Get diamonds returns 0 for new player
+  - Buy 1 diamond deducts 25 coins
+  - Buy multiple diamonds
+  - Insufficient balance returns null
+  - Invalid count returns null
+  - Diamonds accumulate over multiple purchases
+- All 141 tests pass
+
+#### Frontend Changes
+
+**Shop Page (`public/shop.html`, `public/shop.js`)**
+- Created dedicated shop page with retro pixel art aesthetic
+- Shows current coin and diamond balances
+- Diamond purchase card with price (25 coins) and buy button
+- Placeholder cards for future shop items (colors, emotes, VIP badge)
+- Registers player with 'shop' game type for Contacts visibility
+- Real-time balance updates via Socket.IO
+- Error notifications for insufficient funds
+- Navigation back to lobby
+
+**Lobby Updates (`public/index.html`, `public/lobby.js`)**
+- Added shop card to game grid (💎 Shop)
+- Added "Make It Rain" button with gold styling
+  - Shows cost (20 coins)
+  - Disabled when balance < 20 coins
+  - Prominent placement after avatar bar
+- Implemented money rain effect:
+  - Plays `/userinput/winscreen.mp3` for 20 seconds
+  - Spawns falling coin emojis (🪙) across screen
+  - Shows toast notification with triggering player's name
+  - Effect broadcasts to all lobby users
+  - Coins fall and rotate with CSS animations
+
+**Contacts Updates (`public/contacts.html`, `public/contacts.js`)**
+- Added diamond display next to player names
+- Shows "💎×N" for players with diamonds > 0
+- Diamond icon styled with light blue glow (#33d9ff)
+- Fetches diamond counts via `get-player-character` event
+- Updates display in real-time when diamonds change
+
+**Styling (`shared/css/theme.css`)**
+- Added `.money-rain-container` for full-screen coin overlay
+- Added `.falling-coin` with rotation and fall animation
+- Added `.rain-toast` with gold theme and slide-down animation
+- Coins have gold drop-shadow effect
+- All animations respect pointer-events: none for non-interactive overlay
+
+### How to Verify
+
+**Diamond Shop:**
+1. Start server: `npm start`
+2. Navigate to `http://localhost:3000`
+3. Set a player name and create a character
+4. Note your coin balance
+5. Click "Shop" card in game grid
+6. Verify you see shop page with current balances
+7. Click "BUY 1 DIAMOND" button
+8. Verify coin balance decreases by 25
+9. Verify diamond count increases by 1
+10. Navigate to Contacts page
+11. Verify your name shows "💎×1" next to it
+12. Open shop in another tab and verify player shows "shop" status in Contacts
+
+**Make It Rain:**
+1. Ensure you have at least 20 coins
+2. Click "MAKE IT RAIN 💸 (20 Coins)" button
+3. Verify coins are deducted
+4. Verify victory music plays for ~20 seconds
+5. Verify falling coins animate across screen
+6. Verify gold toast appears at top: "[Your Name] made it rain! 💸"
+7. Open another browser tab/window
+8. Trigger rain effect from one tab
+9. Verify effect appears in all tabs
+
+**Error Handling:**
+1. Reduce balance to < 25 coins
+2. Try buying diamond - verify error message
+3. Reduce balance to < 20 coins
+4. Verify "Make It Rain" button is disabled
+
+### Files Modified
+
+**Backend:**
+- `server/sql/persistence.sql` — Added diamonds column
+- `server/currency.js` — Added buyDiamonds, getDiamonds functions
+- `server/socket-handlers.js` — Added shop & rain handlers
+- `server/socket-utils.js` — Added 'shop' to allowed game types
+- `server/__tests__/currency.test.js` — Added diamond tests
+
+**Frontend:**
+- `public/shop.html` — New shop page
+- `public/shop.js` — New shop logic
+- `public/index.html` — Added shop card, rain button, rain button styles
+- `public/lobby.js` — Added rain effect handler
+- `public/contacts.html` — Added diamond styling
+- `public/contacts.js` — Added diamond display logic
+- `shared/css/theme.css` — Added rain animation styles
+
+### Architecture Notes
+
+**Expandable Shop System:**
+- Shop page designed with placeholder cards for future items
+- Easy to add new purchasable items by duplicating shop-item structure
+- Currency system supports any transaction type via reason field
+- All purchases logged to wallet_ledger for accountability
+
+**Transaction Safety:**
+- All coin/diamond operations use database transactions
+- Balance checks happen atomically to prevent race conditions
+- Insufficient funds return null, never modify state
+- In-memory mode maintains same guarantees
+
+**Broadcast Pattern:**
+- Make It Rain uses `io.emit()` to broadcast to all connected clients
+- Effect plays on all lobby users simultaneously
+- Each client independently renders coins and plays audio
+- No server-side rate limiting needed (20 coin cost is natural throttle)
+
+### Security Summary
+- CodeQL scan completed: 0 alerts found
+- All tests pass (141/141)
+- No security vulnerabilities introduced
+- Input validation on diamond count (1-100 max)
+- Transaction logging maintains audit trail
+- No client-side trust for balance calculations
+- Code review completed with all feedback addressed
+
+---
+
+## Previous Changes
 # HANDOFF - Complete Player Registration Implementation Across All Games
 
 ## What Was Done

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop - StrictHotel</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👽</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/shared/css/theme.css">
+    <style>
+        /* ===== Inverted Nintendo DS Pixel Style ===== */
+        :root {
+            --ds-bg: #1a1a1a;
+            --ds-surface: #111111;
+            --ds-border: #cccccc;
+            --ds-text: #e8e8e8;
+            --ds-text-dim: #888888;
+            --ds-highlight: #333333;
+            --ds-radius: 0px;
+            --diamond-blue: #33d9ff;
+            --diamond-light: #ffffff;
+            --gold: #ffdd00;
+        }
+
+        body {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 12px;
+            color: var(--ds-text);
+            image-rendering: pixelated;
+            line-height: 1.8;
+        }
+
+        .shop-container {
+            text-align: center;
+            padding: 16px 12px 40px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .shop-title {
+            font-size: 20px;
+            color: var(--ds-text);
+            letter-spacing: 3px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid var(--ds-border);
+        }
+
+        .shop-balances {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .balance-card {
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            padding: 12px 20px;
+            border-radius: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 11px;
+        }
+
+        .balance-icon {
+            font-size: 1.5rem;
+        }
+
+        .balance-label {
+            color: var(--ds-text-dim);
+            font-size: 9px;
+            margin-bottom: 2px;
+        }
+
+        .balance-amount {
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            max-width: 800px;
+            margin: 0 auto 24px;
+        }
+
+        .shop-item {
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            padding: 20px;
+            border-radius: 0;
+            box-shadow: 4px 4px 0 var(--ds-border);
+            transition: all 0.15s;
+        }
+
+        .shop-item:hover {
+            box-shadow: 6px 6px 0 var(--ds-border);
+            transform: translate(-2px, -2px);
+        }
+
+        .shop-item-icon {
+            font-size: 4rem;
+            margin-bottom: 12px;
+            filter: drop-shadow(0 0 10px var(--diamond-blue));
+        }
+
+        .shop-item-name {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: var(--ds-text);
+        }
+
+        .shop-item-price {
+            color: var(--gold);
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        .shop-item-owned {
+            color: var(--ds-text-dim);
+            font-size: 10px;
+            margin-bottom: 12px;
+        }
+
+        .shop-buy-btn {
+            background: var(--ds-bg);
+            border: 2px solid var(--ds-border);
+            color: var(--ds-text);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            padding: 10px 20px;
+            cursor: pointer;
+            letter-spacing: 1px;
+            transition: all 0.15s;
+            border-radius: 0;
+            width: 100%;
+        }
+
+        .shop-buy-btn:hover:not(:disabled) {
+            background: var(--ds-border);
+            color: var(--ds-surface);
+            box-shadow: 3px 3px 0 var(--ds-text-dim);
+        }
+
+        .shop-buy-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .shop-home-btn {
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            color: var(--ds-text);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            padding: 12px 24px;
+            cursor: pointer;
+            letter-spacing: 1px;
+            transition: all 0.15s;
+            border-radius: 0;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 20px;
+        }
+
+        .shop-home-btn:hover {
+            background: var(--ds-border);
+            color: var(--ds-surface);
+            box-shadow: 3px 3px 0 var(--ds-text-dim);
+        }
+
+        .placeholder-section {
+            margin-top: 40px;
+            padding: 20px;
+            border: 2px dashed var(--ds-text-dim);
+            border-radius: 0;
+            opacity: 0.5;
+        }
+
+        .placeholder-text {
+            font-size: 10px;
+            color: var(--ds-text-dim);
+        }
+
+        .error-message {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 51, 102, 0.95);
+            border: 3px solid #ff3366;
+            padding: 12px 24px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            color: #ffffff;
+            z-index: 10000;
+            animation: slideDown 0.5s ease-out;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateX(-50%) translateY(-100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .shop-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="shop-container">
+        <h1 class="shop-title">💎 DIAMOND SHOP 💎</h1>
+
+        <div class="shop-balances">
+            <div class="balance-card">
+                <div class="balance-icon">🪙</div>
+                <div>
+                    <div class="balance-label">StrictCoins</div>
+                    <div class="balance-amount" id="coin-balance">0</div>
+                </div>
+            </div>
+            <div class="balance-card">
+                <div class="balance-icon">💎</div>
+                <div>
+                    <div class="balance-label">Diamonds</div>
+                    <div class="balance-amount" id="diamond-balance">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="shop-grid">
+            <div class="shop-item">
+                <div class="shop-item-icon">💎</div>
+                <div class="shop-item-name">Diamond</div>
+                <div class="shop-item-price">🪙 25 Coins</div>
+                <div class="shop-item-owned">Owned: <span id="diamonds-owned">0</span></div>
+                <button class="shop-buy-btn" id="buy-diamond-btn">BUY 1 DIAMOND</button>
+            </div>
+
+            <!-- Placeholder for future items -->
+            <div class="shop-item" style="opacity: 0.5;">
+                <div class="shop-item-icon">🎨</div>
+                <div class="shop-item-name">Custom Colors</div>
+                <div class="shop-item-price">🪙 Coming Soon</div>
+                <div class="shop-item-owned">Not Available</div>
+                <button class="shop-buy-btn" disabled>COMING SOON</button>
+            </div>
+
+            <div class="shop-item" style="opacity: 0.5;">
+                <div class="shop-item-icon">🎭</div>
+                <div class="shop-item-name">Special Emotes</div>
+                <div class="shop-item-price">🪙 Coming Soon</div>
+                <div class="shop-item-owned">Not Available</div>
+                <button class="shop-buy-btn" disabled>COMING SOON</button>
+            </div>
+
+            <div class="shop-item" style="opacity: 0.5;">
+                <div class="shop-item-icon">👑</div>
+                <div class="shop-item-name">VIP Badge</div>
+                <div class="shop-item-price">🪙 Coming Soon</div>
+                <div class="shop-item-owned">Not Available</div>
+                <button class="shop-buy-btn" disabled>COMING SOON</button>
+            </div>
+        </div>
+
+        <div class="placeholder-section">
+            <div class="placeholder-text">MORE ITEMS COMING SOON...</div>
+        </div>
+
+        <a href="/" class="shop-home-btn">← ZURÜCK ZUR LOBBY</a>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/shop.js"></script>
+</body>
+</html>

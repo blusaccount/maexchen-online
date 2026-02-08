@@ -11,7 +11,7 @@ import {
     removePlayerFromRoom, awardPotAndEndGame
 } from './room-manager.js';
 
-import { getBalance, addBalance, deductBalance } from './currency.js';
+import { getBalance, addBalance, deductBalance, buyDiamonds, getDiamonds } from './currency.js';
 import { isDatabaseEnabled, query, withTransaction } from './db.js';
 import {
     updateBrainAgeLeaderboard,
@@ -391,7 +391,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
         } catch (err) { console.error('register-player error:', err.message); } });
 
         // --- Get Player Character (for contacts app) ---
-        socket.on('get-player-character', (data) => { try {
+        socket.on('get-player-character', async (data) => { try {
             if (!checkRateLimit(socket)) return;
             if (!data || typeof data !== 'object') return;
             const name = sanitizeName(data.name);
@@ -407,10 +407,12 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
             }
 
             if (found) {
+                const diamonds = await getDiamonds(found.name);
                 socket.emit('player-character', {
                     name: found.name,
                     character: found.character,
-                    game: found.game
+                    game: found.game,
+                    diamonds
                 });
             }
         } catch (err) { console.error('get-player-character error:', err.message); } });
@@ -422,6 +424,57 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
             if (!player) return;
             socket.emit('balance-update', { balance: await getBalance(player.name) });
         } catch (err) { console.error('get-balance error:', err.message); } });
+
+        // --- Get Player Diamonds ---
+        socket.on('get-player-diamonds', async () => { try {
+            if (!checkRateLimit(socket)) return;
+            const player = onlinePlayers.get(socket.id);
+            if (!player || !player.name) return;
+            const diamonds = await getDiamonds(player.name);
+            socket.emit('diamonds-update', { diamonds });
+        } catch (err) { console.error('get-player-diamonds error:', err.message); } });
+
+        // --- Buy Diamonds ---
+        socket.on('buy-diamonds', async (data) => { try {
+            if (!checkRateLimit(socket)) return;
+            const player = onlinePlayers.get(socket.id);
+            if (!player || !player.name) return;
+            
+            const count = Number(data?.count) || 1;
+            if (!Number.isInteger(count) || count <= 0 || count > 100) {
+                socket.emit('error', { message: 'Ungültige Anzahl' });
+                return;
+            }
+            
+            const result = await buyDiamonds(player.name, count);
+            if (result === null) {
+                socket.emit('error', { message: 'Nicht genug Coins!' });
+                return;
+            }
+            
+            socket.emit('balance-update', { balance: result.balance });
+            socket.emit('diamonds-update', { diamonds: result.diamonds });
+        } catch (err) { console.error('buy-diamonds error:', err.message); } });
+
+        // --- Make It Rain Effect ---
+        socket.on('lobby-make-it-rain', async () => { try {
+            if (!checkRateLimit(socket)) return;
+            const player = onlinePlayers.get(socket.id);
+            if (!player || !player.name) return;
+            
+            const cost = 20;
+            const newBalance = await deductBalance(player.name, cost, 'lobby_effect_rain');
+            if (newBalance === null) {
+                socket.emit('error', { message: 'Nicht genug Coins!' });
+                return;
+            }
+            
+            socket.emit('balance-update', { balance: newBalance });
+            
+            // Broadcast to all connected users (celebration effect visible to everyone)
+            // Note: No lobby room exists; this is intentional so all users see the effect
+            io.emit('lobby-rain-effect', { playerName: player.name });
+        } catch (err) { console.error('lobby-make-it-rain error:', err.message); } });
 
         // --- Stock Game: Buy ---
         socket.on('stock-buy', async (data) => { try {
