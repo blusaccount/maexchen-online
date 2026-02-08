@@ -471,7 +471,8 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
             
             socket.emit('balance-update', { balance: newBalance });
             
-            // Broadcast to all lobby users
+            // Broadcast to all connected users (celebration effect visible to everyone)
+            // Note: No lobby room exists; this is intentional so all users see the effect
             io.emit('lobby-rain-effect', { playerName: player.name });
         } catch (err) { console.error('lobby-make-it-rain error:', err.message); } });
 

@@ -18,6 +18,11 @@
     var STORAGE_KEY = 'stricthotel-character';
     var NAME_KEY = 'stricthotel-name';
     var registered = false;
+    
+    // Make It Rain constants
+    var RAIN_AUDIO_PATH = '/userinput/winscreen.mp3';
+    var RAIN_DURATION_MS = 20000;
+    var COIN_SPAWN_INTERVAL_MS = 300;
 
     window.StrictHotelLobby = window.StrictHotelLobby || {};
     window.StrictHotelLobby.socket = socket;
@@ -151,7 +156,7 @@
         }, 5000);
         
         // Play victory music for 20 seconds
-        var audio = new Audio('/userinput/winscreen.mp3');
+        var audio = new Audio(RAIN_AUDIO_PATH);
         audio.volume = 0.5;
         audio.play().catch(function () {
             console.log('Audio playback failed');
@@ -159,24 +164,23 @@
         setTimeout(function () {
             audio.pause();
             audio.currentTime = 0;
-        }, 20000);
+        }, RAIN_DURATION_MS);
         
         // Spawn falling coins
         var container = document.createElement('div');
         container.className = 'money-rain-container';
         document.body.appendChild(container);
         
-        var duration = 20000; // 20 seconds
         var interval = setInterval(function () {
             createFallingCoin(container);
-        }, 300);
+        }, COIN_SPAWN_INTERVAL_MS);
         
         setTimeout(function () {
             clearInterval(interval);
             setTimeout(function () {
                 container.remove();
             }, 3000);
-        }, duration);
+        }, RAIN_DURATION_MS);
     });
 
     function createFallingCoin(container) {
