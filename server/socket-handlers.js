@@ -135,6 +135,15 @@ const loopState = {
     isPlaying: false,
     currentStep: 0,
     listeners: new Map(),  // socketId -> playerName
+    synth: {
+        waveform: 'square',
+        frequency: 440,
+        cutoff: 2000,
+        resonance: 1,
+        attack: 0.01,
+        decay: 0.2,
+        volume: 0.3
+    }
 };
 
 // ============== PICTOCHAT STATE ==============
@@ -2093,7 +2102,8 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
                 grid: loopState.grid,
                 bpm: loopState.bpm,
                 isPlaying: loopState.isPlaying,
-                listeners: Array.from(loopState.listeners.values())
+                listeners: Array.from(loopState.listeners.values()),
+                synth: loopState.synth
             });
 
             // Broadcast updated listener list to all
@@ -2174,6 +2184,55 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
             console.log(`[LoopMachine] ${loopState.isPlaying ? 'Playing' : 'Paused'}`);
         } catch (err) { console.error('loop-play-pause error:', err.message); } });
 
+        socket.on('loop-set-synth', (data) => { try {
+            if (!checkRateLimit(socket, 5)) return;
+            if (!data || typeof data !== 'object') return;
+
+            // Validate and clamp all values
+            const validWaveforms = ['sine', 'square', 'sawtooth', 'triangle'];
+            const waveform = validWaveforms.includes(data.waveform) ? data.waveform : 'square';
+            
+            const frequency = typeof data.frequency === 'number' 
+                ? Math.max(50, Math.min(2000, data.frequency))
+                : 440;
+            
+            const cutoff = typeof data.cutoff === 'number'
+                ? Math.max(200, Math.min(8000, data.cutoff))
+                : 2000;
+            
+            const resonance = typeof data.resonance === 'number'
+                ? Math.max(0.1, Math.min(20, data.resonance))
+                : 1;
+            
+            const attack = typeof data.attack === 'number'
+                ? Math.max(0.01, Math.min(0.5, data.attack))
+                : 0.01;
+            
+            const decay = typeof data.decay === 'number'
+                ? Math.max(0.05, Math.min(1.0, data.decay))
+                : 0.2;
+            
+            const volume = typeof data.volume === 'number'
+                ? Math.max(0, Math.min(1, data.volume))
+                : 0.3;
+
+            // Update state
+            loopState.synth = {
+                waveform,
+                frequency,
+                cutoff,
+                resonance,
+                attack,
+                decay,
+                volume
+            };
+
+            // Broadcast to all listeners
+            io.to(LOOP_ROOM).emit('loop-synth-updated', loopState.synth);
+
+            console.log(`[LoopMachine] Synth settings updated: ${waveform} @ ${frequency}Hz`);
+        } catch (err) { console.error('loop-set-synth error:', err.message); } });
+
         socket.on('loop-clear', () => { try {
             if (!checkRateLimit(socket, 3)) return;
 
@@ -2182,12 +2241,24 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
                 loopState.grid[instrument] = [...EMPTY_GRID_ROW];
             }
 
+            // Reset synth to defaults
+            loopState.synth = {
+                waveform: 'square',
+                frequency: 440,
+                cutoff: 2000,
+                resonance: 1,
+                attack: 0.01,
+                decay: 0.2,
+                volume: 0.3
+            };
+
             // Broadcast full sync to all listeners
             io.to(LOOP_ROOM).emit('loop-sync', {
                 grid: loopState.grid,
                 bpm: loopState.bpm,
                 isPlaying: loopState.isPlaying,
-                listeners: Array.from(loopState.listeners.values())
+                listeners: Array.from(loopState.listeners.values()),
+                synth: loopState.synth
             });
 
             console.log('[LoopMachine] Grid cleared');

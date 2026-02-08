@@ -254,6 +254,153 @@
             color: var(--ds-accent);
         }
 
+        /* ===== Synth Lab Section ===== */
+        .synth-section {
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .synth-header {
+            font-size: 11px;
+            margin-bottom: 12px;
+            color: var(--ds-text);
+            letter-spacing: 1px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .synth-header:hover {
+            color: var(--ds-gold);
+        }
+
+        .synth-header.collapsed::after {
+            content: ' ▶';
+        }
+
+        .synth-controls {
+            display: block;
+        }
+
+        .synth-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .synth-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .synth-label {
+            font-size: 9px;
+            color: var(--ds-text-dim);
+            min-width: 80px;
+        }
+
+        /* Wave buttons */
+        .wave-buttons {
+            display: flex;
+            gap: 6px;
+        }
+
+        .wave-btn {
+            background: var(--ds-bg);
+            border: 2px solid var(--ds-border);
+            color: var(--ds-text);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .wave-btn:hover:not(:disabled) {
+            background: var(--ds-highlight);
+        }
+
+        .wave-btn.active {
+            background: var(--ds-gold);
+            color: #000;
+            border-color: var(--ds-gold);
+        }
+
+        .wave-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Select dropdown */
+        .synth-select {
+            background: var(--ds-bg);
+            border: 2px solid var(--ds-border);
+            color: var(--ds-text);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 8px;
+            padding: 8px;
+            border-radius: 0;
+            cursor: pointer;
+        }
+
+        .synth-select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Sliders */
+        .synth-slider {
+            flex: 1;
+            height: 8px;
+            background: var(--ds-bg);
+            border: 2px solid var(--ds-border);
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+            border-radius: 0;
+        }
+
+        .synth-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 20px;
+            background: var(--ds-gold);
+            border: 2px solid var(--ds-border);
+            cursor: pointer;
+        }
+
+        .synth-slider::-moz-range-thumb {
+            width: 12px;
+            height: 20px;
+            background: var(--ds-gold);
+            border: 2px solid var(--ds-border);
+            cursor: pointer;
+            border-radius: 0;
+        }
+
+        .synth-slider:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .synth-slider:disabled::-webkit-slider-thumb {
+            cursor: not-allowed;
+        }
+
+        .synth-slider:disabled::-moz-range-thumb {
+            cursor: not-allowed;
+        }
+
+        .synth-value {
+            font-size: 8px;
+            color: var(--ds-text-dim);
+            min-width: 60px;
+            text-align: right;
+        }
+
         /* ===== Mobile ===== */
         @media (max-width: 768px) {
             .loop-title {
@@ -357,6 +504,80 @@
             <div class="controls-row">
                 <label class="control-label" for="bpm-input">BPM (60-200):</label>
                 <input type="number" id="bpm-input" class="bpm-input" min="60" max="200" value="120" disabled>
+            </div>
+        </div>
+
+        <!-- Synth Lab -->
+        <div class="synth-section">
+            <h2 id="synth-header" class="synth-header">SYNTH LAB ▼</h2>
+            <div id="synth-controls" class="synth-controls">
+                <!-- Wave selection -->
+                <div class="synth-row">
+                    <label class="synth-label">WAVE:</label>
+                    <div class="wave-buttons">
+                        <button class="wave-btn active" data-wave="square" disabled>SQR</button>
+                        <button class="wave-btn" data-wave="sawtooth" disabled>SAW</button>
+                        <button class="wave-btn" data-wave="sine" disabled>SIN</button>
+                        <button class="wave-btn" data-wave="triangle" disabled>TRI</button>
+                    </div>
+                </div>
+                
+                <!-- Note selection -->
+                <div class="synth-row">
+                    <label class="synth-label" for="synth-note">NOTE:</label>
+                    <select id="synth-note" class="synth-select" disabled>
+                        <option value="131">C3 (131Hz)</option>
+                        <option value="165">E3 (165Hz)</option>
+                        <option value="196">G3 (196Hz)</option>
+                        <option value="262">C4 (262Hz)</option>
+                        <option value="330">E4 (330Hz)</option>
+                        <option value="392">G4 (392Hz)</option>
+                        <option value="440" selected>A4 (440Hz)</option>
+                        <option value="523">C5 (523Hz)</option>
+                        <option value="659">E5 (659Hz)</option>
+                        <option value="784">G5 (784Hz)</option>
+                    </select>
+                </div>
+                
+                <!-- Cutoff slider -->
+                <div class="synth-row">
+                    <label class="synth-label" for="synth-cutoff">CUTOFF:</label>
+                    <input type="range" id="synth-cutoff" class="synth-slider" 
+                           min="200" max="8000" step="100" value="2000" disabled>
+                    <span class="synth-value" id="synth-cutoff-value">2000</span>
+                </div>
+                
+                <!-- Resonance slider -->
+                <div class="synth-row">
+                    <label class="synth-label" for="synth-resonance">RESO:</label>
+                    <input type="range" id="synth-resonance" class="synth-slider" 
+                           min="1" max="200" step="1" value="10" disabled>
+                    <span class="synth-value" id="synth-resonance-value">1.0</span>
+                </div>
+                
+                <!-- Attack slider -->
+                <div class="synth-row">
+                    <label class="synth-label" for="synth-attack">ATTACK:</label>
+                    <input type="range" id="synth-attack" class="synth-slider" 
+                           min="1" max="50" step="1" value="1" disabled>
+                    <span class="synth-value" id="synth-attack-value">0.01s</span>
+                </div>
+                
+                <!-- Decay slider -->
+                <div class="synth-row">
+                    <label class="synth-label" for="synth-decay">DECAY:</label>
+                    <input type="range" id="synth-decay" class="synth-slider" 
+                           min="5" max="100" step="1" value="20" disabled>
+                    <span class="synth-value" id="synth-decay-value">0.20s</span>
+                </div>
+                
+                <!-- Volume slider -->
+                <div class="synth-row">
+                    <label class="synth-label" for="synth-volume">VOL:</label>
+                    <input type="range" id="synth-volume" class="synth-slider" 
+                           min="0" max="100" step="1" value="30" disabled>
+                    <span class="synth-value" id="synth-volume-value">30%</span>
+                </div>
             </div>
         </div>
 
