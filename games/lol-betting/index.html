@@ -244,6 +244,63 @@
             font-size: 9px;
         }
 
+        /* ===== Username Validation ===== */
+        .username-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .username-row input {
+            flex: 1;
+            background: var(--ds-bg);
+            border: 2px solid var(--ds-border);
+            color: var(--ds-text);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 9px;
+            padding: 8px;
+            border-radius: 0;
+        }
+
+        .validate-btn {
+            background: var(--ds-highlight);
+            border: 2px solid var(--ds-border);
+            color: var(--ds-text);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .validate-btn:hover:not(:disabled) {
+            background: var(--ds-border);
+            color: #000;
+        }
+
+        .validate-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .validation-status {
+            font-size: 8px;
+            margin-top: 4px;
+            min-height: 16px;
+        }
+
+        .validation-status.valid {
+            color: #4caf50;
+        }
+
+        .validation-status.invalid {
+            color: #ff6b6b;
+        }
+
+        .validation-status.loading {
+            color: var(--ds-text-dim);
+        }
+
         /* ===== Mobile ===== */
         @media (max-width: 600px) {
             .lol-title {
@@ -274,15 +331,17 @@
             <h2>PLACE YOUR BET</h2>
             <form class="bet-form" id="bet-form">
                 <div class="form-row">
-                    <label for="lol-username">League of Legends Username</label>
-                    <input 
-                        type="text" 
-                        id="lol-username" 
-                        placeholder="Enter summoner name..."
-                        minlength="3"
-                        maxlength="16"
-                        required
-                    >
+                    <label for="lol-username">Riot ID (Name#Tag)</label>
+                    <div class="username-row">
+                        <input 
+                            type="text" 
+                            id="lol-username" 
+                            placeholder="e.g. Player#EUW"
+                            required
+                        >
+                        <button type="button" class="validate-btn" id="validate-btn" disabled>SEARCH</button>
+                    </div>
+                    <div class="validation-status" id="validation-status"></div>
                 </div>
 
                 <div class="form-row">
