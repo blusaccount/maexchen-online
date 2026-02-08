@@ -733,3 +733,51 @@ The `lol-place-bet` socket handler was making a redundant Riot API call (`valida
 - `npm test` — all tests pass
 - CodeQL: 0 alerts
 
+---
+
+# HANDOFF - Comprehensive Code Review Fixes
+
+## What Was Done
+
+Performed a full-codebase review covering security, correctness, performance, and test coverage.
+
+### Security Fixes
+
+1. **LoL Betting Input Validation** (`server/lol-betting.js`)
+   - `placeBet()` now validates `playerName`, `lolUsername`, `amount`, and `betOnWin` types before processing
+   - `getPlayerBets()` limit parameter is now sanitized (clamped 1–100, floored to integer)
+
+2. **Chat Message XSS** (`server/socket-handlers.js`)
+   - `chat-message` handler now strips `"`, `'`, and backtick characters (matching `picto-message` sanitization)
+
+3. **Brain Leaderboard Validation** (`server/brain-leaderboards.js`)
+   - `updateBrainAgeLeaderboard()` and `updateGameLeaderboard()` now validate `playerName` type
+
+4. **Portfolio History Guards** (`server/portfolio-history.js`)
+   - `recordSnapshot()` rejects NaN/non-finite/non-string inputs before recording
+
+### Database Schema Improvements (`server/sql/persistence.sql`)
+
+- Added `CHECK (bet_amount > 0)` constraint on `lol_bets`
+- Added `CHECK (shares > 0)` constraint on `stock_positions`
+- Added index `lol_bets_player_name_idx` on `lol_bets(player_name)` for frequent lookups
+- Added index `wallet_ledger_player_created_idx` on `wallet_ledger(player_id, created_at)` for daily reward queries
+
+### Test Coverage
+
+- New `server/__tests__/socket-utils.test.js` — 33 tests covering `sanitizeName`, `validateCharacter`, `validateRoomCode`, `validateGameType`, `validateYouTubeId`, `normalizePoint`, `sanitizeColor`, `sanitizeSize`, `getSocketIp`
+
+## Files Changed
+
+- `server/lol-betting.js` — input validation in `placeBet()`, safe limit in `getPlayerBets()`
+- `server/socket-handlers.js` — chat-message XSS fix
+- `server/brain-leaderboards.js` — playerName validation
+- `server/portfolio-history.js` — NaN guards
+- `server/sql/persistence.sql` — CHECK constraints and new indexes
+- `server/__tests__/socket-utils.test.js` — new test file (33 tests)
+
+## Verification
+
+- `npm test` — 122 tests pass (89 original + 33 new)
+- All existing tests remain green
+
