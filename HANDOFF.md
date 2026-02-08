@@ -12,12 +12,26 @@ Added automatic schema initialisation: `server/db.js` now exports an `initSchema
 
 - `server/db.js` — added `initSchema()` that reads and runs `server/sql/persistence.sql`
 - `server/index.js` — imported and called `initSchema()` on server startup
+# HANDOFF - Fix Pictochat Drawing Not Showing Correctly for Other Players
+
+## What Was Done
+
+### Bug Fix: Gaps between stroke segment batches on receiving clients
+
+When a player draws a continuous stroke, the client sends points in batches via `picto-stroke-segment`. On the receiving end, each batch was drawn independently without connecting the last point of the previous batch to the first point of the new batch, causing visible gaps in the stroke.
+
+Fixed by tracking `lastPoint` per in-progress stroke in the client-side `picto-stroke-segment` handler. When a new batch arrives, the previous batch's last point is prepended to create a continuous line.
+
+## Files Changed
+
+- `public/pictochat.js` — Track `lastPoint` in the `inProgress` stroke entries; prepend it when drawing consecutive segment batches to eliminate gaps.
 
 ## Verification
 
 - `npm test` — all 122 tests pass
 - `node --check server/db.js && node --check server/index.js` — no syntax errors
 - All SQL statements use `CREATE TABLE IF NOT EXISTS` / `CREATE INDEX IF NOT EXISTS`, so re-running on an existing database is idempotent
+- Manual code review of the drawing data flow confirms the fix addresses the gap between batches.
 
 ---
 

@@ -568,16 +568,21 @@
                 stroke = {
                     tool: data.tool,
                     color: data.color,
-                    size: data.size
+                    size: data.size,
+                    lastPoint: null
                 };
                 inProgress[data.strokeId] = stroke;
             }
             var points = data.points || [];
-            if (points.length === 1) {
+            if (points.length === 0) return;
+            if (points.length === 1 && !stroke.lastPoint) {
                 drawDot(ctx, stroke, points[0]);
             } else {
-                drawStrokeSegment(ctx, stroke, points);
+                // Prepend lastPoint to connect consecutive batches
+                var draw = stroke.lastPoint ? [stroke.lastPoint].concat(points) : points;
+                drawStrokeSegment(ctx, stroke, draw);
             }
+            stroke.lastPoint = points[points.length - 1];
         });
 
         socket.on('picto-stroke-commit', function (data) {
