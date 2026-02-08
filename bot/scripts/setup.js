@@ -9,9 +9,9 @@ const rootDir = join(__dirname, '..', '..');
 const isWindows = process.platform === 'win32';
 
 async function setup() {
-    // Skip yt-dlp download in CI or when SKIP_YT_DLP is set
-    if (process.env.CI || process.env.SKIP_YT_DLP) {
-        console.log('Setup: Skipping yt-dlp download (CI or SKIP_YT_DLP set)');
+    // Skip yt-dlp download in CI, when SKIP_YT_DLP is set, or when bot is not enabled
+    if (process.env.CI || process.env.SKIP_YT_DLP || !process.env.DISCORD_TOKEN) {
+        console.log('Setup: Skipping yt-dlp download (CI/SKIP_YT_DLP or DISCORD_TOKEN not set)');
         return;
     }
 
