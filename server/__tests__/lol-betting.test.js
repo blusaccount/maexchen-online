@@ -6,7 +6,7 @@ vi.mock('../db.js', () => ({
     query: vi.fn()
 }));
 
-const { placeBet, getActiveBets, getPlayerBets, resolveBet, getPendingBetsForChecking } = await import('../lol-betting.js');
+const { placeBet, getActiveBets, getPlayerBets, resolveBet, getPendingBetsForChecking, getPendingBetsWithoutPuuid, updateBetPuuid } = await import('../lol-betting.js');
 
 describe('lol-betting (in-memory mode)', () => {
     describe('placeBet', () => {
@@ -103,6 +103,72 @@ describe('lol-betting (in-memory mode)', () => {
             expect(withData.length).toBe(1);
             expect(withData[0].puuid).toBe('puuid-1');
             expect(withData[0].lastMatchId).toBe('match-1');
+        });
+    });
+
+    describe('getPendingBetsWithoutPuuid', () => {
+        it('returns only pending bets missing puuid or lastMatchId', async () => {
+            // Create bets with complete and incomplete data
+            await placeBet('kelly', 'Complete#NA1', 100, true, 'puuid-complete', 'match-complete');
+            await placeBet('lisa', 'NoPuuid#NA1', 100, true, null, null);
+            await placeBet('mike', 'OnlyPuuid#NA1', 100, false, 'puuid-partial', null);
+            
+            const incomplete = await getPendingBetsWithoutPuuid();
+            
+            // Should return bets without puuid OR without lastMatchId
+            const noPuuid = incomplete.filter(b => b.playerName === 'lisa');
+            expect(noPuuid.length).toBe(1);
+            
+            const onlyPuuid = incomplete.filter(b => b.playerName === 'mike');
+            expect(onlyPuuid.length).toBe(1);
+            
+            // Should NOT return complete bets
+            const complete = incomplete.filter(b => b.playerName === 'kelly');
+            expect(complete.length).toBe(0);
+        });
+
+        it('returns bets sorted oldest first', async () => {
+            await placeBet('nancy', 'N1#NA1', 10, true, null, null);
+            await placeBet('oscar', 'O1#NA1', 20, false, null, null);
+            
+            const incomplete = await getPendingBetsWithoutPuuid();
+            const relevantBets = incomplete.filter(b => b.playerName === 'nancy' || b.playerName === 'oscar');
+            
+            if (relevantBets.length >= 2) {
+                const dates = relevantBets.map(b => new Date(b.createdAt).getTime());
+                for (let i = 1; i < dates.length; i++) {
+                    expect(dates[i]).toBeGreaterThanOrEqual(dates[i - 1]);
+                }
+            }
+        });
+    });
+
+    describe('updateBetPuuid', () => {
+        it('updates puuid and lastMatchId for a pending bet', async () => {
+            const bet = await placeBet('paul', 'UpdateTest#NA1', 100, true, null, null);
+            
+            const success = await updateBetPuuid(bet.id, 'new-puuid-123', 'new-match-456');
+            expect(success).toBe(true);
+            
+            // Verify the bet was updated
+            const allPending = await getPendingBetsForChecking();
+            const updated = allPending.find(b => b.id === bet.id);
+            expect(updated).toBeDefined();
+            expect(updated.puuid).toBe('new-puuid-123');
+            expect(updated.lastMatchId).toBe('new-match-456');
+        });
+
+        it('returns false for non-existent bet', async () => {
+            const success = await updateBetPuuid(999999, 'fake-puuid', 'fake-match');
+            expect(success).toBe(false);
+        });
+
+        it('returns false for already resolved bet', async () => {
+            const bet = await placeBet('quinn', 'ResolvedTest#NA1', 100, true, 'puuid', 'match');
+            await resolveBet(bet.id, true);
+            
+            const success = await updateBetPuuid(bet.id, 'new-puuid', 'new-match');
+            expect(success).toBe(false);
         });
     });
 });

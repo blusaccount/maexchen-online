@@ -43,7 +43,7 @@ import {
 } from './stock-game.js';
 import { recordSnapshot, getHistory } from './portfolio-history.js';
 import { loadStrokes, saveStroke, deleteStroke, clearStrokes, loadMessages, saveMessage, clearMessages, PICTO_MAX_MESSAGES } from './pictochat-store.js';
-import { placeBet, getActiveBets, getPlayerBets } from './lol-betting.js';
+import { placeBet, getActiveBets, getPlayerBets, resolveBet } from './lol-betting.js';
 import { parseRiotId, validateRiotId, getMatchHistory, isRiotApiEnabled } from './riot-api.js';
 
 // ============== INPUT VALIDATION ==============
@@ -1797,6 +1797,13 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
                 newBalance
             });
 
+            // Emit warning if bet was placed without PUUID (automatic resolution not available)
+            if (!puuid) {
+                socket.emit('lol-bet-warning', {
+                    message: 'Automatic bet resolution is not active. Bets may need to be resolved manually.'
+                });
+            }
+
             // Broadcast updated bets list to all clients
             const allBets = await getActiveBets();
             io.emit('lol-bets-update', { bets: allBets });
@@ -1838,6 +1845,87 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
             socket.emit('lol-history-update', { history });
         } catch (err) {
             console.error('lol-get-history error:', err.message);
+        } });
+
+        // --- Admin Resolve LoL Bet ---
+        // NOTE: This endpoint currently has no admin permission check.
+        // Any logged-in player can resolve bets. In production, add role-based
+        // authorization (e.g., check if player.role === 'admin') before allowing resolution.
+        socket.on('lol-admin-resolve-bet', async (data) => { try {
+            if (!checkRateLimit(socket, 5)) {
+                socket.emit('lol-bet-error', { message: 'Too many requests, please wait' });
+                return;
+            }
+
+            if (!data || typeof data !== 'object') return;
+
+            const player = onlinePlayers.get(socket.id);
+            if (!player) {
+                socket.emit('lol-bet-error', { message: 'Not logged in' });
+                return;
+            }
+
+            const { betId, didPlayerWin } = data;
+
+            // Validate inputs
+            const safeBetId = Number(betId);
+            if (!Number.isInteger(safeBetId) || safeBetId <= 0) {
+                socket.emit('lol-bet-error', { message: 'Invalid bet ID' });
+                return;
+            }
+
+            if (typeof didPlayerWin !== 'boolean') {
+                socket.emit('lol-bet-error', { message: 'Invalid result (must be true or false)' });
+                return;
+            }
+
+            // Resolve the bet
+            const result = await resolveBet(safeBetId, didPlayerWin);
+
+            if (!result) {
+                socket.emit('lol-bet-error', { message: 'Bet not found or already resolved' });
+                return;
+            }
+
+            const { playerName, wonBet, payout } = result;
+
+            // Credit winner's balance if they won
+            let newBalance = null;
+            if (wonBet && payout > 0) {
+                newBalance = await addBalance(playerName, payout, 'lol_bet_win', {
+                    betId: safeBetId,
+                    resolvedManually: true
+                });
+            }
+
+            console.log(`[LoL Admin Resolve] ${player.name} manually resolved bet ${safeBetId}: ${playerName} ${wonBet ? 'won' : 'lost'} ${wonBet ? payout : 0} SC`);
+
+            // Notify the player who won (if applicable)
+            if (wonBet && newBalance !== null) {
+                io.emit('lol-bet-resolved', {
+                    betId: safeBetId,
+                    playerName,
+                    wonBet,
+                    payout,
+                    newBalance
+                });
+            }
+
+            // Broadcast updated bets list to all clients
+            const allBets = await getActiveBets();
+            io.emit('lol-bets-update', { bets: allBets });
+
+            // Confirm to the admin who resolved it
+            socket.emit('lol-bet-resolved-confirm', {
+                betId: safeBetId,
+                playerName,
+                wonBet,
+                payout
+            });
+
+        } catch (err) {
+            console.error('lol-admin-resolve-bet error:', err.message);
+            socket.emit('lol-bet-error', { message: 'Failed to resolve bet' });
         } });
 
         // ============== END LOL BETTING ==============

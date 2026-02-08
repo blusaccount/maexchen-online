@@ -1,8 +1,8 @@
 // ============== LOL MATCH CHECKER ==============
 
-import { getPendingBetsForChecking, resolveBet, getActiveBets } from './lol-betting.js';
+import { getPendingBetsForChecking, resolveBet, getActiveBets, getPendingBetsWithoutPuuid, updateBetPuuid } from './lol-betting.js';
 import { addBalance } from './currency.js';
-import { getMatchHistory, getMatchDetails, isRiotApiEnabled } from './riot-api.js';
+import { getMatchHistory, getMatchDetails, isRiotApiEnabled, validateRiotId } from './riot-api.js';
 import { withTransaction } from './db.js';
 
 let checkerInterval = null;
@@ -53,10 +53,69 @@ export function stopMatchChecker() {
 }
 
 /**
+ * Backfill PUUID and lastMatchId for bets that were placed without them
+ * NOTE: This runs on every polling cycle. For production systems with high volume,
+ * consider adding a retry counter or last_attempt timestamp to avoid repeatedly
+ * attempting to backfill bets that consistently fail validation.
+ */
+async function backfillMissingPuuids() {
+    try {
+        const incompleteBets = await getPendingBetsWithoutPuuid();
+        
+        if (incompleteBets.length === 0) {
+            return; // Nothing to backfill
+        }
+
+        console.log(`[LoL Match Checker] Backfilling ${incompleteBets.length} incomplete bets`);
+
+        for (const bet of incompleteBets) {
+            try {
+                // Validate Riot ID and get PUUID
+                const validation = await validateRiotId(bet.lolUsername);
+                
+                if (!validation.valid || !validation.puuid) {
+                    console.warn(`[LoL Match Checker] Could not validate ${bet.lolUsername} for bet ${bet.id}`);
+                    continue;
+                }
+
+                // Fetch last match ID
+                const matchHistory = await getMatchHistory(validation.puuid, 1);
+                if (matchHistory.length === 0) {
+                    console.warn(`[LoL Match Checker] No match history for ${bet.lolUsername} (bet ${bet.id})`);
+                    continue;
+                }
+
+                const lastMatchId = matchHistory[0];
+                
+                // Update bet with PUUID and lastMatchId
+                const success = await updateBetPuuid(bet.id, validation.puuid, lastMatchId);
+                
+                if (success) {
+                    console.log(`[LoL Match Checker] Backfilled bet ${bet.id}: ${bet.lolUsername} -> ${validation.puuid}`);
+                }
+
+                // Add small delay to respect rate limits
+                await delay(1000);
+            } catch (err) {
+                console.error(`[LoL Match Checker] Error backfilling bet ${bet.id}:`, err.message);
+                // Continue with next bet even if one fails
+            }
+        }
+    } catch (err) {
+        console.error('[LoL Match Checker] Error in backfill process:', err.message);
+        // Don't crash the main loop
+    }
+}
+
+/**
  * Main checking function - runs periodically
  */
 async function checkPendingBets() {
     try {
+        // STEP 1: Backfill PUUID and lastMatchId for bets that were placed without them
+        await backfillMissingPuuids();
+
+        // STEP 2: Check bets that have PUUID and lastMatchId
         const pendingBets = await getPendingBetsForChecking();
         
         if (pendingBets.length === 0) {

@@ -172,6 +172,63 @@ export async function getPendingBetsForChecking() {
 }
 
 /**
+ * Get pending bets that are missing PUUID or lastMatchId
+ * These bets were placed when the Riot API was unavailable and need backfilling
+ */
+export async function getPendingBetsWithoutPuuid() {
+    // Limit batch size to prevent excessive API calls in a single cycle
+    const MAX_BACKFILL_BATCH_SIZE = 100;
+    
+    if (!isDatabaseEnabled()) {
+        return betsMemory
+            .filter(bet => bet.status === 'pending' && (!bet.puuid || !bet.lastMatchId))
+            .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    }
+
+    const result = await query(
+        `select id, player_name, lol_username, bet_amount, bet_on_win, created_at
+         from lol_bets
+         where status = 'pending' and (puuid is null or last_match_id is null)
+         order by created_at asc
+         limit $1`,
+        [MAX_BACKFILL_BATCH_SIZE]
+    );
+
+    return result.rows.map(row => ({
+        id: row.id,
+        playerName: row.player_name,
+        lolUsername: row.lol_username,
+        amount: Number(row.bet_amount),
+        betOnWin: row.bet_on_win,
+        createdAt: row.created_at
+    }));
+}
+
+/**
+ * Update a bet's PUUID and lastMatchId after backfilling
+ */
+export async function updateBetPuuid(betId, puuid, lastMatchId) {
+    if (!isDatabaseEnabled()) {
+        const bet = betsMemory.find(b => b.id === betId);
+        if (!bet || bet.status !== 'pending') {
+            return false;
+        }
+        bet.puuid = puuid;
+        bet.lastMatchId = lastMatchId;
+        return true;
+    }
+
+    const result = await query(
+        `update lol_bets
+         set puuid = $2, last_match_id = $3
+         where id = $1 and status = 'pending'`,
+        [betId, puuid, lastMatchId]
+    );
+
+    return result.rowCount > 0;
+}
+
+/**
  * Mock function to simulate resolving a bet
  * In production, this would integrate with Riot Games API
  * Note: This function is not exposed via socket handlers - it's for future admin/API use

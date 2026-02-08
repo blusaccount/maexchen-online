@@ -1,3 +1,79 @@
+# HANDOFF - LoL Betting System Auto-Completion Fixes
+
+## What Was Done
+
+### Problem Fixed
+The LoL betting system had three interconnected issues preventing automatic bet resolution:
+1. Match checker never started without `RIOT_API_KEY`
+2. Bets placed without API key had null PUUID/lastMatchId and were never checked
+3. `resolveBet()` didn't credit player balances (only updated bet status)
+
+### Changes Made
+
+**Fix A: PUUID Backfill for Incomplete Bets (`server/lol-betting.js`, `server/lol-match-checker.js`)**
+- Added `getPendingBetsWithoutPuuid()` function to find bets missing PUUID or lastMatchId
+- Added `updateBetPuuid(betId, puuid, lastMatchId)` function to backfill bet data
+- Added `backfillMissingPuuids()` function in match checker that runs in the polling loop
+- When Riot API becomes available, incomplete bets are retroactively resolved with PUUID and lastMatchId
+- Backfill runs before checking matches, with rate limiting (1s delay between bets)
+
+**Fix B: Manual Bet Resolution (`server/socket-handlers.js`)**
+- Added `lol-admin-resolve-bet` socket event handler
+- Accepts `{ betId, didPlayerWin }` and validates the caller is logged in
+- Calls `resolveBet()` to update bet status
+- Credits winner's balance via `addBalance()` with reason `lol_bet_win`
+- Emits `lol-bet-resolved` to notify the winner
+- Emits `lol-bet-resolved-confirm` to the admin who resolved it
+- Broadcasts updated bets list to all clients
+
+**Fix C: User Feedback (`server/socket-handlers.js`)**
+- In `lol-place-bet` handler, after placing bet, checks if `puuid` is null
+- Emits `lol-bet-warning` event with message: "Automatic bet resolution is not active. Bets may need to be resolved manually."
+
+### How to Verify
+
+**Scenario 1: Backfill existing incomplete bets**
+1. Start server with valid `RIOT_API_KEY` in `.env`
+2. Match checker will automatically backfill any pending bets with null PUUID
+3. Check logs for: `[LoL Match Checker] Backfilling N incomplete bets`
+4. Backfilled bets should then appear in normal match checking flow
+
+**Scenario 2: Manual bet resolution**
+1. Place a bet (with or without API key)
+2. As any logged-in player, emit socket event:
+   ```js
+   socket.emit('lol-admin-resolve-bet', { betId: 123, didPlayerWin: true });
+   ```
+3. If won, player's balance should increase by 2x bet amount
+4. Bet should disappear from active bets list
+5. Winner receives `lol-bet-resolved` event with payout info
+
+**Scenario 3: Warning on incomplete bet**
+1. Remove `RIOT_API_KEY` from environment or set to invalid value
+2. Place a bet via frontend
+3. Should receive `lol-bet-warning` event after successful bet placement
+4. Frontend should display the warning to user
+
+### Tests
+- All 133 existing tests pass
+- Added 3 new test suites for new functions:
+  - `getPendingBetsWithoutPuuid` - filters and sorts correctly
+  - `updateBetPuuid` - updates pending bets, rejects resolved bets
+  - Full integration tests in `lol-betting.test.js`
+
+### Files Modified
+- `server/lol-betting.js` — Added getPendingBetsWithoutPuuid, updateBetPuuid functions
+- `server/lol-match-checker.js` — Added backfillMissingPuuids step in polling loop
+- `server/socket-handlers.js` — Added lol-admin-resolve-bet handler, lol-bet-warning emission
+- `server/__tests__/lol-betting.test.js` — Added tests for new functions
+
+### Known Limitations
+- Manual resolution has no admin permission check (any logged-in player can resolve)
+- Consider adding admin role check in production
+- Backfill runs on every polling cycle; could add flag to track already-attempted bets
+
+## Previous Changes
+
 # HANDOFF - Large-screen layout & font-size improvements
 
 ## What Was Done
