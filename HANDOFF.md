@@ -686,3 +686,28 @@ When a player placed a LoL bet, the currency was deducted first (`deductBalance`
 - `node --check server/lol-betting.js`
 - `node --check server/socket-handlers.js`
 
+---
+
+# HANDOFF - Pictochat Undo/Redo/Clear Fixes
+
+## What Was Done
+
+### Bug Fix: Undo/redo/clear not working in pictochat
+
+Three client-side bugs in `public/pictochat.js` prevented undo, redo, and clear from working correctly:
+
+1. **Shapes not undoable**: The `picto-shape` client handler applied shapes to the canvas but never added their `strokeId` to the `undoStack`. This meant shapes (line, rect, circle) could never be undone or redone. Fixed by updating the handler to push to `undoStack` and clear `redoStack` when the shape was authored by the current user (matching the `picto-stroke-commit` pattern).
+
+2. **Clear left stale undo/redo stacks for other users**: The `picto-clear` handler only cleared `undoStack` and `redoStack` for the user who initiated the clear (`data.byId === socket.id`). Other users retained stale stroke IDs in their stacks, causing silent failures on subsequent undo/redo attempts. Fixed by clearing both stacks unconditionally for all users on clear.
+
+3. **Reconnect left stale undo/redo stacks**: The `picto-state` handler (fired on join/reconnect) reset the `strokes` array but did not reset `undoStack` and `redoStack`. After reconnecting, the user could have stale entries. Fixed by clearing both stacks when new state is received.
+
+## Files Changed
+
+- `public/pictochat.js`
+
+## Verification
+
+- `npm test` (86 tests pass, no regressions)
+- Server-side handlers are unchanged; all fixes are client-only
+
