@@ -39,8 +39,6 @@ function calculateTrainingCoins(score) {
     return Math.max(2, Math.floor(calculateBrainCoins(clamped) / 2));
 }
 
- 
-
 function getUtcDayNumber(date = new Date()) {
     return Math.floor(date.getTime() / (1000 * 60 * 60 * 24));
 }
