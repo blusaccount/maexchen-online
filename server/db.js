@@ -1,4 +1,7 @@
 import { createRequire } from 'module';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import path from 'path';
 
 const require = createRequire(import.meta.url);
 let Pool = null;
@@ -59,4 +62,12 @@ export async function withTransaction(callback) {
     } finally {
         client.release();
     }
+}
+
+export async function initSchema() {
+    if (!pool) return;
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const sql = readFileSync(path.join(__dirname, 'sql', 'persistence.sql'), 'utf8');
+    await pool.query(sql);
+    console.log('✓ Database schema initialised');
 }

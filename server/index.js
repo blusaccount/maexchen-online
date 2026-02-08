@@ -20,6 +20,7 @@ import { registerSocketHandlers, cleanupRateLimiters } from './socket-handlers.j
 import { getDailyLesson, buildQuiz, getDailySeed } from './turkish-lessons.js';
 import { recordDailyCompletion, getTurkishLeaderboard } from './turkish-streaks.js';
 import { startDiscordBot } from './discord-bot.js';
+import { initSchema } from './db.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -468,6 +469,13 @@ setInterval(() => {
 }, 5 * 60 * 1000);
 
 // ============== START SERVER ==============
+
+// Initialise database schema before accepting connections
+try {
+    await initSchema();
+} catch (err) {
+    console.error('Database schema init error:', err);
+}
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, async () => {
