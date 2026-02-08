@@ -105,6 +105,18 @@ const SOUNDBOARD_VALID_IDS = new Set([
     'reverbfart', 'rizz', 'seyuh', 'vineboom'
 ]);
 
+// ============== STRICT CLUB STATE ==============
+
+const CLUB_ROOM = 'strict-club';
+const clubState = {
+    videoId: null,
+    title: null,
+    queuedBy: null,
+    isPlaying: false,
+    startedAt: null,
+    listeners: new Map() // socketId -> name
+};
+
 // ============== PICTOCHAT STATE ==============
 
 const PICTO_ROOM = 'lobby-picto';
@@ -1795,6 +1807,118 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
 
         // ============== END LOL BETTING ==============
 
+        // ============== STRICT CLUB HANDLERS ==============
+
+        socket.on('club-join', () => { try {
+            if (!checkRateLimit(socket, 5)) return;
+
+            const player = onlinePlayers.get(socket.id);
+            const playerName = player?.name || 'Guest';
+
+            socket.join(CLUB_ROOM);
+            clubState.listeners.set(socket.id, playerName);
+
+            // Send current state to the joining user
+            socket.emit('club-sync', {
+                videoId: clubState.videoId,
+                title: clubState.title,
+                queuedBy: clubState.queuedBy,
+                isPlaying: clubState.isPlaying,
+                listeners: Array.from(clubState.listeners.values())
+            });
+
+            // Broadcast updated listener list to all
+            io.to(CLUB_ROOM).emit('club-listeners', {
+                listeners: Array.from(clubState.listeners.values())
+            });
+
+            console.log(`[StrictClub] ${playerName} joined (${clubState.listeners.size} listeners)`);
+        } catch (err) { console.error('club-join error:', err.message); } });
+
+        socket.on('club-leave', () => { try {
+            if (!checkRateLimit(socket, 5)) return;
+
+            const playerName = clubState.listeners.get(socket.id) || 'Guest';
+            socket.leave(CLUB_ROOM);
+            clubState.listeners.delete(socket.id);
+
+            // Broadcast updated listener list
+            io.to(CLUB_ROOM).emit('club-listeners', {
+                listeners: Array.from(clubState.listeners.values())
+            });
+
+            console.log(`[StrictClub] ${playerName} left (${clubState.listeners.size} listeners)`);
+        } catch (err) { console.error('club-leave error:', err.message); } });
+
+        socket.on('club-queue', (videoId) => { try {
+            if (!checkRateLimit(socket, 3)) return;
+
+            const id = validateYouTubeId(videoId);
+            if (!id) return;
+
+            const player = onlinePlayers.get(socket.id);
+            const playerName = player?.name || 'Guest';
+
+            clubState.videoId = id;
+            clubState.title = 'YouTube Track';
+            clubState.queuedBy = playerName;
+            clubState.isPlaying = true;
+            clubState.startedAt = Date.now();
+
+            // Broadcast to all listeners
+            io.to(CLUB_ROOM).emit('club-play', {
+                videoId: id,
+                title: clubState.title,
+                queuedBy: clubState.queuedBy
+            });
+
+            console.log(`[StrictClub] ${playerName} queued: ${id}`);
+        } catch (err) { console.error('club-queue error:', err.message); } });
+
+        socket.on('club-pause', (shouldPlay) => { try {
+            if (!checkRateLimit(socket, 5)) return;
+            if (!clubState.videoId) return;
+
+            clubState.isPlaying = !!shouldPlay;
+
+            const player = onlinePlayers.get(socket.id);
+            const playerName = player?.name || 'Guest';
+
+            // Broadcast to all listeners
+            io.to(CLUB_ROOM).emit('club-pause', {
+                isPlaying: clubState.isPlaying
+            });
+
+            console.log(`[StrictClub] ${playerName} ${clubState.isPlaying ? 'resumed' : 'paused'}`);
+        } catch (err) { console.error('club-pause error:', err.message); } });
+
+        socket.on('club-skip', () => { try {
+            if (!checkRateLimit(socket, 3)) return;
+
+            const player = onlinePlayers.get(socket.id);
+            const playerName = player?.name || 'Guest';
+
+            // Clear current track
+            clubState.videoId = null;
+            clubState.title = null;
+            clubState.queuedBy = null;
+            clubState.isPlaying = false;
+            clubState.startedAt = null;
+
+            // Broadcast sync to all (clears the player)
+            io.to(CLUB_ROOM).emit('club-sync', {
+                videoId: null,
+                title: null,
+                queuedBy: null,
+                isPlaying: false,
+                listeners: Array.from(clubState.listeners.values())
+            });
+
+            console.log(`[StrictClub] ${playerName} skipped track`);
+        } catch (err) { console.error('club-skip error:', err.message); } });
+
+        // ============== END STRICT CLUB ==============
+
         // --- Leave Room ---
         socket.on('leave-room', async () => { try {
             if (!checkRateLimit(socket)) return;
@@ -1813,6 +1937,14 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
 
             cleanupPictoForSocket(socket.id, io);
             io.to(PICTO_ROOM).emit('picto-cursor-hide', { id: socket.id });
+
+            // Cleanup Strict Club
+            if (clubState.listeners.has(socket.id)) {
+                clubState.listeners.delete(socket.id);
+                io.to(CLUB_ROOM).emit('club-listeners', {
+                    listeners: Array.from(clubState.listeners.values())
+                });
+            }
 
             // Remove from online players
             onlinePlayers.delete(socket.id);

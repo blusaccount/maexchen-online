@@ -1,4 +1,78 @@
 # HANDOFF - Fix lol-place-bet error: missing puuid column
+# HANDOFF - Add Strict Club (Multiplayer YouTube Audio Listening Room)
+
+## What Was Done
+
+### New Feature: Strict Club - Listen to YouTube audio together
+
+Created a new main menu app called "Strict Club" where users can listen to YouTube audio together in a synchronized multiplayer room. The entire experience uses **Frutiger Aero** design aesthetics (mid-2000s to early-2010s design language).
+
+**Key Features:**
+- **Frutiger Aero Design**: Glossy glass panels with backdrop-filter blur, animated sky gradient background, floating translucent bubbles, rounded pill-shaped buttons, optimistic blue/green color palette
+- **Synchronized Playback**: All users in the room hear the same audio at the same time via Socket.IO
+- **Audio Visualizer**: Canvas-based frequency bar visualizer with Frutiger Aero colors (ocean blue to sky blue gradients)
+- **Multi-user Support**: Shows list of connected listeners, anyone can queue/skip tracks
+- **YouTube Integration**: Accepts YouTube URLs or video IDs, uses YouTube IFrame API (hidden player for audio-only)
+
+**Design Details:**
+- Font: M PLUS Rounded 1c (Google Fonts)
+- Background: Animated gradient (sky blue #87CEEB → ocean blue #0077BE → green #4CAF50)
+- Glass panels: `rgba(255,255,255,0.15)` with `backdrop-filter: blur(20px)` and subtle borders
+- Floating bubbles: CSS-only animations with radial gradients
+- Home button: Glass circle button (similar to nostalgiabait pages)
+
+## Files Created
+
+- `public/strict-club/index.html` — Main Strict Club page with Frutiger Aero layout
+- `public/strict-club/club.css` — Self-contained Frutiger Aero styles (glossy panels, animated background, bubbles)
+- `public/strict-club/club.js` — Client logic (Socket.IO, YouTube IFrame API, UI state management)
+- `public/strict-club/visualizer.js` — Web Audio API visualizer with fallback for cross-origin restrictions
+
+## Files Modified
+
+- `public/index.html` — Added Strict Club game card (🎧 icon) to main menu
+- `server/socket-handlers.js` — Added club-* socket event handlers (join, leave, queue, pause, skip) with rate limiting and YouTube ID validation
+
+## Socket Events (kebab-case per project convention)
+
+- `club-join` — Client joins the club room (auto-join on page load)
+- `club-leave` — Client leaves the club room
+- `club-queue` — Client queues a YouTube video by ID
+- `club-play` — Server broadcasts when a new track starts
+- `club-pause` — Server broadcasts play/pause state changes
+- `club-sync` — Server sends current state to newly joined users
+- `club-listeners` — Server broadcasts updated listener list
+- `club-skip` — Skip current track
+
+## Server State
+
+In-memory club state (shared globally, not per-room):
+- `videoId` — Current YouTube video ID
+- `title` — Track title
+- `queuedBy` — Name of user who queued it
+- `isPlaying` — Playback state
+- `startedAt` — Timestamp when track started
+- `listeners` — Map of socketId → playerName
+
+## Verification
+
+- `npm test` — all 122 tests pass ✅
+- Navigate to main menu (`/`) — new "Strict Club" card appears with 🎧 icon ✅
+- Click into Strict Club — Frutiger Aero themed page loads with animated gradient and floating bubbles ✅
+- Paste a YouTube URL or video ID — track queues, "Now Playing" updates with track info and queued-by name ✅
+- Socket.IO connects and syncs state correctly ✅
+- Listeners panel shows connected users ✅
+- Server logs confirm: connection, join event, queue event working properly ✅
+
+**Screenshots:**
+- Initial page: Glossy glass panels, animated gradient background, floating bubbles
+- After queueing: "Now Playing" shows "YouTube Track" and "Queued by Guest"
+
+**Notes:**
+- YouTube IFrame API may fail to load in restricted environments (ERR_BLOCKED_BY_CLIENT), but the core Socket.IO sync functionality works correctly
+- The visualizer includes a simulated fallback mode for when Web Audio API cannot connect to YouTube audio (due to CORS)
+- The static files are auto-served by the existing `express.static` middleware pointing at `public/`
+# HANDOFF - Implement LoL Bet Resolution with Riot Match v5 API
 
 ## What Was Done
 

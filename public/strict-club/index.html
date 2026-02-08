@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strict Club - StrictHotel</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👽</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@300;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/strict-club/club.css">
+</head>
+<body>
+    <!-- Animated background with bubbles -->
+    <div class="background-container">
+        <div class="bubble bubble-1"></div>
+        <div class="bubble bubble-2"></div>
+        <div class="bubble bubble-3"></div>
+        <div class="bubble bubble-4"></div>
+        <div class="bubble bubble-5"></div>
+    </div>
+
+    <!-- Home button -->
+    <a href="/" class="home-button" title="Back to Main Menu">🏠</a>
+
+    <!-- Main container -->
+    <div class="club-container">
+        <!-- Header -->
+        <header class="club-header glass-panel">
+            <h1 class="club-title">STRICT CLUB</h1>
+            <p class="club-subtitle">Listen Together</p>
+        </header>
+
+        <!-- Now Playing Panel -->
+        <div class="now-playing glass-panel">
+            <div class="now-playing-icon">🎵</div>
+            <div class="now-playing-info">
+                <div class="now-playing-title" id="now-playing-title">No track playing</div>
+                <div class="now-playing-queued" id="now-playing-queued"></div>
+            </div>
+        </div>
+
+        <!-- Audio Visualizer -->
+        <div class="visualizer-container glass-panel">
+            <canvas id="visualizer-canvas"></canvas>
+        </div>
+
+        <!-- Controls Panel -->
+        <div class="controls-panel glass-panel">
+            <div class="url-input-group">
+                <input 
+                    type="text" 
+                    id="youtube-url-input" 
+                    class="url-input"
+                    placeholder="Paste YouTube URL or Video ID..."
+                    autocomplete="off"
+                >
+                <button id="queue-btn" class="control-button primary-btn">Queue</button>
+            </div>
+            <div class="playback-controls">
+                <button id="play-btn" class="control-button icon-btn" title="Play/Pause">▶️</button>
+                <button id="skip-btn" class="control-button icon-btn" title="Skip">⏭️</button>
+            </div>
+        </div>
+
+        <!-- Listeners Panel -->
+        <div class="listeners-panel glass-panel">
+            <div class="listeners-header">
+                <span class="listeners-icon">👥</span>
+                <span class="listeners-title">Listeners</span>
+                <span class="listeners-count" id="listeners-count">0</span>
+            </div>
+            <div class="listeners-list" id="listeners-list">
+                <div class="listener-item">Connecting...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden YouTube player -->
+    <div id="youtube-player-container" style="position: fixed; top: -9999px; left: -9999px; width: 1px; height: 1px; overflow: hidden; pointer-events: none;">
+        <div id="youtube-player"></div>
+    </div>
+
+    <!-- Socket.IO -->
+    <script src="/socket.io/socket.io.js"></script>
+
+    <!-- YouTube IFrame API -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+
+    <!-- Visualizer -->
+    <script src="/strict-club/visualizer.js"></script>
+
+    <!-- Main Club Logic -->
+    <script src="/strict-club/club.js"></script>
+</body>
+</html>

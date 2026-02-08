@@ -1,0 +1,407 @@
+/* ============================
+   STRICT CLUB - Frutiger Aero
+   ============================ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'M PLUS Rounded 1c', 'Segoe UI', sans-serif;
+    color: #ffffff;
+    overflow-x: hidden;
+    min-height: 100vh;
+    position: relative;
+}
+
+/* ====== Animated Background ====== */
+.background-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    background: linear-gradient(135deg, #87CEEB 0%, #0077BE 50%, #4CAF50 100%);
+    animation: gradient-shift 15s ease infinite;
+}
+
+@keyframes gradient-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* ====== Floating Bubbles ====== */
+.bubble {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.2));
+    box-shadow: 
+        inset 0 -10px 20px rgba(255, 255, 255, 0.3),
+        0 10px 30px rgba(0, 0, 0, 0.2);
+    animation: float-up linear infinite;
+    opacity: 0.7;
+}
+
+.bubble-1 {
+    width: 80px;
+    height: 80px;
+    left: 10%;
+    bottom: -100px;
+    animation-duration: 20s;
+    animation-delay: 0s;
+}
+
+.bubble-2 {
+    width: 60px;
+    height: 60px;
+    left: 30%;
+    bottom: -100px;
+    animation-duration: 25s;
+    animation-delay: 5s;
+}
+
+.bubble-3 {
+    width: 100px;
+    height: 100px;
+    left: 60%;
+    bottom: -100px;
+    animation-duration: 30s;
+    animation-delay: 10s;
+}
+
+.bubble-4 {
+    width: 50px;
+    height: 50px;
+    left: 80%;
+    bottom: -100px;
+    animation-duration: 22s;
+    animation-delay: 2s;
+}
+
+.bubble-5 {
+    width: 70px;
+    height: 70px;
+    left: 45%;
+    bottom: -100px;
+    animation-duration: 28s;
+    animation-delay: 8s;
+}
+
+@keyframes float-up {
+    0% {
+        transform: translateY(0) translateX(0);
+        opacity: 0.7;
+    }
+    50% {
+        transform: translateY(-50vh) translateX(20px);
+        opacity: 0.5;
+    }
+    100% {
+        transform: translateY(-110vh) translateX(-20px);
+        opacity: 0;
+    }
+}
+
+/* ====== Glass Panel Mixin ====== */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 20px;
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+/* ====== Home Button ====== */
+.home-button {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    text-decoration: none;
+    box-shadow: 
+        0 4px 15px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+
+.home-button:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+    box-shadow: 
+        0 6px 20px rgba(0, 0, 0, 0.3),
+        0 0 20px rgba(255, 255, 255, 0.5);
+}
+
+/* ====== Main Container ====== */
+.club-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 100px 20px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* ====== Header ====== */
+.club-header {
+    text-align: center;
+    padding: 30px;
+}
+
+.club-title {
+    font-size: 3rem;
+    font-weight: 700;
+    letter-spacing: 4px;
+    background: linear-gradient(135deg, #ffffff 0%, #87CEEB 50%, #ffffff 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 4px 20px rgba(255, 255, 255, 0.5);
+    margin-bottom: 10px;
+}
+
+.club-subtitle {
+    font-size: 1.2rem;
+    font-weight: 300;
+    color: rgba(255, 255, 255, 0.9);
+    letter-spacing: 2px;
+}
+
+/* ====== Now Playing ====== */
+.now-playing {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 20px 25px;
+}
+
+.now-playing-icon {
+    font-size: 3rem;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+.now-playing-info {
+    flex: 1;
+}
+
+.now-playing-title {
+    font-size: 1.3rem;
+    font-weight: 500;
+    color: #ffffff;
+    margin-bottom: 5px;
+}
+
+.now-playing-queued {
+    font-size: 0.9rem;
+    font-weight: 300;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* ====== Visualizer ====== */
+.visualizer-container {
+    padding: 20px;
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+#visualizer-canvas {
+    width: 100%;
+    height: 250px;
+    border-radius: 10px;
+}
+
+/* ====== Controls Panel ====== */
+.controls-panel {
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.url-input-group {
+    display: flex;
+    gap: 10px;
+}
+
+.url-input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 30px;
+    padding: 12px 20px;
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    font-size: 1rem;
+    color: #ffffff;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.url-input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.url-input:focus {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+}
+
+.playback-controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+/* ====== Buttons ====== */
+.control-button {
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 30px;
+    padding: 12px 24px;
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #ffffff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 
+        0 4px 15px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.control-button:hover {
+    background: rgba(255, 255, 255, 0.35);
+    transform: translateY(-2px);
+    box-shadow: 
+        0 6px 20px rgba(0, 0, 0, 0.3),
+        0 0 20px rgba(255, 255, 255, 0.4);
+}
+
+.control-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.primary-btn {
+    background: linear-gradient(135deg, rgba(0, 119, 190, 0.6), rgba(76, 175, 80, 0.6));
+}
+
+.primary-btn:hover {
+    background: linear-gradient(135deg, rgba(0, 119, 190, 0.8), rgba(76, 175, 80, 0.8));
+}
+
+.icon-btn {
+    font-size: 1.5rem;
+    padding: 12px 20px;
+    min-width: 60px;
+}
+
+/* ====== Listeners Panel ====== */
+.listeners-panel {
+    padding: 20px 25px;
+}
+
+.listeners-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.listeners-icon {
+    font-size: 1.5rem;
+}
+
+.listeners-title {
+    flex: 1;
+}
+
+.listeners-count {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+}
+
+.listeners-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.listener-item {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 300;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* ====== Responsive ====== */
+@media (max-width: 768px) {
+    .club-container {
+        padding: 80px 15px 30px;
+        gap: 15px;
+    }
+
+    .club-title {
+        font-size: 2rem;
+        letter-spacing: 2px;
+    }
+
+    .club-subtitle {
+        font-size: 1rem;
+    }
+
+    .home-button {
+        width: 50px;
+        height: 50px;
+        font-size: 24px;
+        top: 15px;
+        left: 15px;
+    }
+
+    .url-input-group {
+        flex-direction: column;
+    }
+
+    .control-button {
+        padding: 10px 20px;
+        font-size: 0.9rem;
+    }
+
+    #visualizer-canvas {
+        height: 200px;
+    }
+}
