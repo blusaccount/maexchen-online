@@ -57,9 +57,27 @@ function validateYouTubeId(videoId) {
     return videoId.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 11);
 }
 
+function parseTradeAmount(rawAmount) {
+    const amount = Number(rawAmount);
+    if (!Number.isFinite(amount) || !Number.isInteger(amount) || amount <= 0) {
+        return null;
+    }
+    return amount;
+}
+
+function emitStockError(socket, code, message) {
+    socket.emit('stock-error', {
+        code,
+        message,
+        // Backward compatibility for clients reading `error`
+        error: message
+    });
+}
+
 // ============== RATE LIMITING ==============
 
 const rateLimiters = new Map(); // socketId -> { count, resetTime }
+const stockTradeCooldown = new Map(); // socketId -> timestamp
 
 function checkRateLimit(socketId, maxPerSecond = 10) {
     const now = Date.now();
@@ -70,6 +88,14 @@ function checkRateLimit(socketId, maxPerSecond = 10) {
     }
     entry.count++;
     return entry.count <= maxPerSecond;
+}
+
+function checkStockTradeCooldown(socketId, minIntervalMs = 400) {
+    const now = Date.now();
+    const lastTradeAt = stockTradeCooldown.get(socketId) || 0;
+    if (now - lastTradeAt < minIntervalMs) return false;
+    stockTradeCooldown.set(socketId, now);
+    return true;
 }
 
 // ============== SOUNDBOARD STATE ==============
@@ -344,12 +370,16 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance 
             const symbol = typeof data.symbol === 'string'
                 ? data.symbol.replace(/[^A-Z0-9.\-=]/g, '').slice(0, 12) : '';
             if (!symbol) {
-                socket.emit('stock-error', { error: 'Invalid symbol' });
+                emitStockError(socket, 'INVALID_SYMBOL', 'Invalid symbol');
                 return;
             }
-            const amount = Number(data.amount);
-            if (!Number.isFinite(amount) || amount <= 0) {
-                socket.emit('stock-error', { error: 'Invalid amount' });
+            const amount = parseTradeAmount(data.amount);
+            if (amount === null) {
+                emitStockError(socket, 'INVALID_AMOUNT', 'Amount must be a positive integer');
+                return;
+            }
+            if (!checkStockTradeCooldown(socket.id)) {
+                emitStockError(socket, 'TRADE_COOLDOWN', 'Trade requests are too fast');
                 return;
             }
 
@@ -370,13 +400,13 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance 
                 } catch (e) { /* symbol not found */ }
             }
             if (!quote) {
-                socket.emit('stock-error', { error: 'Price unavailable' });
+                emitStockError(socket, 'PRICE_UNAVAILABLE', 'Price unavailable');
                 return;
             }
 
             const result = await buyStock(player.name, quote.symbol, quote.price, amount);
             if (!result.ok) {
-                socket.emit('stock-error', { error: result.error });
+                emitStockError(socket, result.code || 'BUY_FAILED', result.error || 'Buy failed');
                 return;
             }
 
@@ -395,12 +425,16 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance 
             const symbol = typeof data.symbol === 'string'
                 ? data.symbol.replace(/[^A-Z0-9.\-=]/g, '').slice(0, 12) : '';
             if (!symbol) {
-                socket.emit('stock-error', { error: 'Invalid symbol' });
+                emitStockError(socket, 'INVALID_SYMBOL', 'Invalid symbol');
                 return;
             }
-            const amount = Number(data.amount);
-            if (!Number.isFinite(amount) || amount <= 0) {
-                socket.emit('stock-error', { error: 'Invalid amount' });
+            const amount = parseTradeAmount(data.amount);
+            if (amount === null) {
+                emitStockError(socket, 'INVALID_AMOUNT', 'Amount must be a positive integer');
+                return;
+            }
+            if (!checkStockTradeCooldown(socket.id)) {
+                emitStockError(socket, 'TRADE_COOLDOWN', 'Trade requests are too fast');
                 return;
             }
 
@@ -420,13 +454,13 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance 
                 } catch (e) { /* symbol not found */ }
             }
             if (!quote) {
-                socket.emit('stock-error', { error: 'Price unavailable' });
+                emitStockError(socket, 'PRICE_UNAVAILABLE', 'Price unavailable');
                 return;
             }
 
             const result = await sellStock(player.name, quote.symbol, quote.price, amount);
             if (!result.ok) {
-                socket.emit('stock-error', { error: result.error });
+                emitStockError(socket, result.code || 'SELL_FAILED', result.error || 'Sell failed');
                 return;
             }
 
@@ -1568,6 +1602,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance 
         socket.on('disconnect', async () => { try {
             // Cleanup rate limiter
             rateLimiters.delete(socket.id);
+            stockTradeCooldown.delete(socket.id);
 
             cleanupPictoForSocket(socket.id, io);
             io.to(PICTO_ROOM).emit('picto-cursor-hide', { id: socket.id });
