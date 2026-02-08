@@ -1,6 +1,6 @@
 // ============== CURRENCY MANAGEMENT ==============
 
-import { isDatabaseEnabled, query } from './db.js';
+import { isDatabaseEnabled, query, withTransaction } from './db.js';
 
 const STARTING_BALANCE = 1000;
 
@@ -59,7 +59,17 @@ export async function addBalance(playerName, amount, reason = 'adjustment', meta
         return newBalance;
     }
 
-    const runner = client || { query };
+    // When no external client is provided, wrap in a transaction so
+    // balance update + ledger insert are atomic.
+    if (!client) {
+        return withTransaction(async (txClient) => {
+            return _addBalanceDB(playerName, amount, reason, metadata, txClient);
+        });
+    }
+    return _addBalanceDB(playerName, amount, reason, metadata, client);
+}
+
+async function _addBalanceDB(playerName, amount, reason, metadata, runner) {
     await getOrCreatePlayerBalance(playerName, runner);
 
     const updated = await runner.query(
@@ -91,7 +101,17 @@ export async function deductBalance(playerName, amount, reason = 'adjustment', m
         return newBalance;
     }
 
-    const runner = client || { query };
+    // When no external client is provided, wrap in a transaction so
+    // balance update + ledger insert are atomic.
+    if (!client) {
+        return withTransaction(async (txClient) => {
+            return _deductBalanceDB(playerName, amount, reason, metadata, txClient);
+        });
+    }
+    return _deductBalanceDB(playerName, amount, reason, metadata, client);
+}
+
+async function _deductBalanceDB(playerName, amount, reason, metadata, runner) {
     await getOrCreatePlayerBalance(playerName, runner);
 
     const updated = await runner.query(

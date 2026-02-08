@@ -649,4 +649,40 @@ Users must now enter a valid Riot ID (Name#Tag format) when placing LoL bets. Th
 - `npm test` (58 tests pass, including 4 new portfolio-history tests)
 - Manual: server starts, stocks page loads with chart section visible
 
+---
+
+# HANDOFF - Currency System Resilience (LoL Betting)
+
+## What Was Done
+
+### Bug Fix: Currency deducted even when bet placement fails
+
+When a player placed a LoL bet, the currency was deducted first (`deductBalance`) and then the bet was created (`placeBet`). If `placeBet` threw an error, the catch block only emitted an error message — it never refunded the deducted currency. This caused permanent currency loss on failed bets.
+
+### Changes
+
+**`server/currency.js`**
+- `addBalance` and `deductBalance` now wrap the balance update + ledger insert in a database transaction when no external client is provided. This prevents the balance from changing without a corresponding ledger entry.
+- Extracted `_addBalanceDB` and `_deductBalanceDB` helpers to keep the logic DRY when used with or without an external transaction client.
+
+**`server/lol-betting.js`**
+- `placeBet` now accepts an optional `client` parameter so it can participate in an external database transaction.
+
+**`server/socket-handlers.js`**
+- The `lol-place-bet` handler now uses `withTransaction` (DB mode) to atomically deduct the balance and place the bet. If either step fails, the entire transaction rolls back — no currency is lost.
+- In-memory mode: if `placeBet` throws after `deductBalance` succeeds, the handler refunds the deducted amount via `addBalance` before re-throwing.
+
+**`server/__tests__/currency.test.js`**
+- Added "deduct + refund resilience" tests verifying balance restoration after a failed downstream operation and that balance stays unchanged when deduction itself fails.
+
+**`server/__tests__/lol-betting.test.js`** (new)
+- Unit tests for `placeBet`, `getActiveBets`, and `getPlayerBets` in in-memory mode.
+- Verifies the optional `client` parameter is accepted without error.
+
+## Verification
+
+- `npm test` (86 tests pass — 79 original + 7 new)
+- `node --check server/currency.js`
+- `node --check server/lol-betting.js`
+- `node --check server/socket-handlers.js`
 

@@ -63,6 +63,36 @@ describe('currency (in-memory mode)', () => {
         });
     });
 
+    describe('deduct + refund resilience', () => {
+        it('balance is restored after deduct followed by addBalance refund', async () => {
+            const player = 'player_resilience';
+            const before = await getBalance(player);
+            expect(before).toBe(STARTING_BALANCE);
+
+            // Simulate deducting for a bet
+            const afterDeduct = await deductBalance(player, 200, 'lol_bet');
+            expect(afterDeduct).toBe(800);
+
+            // Simulate bet placement failure — refund
+            const afterRefund = await addBalance(player, 200, 'lol_bet_refund');
+            expect(afterRefund).toBe(STARTING_BALANCE);
+        });
+
+        it('balance stays unchanged when deduction itself fails', async () => {
+            const player = 'player_resilience_fail';
+            const before = await getBalance(player);
+            expect(before).toBe(STARTING_BALANCE);
+
+            // Try to deduct more than balance
+            const result = await deductBalance(player, STARTING_BALANCE + 1);
+            expect(result).toBeNull();
+
+            // Balance should remain unchanged
+            const after = await getBalance(player);
+            expect(after).toBe(STARTING_BALANCE);
+        });
+    });
+
     describe('getAllPlayerNamesMemory', () => {
         it('returns names of players who have been accessed', async () => {
             await getBalance('player_names_a');
