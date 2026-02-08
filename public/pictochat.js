@@ -218,6 +218,36 @@
         }
     }
 
+    function strokeFromPayload(data) {
+        if (!data) return null;
+        var stroke = {
+            strokeId: data.strokeId,
+            authorId: data.authorId,
+            tool: data.tool,
+            color: data.color,
+            size: data.size
+        };
+        if (data.points) {
+            stroke.points = data.points || [];
+        } else if (data.start && data.end) {
+            stroke.start = data.start;
+            stroke.end = data.end;
+        }
+        return stroke;
+    }
+
+    function applyStroke(stroke, renderNow) {
+        if (!stroke) return;
+        strokes.push(stroke);
+        if (renderNow) {
+            if (stroke.points) {
+                drawStroke(ctx, stroke);
+            } else if (stroke.start) {
+                drawShape(ctx, stroke);
+            }
+        }
+    }
+
     function setActiveTool(tool) {
         currentTool = tool;
         for (var i = 0; i < toolButtons.length; i++) {
@@ -548,41 +578,21 @@
 
         socket.on('picto-stroke-commit', function (data) {
             if (!data) return;
-            var stroke = {
-                strokeId: data.strokeId,
-                authorId: data.authorId,
-                tool: data.tool,
-                color: data.color,
-                size: data.size,
-                points: data.points || []
-            };
-
-            strokes.push(stroke);
+            var stroke = strokeFromPayload(data);
+            applyStroke(stroke, !inProgress[data.strokeId]);
 
             if (data.authorId === socket.id) {
                 undoStack.push(data.strokeId);
                 redoStack.length = 0;
             }
 
-            if (!inProgress[data.strokeId]) {
-                drawStroke(ctx, stroke);
-            }
             delete inProgress[data.strokeId];
         });
 
         socket.on('picto-shape', function (data) {
             if (!data) return;
-            var stroke = {
-                strokeId: data.strokeId,
-                authorId: data.authorId,
-                tool: data.tool,
-                color: data.color,
-                size: data.size,
-                start: data.start,
-                end: data.end
-            };
-            strokes.push(stroke);
-            drawShape(ctx, stroke);
+            var stroke = strokeFromPayload(data);
+            applyStroke(stroke, true);
         });
 
         socket.on('picto-undo', function (data) {
@@ -599,12 +609,7 @@
 
         socket.on('picto-redo', function (data) {
             if (!data || !data.stroke) return;
-            strokes.push(data.stroke);
-            if (data.stroke.points) {
-                drawStroke(ctx, data.stroke);
-            } else if (data.stroke.start) {
-                drawShape(ctx, data.stroke);
-            }
+            applyStroke(data.stroke, true);
             if (data.byId === socket.id) {
                 redoStack.pop();
                 undoStack.push(data.stroke.strokeId);

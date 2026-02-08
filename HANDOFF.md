@@ -416,6 +416,21 @@
 
 ---
 
+# HANDOFF - Lean Refactor (Pictochat Client)
+
+## What Was Done
+
+- Extracted shared stroke helpers to reduce duplication in pictochat socket handlers.
+
+## Files Changed
+- `public/pictochat.js`
+
+## Verification
+- Not run here. Suggested:
+  - `node --check public/pictochat.js`
+
+---
+
 # HANDOFF - Turkish Quiz State Machine Stabilization
 
 ## What Was Done
