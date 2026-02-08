@@ -12,7 +12,14 @@ import {
 } from './room-manager.js';
 
 import { getBalance, addBalance, deductBalance } from './currency.js';
-import { buyStock, sellStock, getPortfolioSnapshot, getAllPortfolioPlayerNames, getLeaderboardSnapshot } from './stock-game.js';
+import {
+    buyStock,
+    sellStock,
+    getPortfolioSnapshot,
+    getAllPortfolioPlayerNames,
+    getLeaderboardSnapshot,
+    getTradePerformanceLeaderboard
+} from './stock-game.js';
 import { loadStrokes, saveStroke, deleteStroke, clearStrokes, loadMessages, saveMessage, clearMessages, PICTO_MAX_MESSAGES } from './pictochat-store.js';
 
 // ============== INPUT VALIDATION ==============
@@ -57,9 +64,27 @@ function validateYouTubeId(videoId) {
     return videoId.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 11);
 }
 
+function parseTradeAmount(rawAmount) {
+    const amount = Number(rawAmount);
+    if (!Number.isFinite(amount) || !Number.isInteger(amount) || amount <= 0) {
+        return null;
+    }
+    return amount;
+}
+
+function emitStockError(socket, code, message) {
+    socket.emit('stock-error', {
+        code,
+        message,
+        // Backward compatibility for clients reading `error`
+        error: message
+    });
+}
+
 // ============== RATE LIMITING ==============
 
 const rateLimiters = new Map(); // socketId -> { count, resetTime }
+const stockTradeCooldown = new Map(); // socketId -> timestamp
 
 function checkRateLimit(socketId, maxPerSecond = 10) {
     const now = Date.now();
@@ -70,6 +95,14 @@ function checkRateLimit(socketId, maxPerSecond = 10) {
     }
     entry.count++;
     return entry.count <= maxPerSecond;
+}
+
+function checkStockTradeCooldown(socketId, minIntervalMs = 400) {
+    const now = Date.now();
+    const lastTradeAt = stockTradeCooldown.get(socketId) || 0;
+    if (now - lastTradeAt < minIntervalMs) return false;
+    stockTradeCooldown.set(socketId, now);
+    return true;
 }
 
 // ============== SOUNDBOARD STATE ==============
@@ -272,10 +305,12 @@ export function cleanupRateLimiters() {
 
 let _fetchTickerQuotes = null;
 let _getYahooFinance = null;
+let _stockGameEnabled = true;
 
-export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance } = {}) {
+export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance, isStockGameEnabled = true } = {}) {
     _fetchTickerQuotes = fetchTickerQuotes || null;
     _getYahooFinance = getYahooFinance || null;
+    _stockGameEnabled = isStockGameEnabled !== false;
     io.on('connection', (socket) => {
         console.log(`Connected: ${socket.id}`);
 
@@ -337,6 +372,10 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance 
         // --- Stock Game: Buy ---
         socket.on('stock-buy', async (data) => { try {
             if (!checkRateLimit(socket.id)) return;
+            if (!_stockGameEnabled) {
+                emitStockError(socket, 'GAME_DISABLED', 'Stock game is disabled by server config');
+                return;
+            }
             const player = onlinePlayers.get(socket.id);
             if (!player) return;
             if (!data || typeof data !== 'object') return;
@@ -344,12 +383,16 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance 
             const symbol = typeof data.symbol === 'string'
                 ? data.symbol.replace(/[^A-Z0-9.\-=]/g, '').slice(0, 12) : '';
             if (!symbol) {
-                socket.emit('stock-error', { error: 'Invalid symbol' });
+                emitStockError(socket, 'INVALID_SYMBOL', 'Invalid symbol');
                 return;
             }
-            const amount = Number(data.amount);
-            if (!Number.isFinite(amount) || amount <= 0) {
-                socket.emit('stock-error', { error: 'Invalid amount' });
+            const amount = parseTradeAmount(data.amount);
+            if (amount === null) {
+                emitStockError(socket, 'INVALID_AMOUNT', 'Amount must be a positive integer');
+                return;
+            }
+            if (!checkStockTradeCooldown(socket.id)) {
+                emitStockError(socket, 'TRADE_COOLDOWN', 'Trade requests are too fast');
                 return;
             }
 
@@ -370,13 +413,13 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance 
                 } catch (e) { /* symbol not found */ }
             }
             if (!quote) {
-                socket.emit('stock-error', { error: 'Price unavailable' });
+                emitStockError(socket, 'PRICE_UNAVAILABLE', 'Price unavailable');
                 return;
             }
 
             const result = await buyStock(player.name, quote.symbol, quote.price, amount);
             if (!result.ok) {
-                socket.emit('stock-error', { error: result.error });
+                emitStockError(socket, result.code || 'BUY_FAILED', result.error || 'Buy failed');
                 return;
             }
 
@@ -388,6 +431,10 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance 
         // --- Stock Game: Sell ---
         socket.on('stock-sell', async (data) => { try {
             if (!checkRateLimit(socket.id)) return;
+            if (!_stockGameEnabled) {
+                emitStockError(socket, 'GAME_DISABLED', 'Stock game is disabled by server config');
+                return;
+            }
             const player = onlinePlayers.get(socket.id);
             if (!player) return;
             if (!data || typeof data !== 'object') return;
@@ -395,12 +442,16 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance 
             const symbol = typeof data.symbol === 'string'
                 ? data.symbol.replace(/[^A-Z0-9.\-=]/g, '').slice(0, 12) : '';
             if (!symbol) {
-                socket.emit('stock-error', { error: 'Invalid symbol' });
+                emitStockError(socket, 'INVALID_SYMBOL', 'Invalid symbol');
                 return;
             }
-            const amount = Number(data.amount);
-            if (!Number.isFinite(amount) || amount <= 0) {
-                socket.emit('stock-error', { error: 'Invalid amount' });
+            const amount = parseTradeAmount(data.amount);
+            if (amount === null) {
+                emitStockError(socket, 'INVALID_AMOUNT', 'Amount must be a positive integer');
+                return;
+            }
+            if (!checkStockTradeCooldown(socket.id)) {
+                emitStockError(socket, 'TRADE_COOLDOWN', 'Trade requests are too fast');
                 return;
             }
 
@@ -420,13 +471,13 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance 
                 } catch (e) { /* symbol not found */ }
             }
             if (!quote) {
-                socket.emit('stock-error', { error: 'Price unavailable' });
+                emitStockError(socket, 'PRICE_UNAVAILABLE', 'Price unavailable');
                 return;
             }
 
             const result = await sellStock(player.name, quote.symbol, quote.price, amount);
             if (!result.ok) {
-                socket.emit('stock-error', { error: result.error });
+                emitStockError(socket, result.code || 'SELL_FAILED', result.error || 'Sell failed');
                 return;
             }
 
@@ -438,6 +489,10 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance 
         // --- Stock Game: Get Portfolio ---
         socket.on('stock-get-portfolio', async () => { try {
             if (!checkRateLimit(socket.id)) return;
+            if (!_stockGameEnabled) {
+                emitStockError(socket, 'GAME_DISABLED', 'Stock game is disabled by server config');
+                return;
+            }
             const player = onlinePlayers.get(socket.id);
             if (!player) return;
 
@@ -449,12 +504,19 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance 
         // --- Stock Game: Get All Players' Portfolios (Leaderboard) ---
         socket.on('stock-get-leaderboard', async () => { try {
             if (!checkRateLimit(socket.id)) return;
+            if (!_stockGameEnabled) {
+                emitStockError(socket, 'GAME_DISABLED', 'Stock game is disabled by server config');
+                return;
+            }
             const player = onlinePlayers.get(socket.id);
             if (!player) return;
 
             const quotes = _fetchTickerQuotes ? await _fetchTickerQuotes() : [];
             const leaderboard = await getLeaderboardSnapshot(quotes);
             socket.emit('stock-leaderboard', leaderboard);
+
+            const performanceLeaderboard = await getTradePerformanceLeaderboard(quotes);
+            socket.emit('stock-performance-leaderboard', performanceLeaderboard);
         } catch (err) { console.error('stock-get-leaderboard error:', err.message); } });
 
         // --- Pictochat Join ---
@@ -1568,6 +1630,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance 
         socket.on('disconnect', async () => { try {
             // Cleanup rate limiter
             rateLimiters.delete(socket.id);
+            stockTradeCooldown.delete(socket.id);
 
             cleanupPictoForSocket(socket.id, io);
             io.to(PICTO_ROOM).emit('picto-cursor-hide', { id: socket.id });

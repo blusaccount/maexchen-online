@@ -15,6 +15,36 @@ function round2(n) {
     return Math.round(n * 100) / 100;
 }
 
+function compareByPortfolioValueDesc(a, b) {
+    if (b.portfolioValue !== a.portfolioValue) return b.portfolioValue - a.portfolioValue;
+    return a.name.localeCompare(b.name);
+}
+
+function compareByPerformanceDesc(a, b) {
+    if (b.performancePct !== a.performancePct) return b.performancePct - a.performancePct;
+    return a.name.localeCompare(b.name);
+}
+
+function toPerformanceEntry(player) {
+    let investedCapital = 0;
+    for (const holding of player.holdings || []) {
+        investedCapital += Number(holding.shares) * Number(holding.avgCost);
+    }
+    investedCapital = round2(investedCapital);
+    if (investedCapital <= 0) return null;
+
+    const openPnl = round2(player.portfolioValue - investedCapital);
+    const performancePct = round2((openPnl / investedCapital) * 100);
+
+    return {
+        name: player.name,
+        investedCapital,
+        portfolioValue: player.portfolioValue,
+        openPnl,
+        performancePct
+    };
+}
+
 function getPortfolioMemory(playerName) {
     if (!portfolios.has(playerName)) {
         portfolios.set(playerName, new Map());
@@ -47,11 +77,11 @@ async function getOrCreatePlayerId(playerName, client = null) {
  * @returns {Promise<{ ok:boolean, error?:string, shares?:number, newBalance?:number }>}
  */
 export async function buyStock(playerName, symbol, price, amount) {
-    if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) {
-        return { ok: false, error: 'Invalid amount' };
+    if (typeof amount !== 'number' || !Number.isFinite(amount) || !Number.isInteger(amount) || amount <= 0) {
+        return { ok: false, code: 'INVALID_AMOUNT', error: 'Amount must be a positive integer' };
     }
     if (typeof price !== 'number' || !Number.isFinite(price) || price <= 0) {
-        return { ok: false, error: 'Invalid price' };
+        return { ok: false, code: 'INVALID_PRICE', error: 'Invalid price' };
     }
 
     amount = round2(amount);
@@ -59,7 +89,7 @@ export async function buyStock(playerName, symbol, price, amount) {
     if (!isDatabaseEnabled()) {
         const newBalance = await deductBalance(playerName, amount, 'stock_buy', { symbol, price, amount });
         if (newBalance === null) {
-            return { ok: false, error: 'Insufficient funds' };
+            return { ok: false, code: 'INSUFFICIENT_FUNDS', error: 'Insufficient funds' };
         }
 
         const shares = amount / price;
@@ -81,7 +111,7 @@ export async function buyStock(playerName, symbol, price, amount) {
         const txResult = await withTransaction(async (client) => {
             const newBalance = await deductBalance(playerName, amount, 'stock_buy', { symbol, price, amount }, client);
             if (newBalance === null) {
-                return { ok: false, error: 'Insufficient funds' };
+                return { ok: false, code: 'INSUFFICIENT_FUNDS', error: 'Insufficient funds' };
             }
 
             const playerId = await getOrCreatePlayerId(playerName, client);
@@ -119,7 +149,7 @@ export async function buyStock(playerName, symbol, price, amount) {
         return txResult;
     } catch (err) {
         console.error('buyStock DB error:', err.message);
-        return { ok: false, error: 'Transaction failed' };
+        return { ok: false, code: 'TRANSACTION_FAILED', error: 'Transaction failed' };
     }
 }
 
@@ -128,11 +158,11 @@ export async function buyStock(playerName, symbol, price, amount) {
  * @returns {Promise<{ ok:boolean, error?:string, shares?:number, newBalance?:number }>}
  */
 export async function sellStock(playerName, symbol, price, amount) {
-    if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) {
-        return { ok: false, error: 'Invalid amount' };
+    if (typeof amount !== 'number' || !Number.isFinite(amount) || !Number.isInteger(amount) || amount <= 0) {
+        return { ok: false, code: 'INVALID_AMOUNT', error: 'Amount must be a positive integer' };
     }
     if (typeof price !== 'number' || !Number.isFinite(price) || price <= 0) {
-        return { ok: false, error: 'Invalid price' };
+        return { ok: false, code: 'INVALID_PRICE', error: 'Invalid price' };
     }
 
     amount = round2(amount);
@@ -142,12 +172,12 @@ export async function sellStock(playerName, symbol, price, amount) {
         const holding = portfolio.get(symbol);
 
         if (!holding || holding.shares <= 0) {
-            return { ok: false, error: 'No shares to sell' };
+            return { ok: false, code: 'NO_SHARES', error: 'No shares to sell' };
         }
 
         const sharesToSell = amount / price;
         if (sharesToSell > holding.shares * FP_TOLERANCE) {
-            return { ok: false, error: 'Not enough shares' };
+            return { ok: false, code: 'NOT_ENOUGH_SHARES', error: 'Not enough shares' };
         }
 
         const actualShares = Math.min(sharesToSell, holding.shares);
@@ -169,13 +199,13 @@ export async function sellStock(playerName, symbol, price, amount) {
             );
             const holding = current.rows[0];
             if (!holding || Number(holding.shares) <= 0) {
-                return { ok: false, error: 'No shares to sell' };
+                return { ok: false, code: 'NO_SHARES', error: 'No shares to sell' };
             }
 
             const heldShares = Number(holding.shares);
             const sharesToSell = amount / price;
             if (sharesToSell > heldShares * FP_TOLERANCE) {
-                return { ok: false, error: 'Not enough shares' };
+                return { ok: false, code: 'NOT_ENOUGH_SHARES', error: 'Not enough shares' };
             }
 
             const actualShares = Math.min(sharesToSell, heldShares);
@@ -201,7 +231,7 @@ export async function sellStock(playerName, symbol, price, amount) {
         return txResult;
     } catch (err) {
         console.error('sellStock DB error:', err.message);
-        return { ok: false, error: 'Transaction failed' };
+        return { ok: false, code: 'TRANSACTION_FAILED', error: 'Transaction failed' };
     }
 }
 
@@ -269,7 +299,7 @@ export async function getLeaderboardSnapshot(currentPrices) {
                 holdings,
             });
         }
-        leaderboard.sort((a, b) => b.portfolioValue - a.portfolioValue);
+        leaderboard.sort(compareByPortfolioValueDesc);
         return leaderboard;
     }
 
@@ -332,8 +362,26 @@ export async function getLeaderboardSnapshot(currentPrices) {
         });
     }
 
-    leaderboard.sort((a, b) => b.portfolioValue - a.portfolioValue);
+    leaderboard.sort(compareByPortfolioValueDesc);
     return leaderboard;
+}
+
+/**
+ * Rank players by open trade performance (unrealized PnL %) for currently held positions.
+ * Keeps the main leaderboard independent (portfolio value still primary there).
+ * @returns {Promise<Array<{ name:string, investedCapital:number, portfolioValue:number, openPnl:number, performancePct:number }>>}
+ */
+export async function getTradePerformanceLeaderboard(currentPrices) {
+    const portfolioLeaderboard = await getLeaderboardSnapshot(currentPrices);
+    const performance = [];
+
+    for (const player of portfolioLeaderboard) {
+        const entry = toPerformanceEntry(player);
+        if (entry) performance.push(entry);
+    }
+
+    performance.sort(compareByPerformanceDesc);
+    return performance;
 }
 
 /**

@@ -28,6 +28,8 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+const GAME_ENABLED = String(process.env.GAME_ENABLED ?? 'true').toLowerCase() !== 'false';
+
 // Trust proxy (Render terminates SSL at the proxy layer)
 app.set('trust proxy', 1);
 
@@ -223,6 +225,9 @@ async function fetchTickerQuotes() {
 }
 
 app.get('/api/ticker', async (req, res) => {
+    if (!GAME_ENABLED) {
+        return res.status(503).json({ code: 'GAME_DISABLED', error: 'Stock game is disabled by server config' });
+    }
     try {
         const data = await fetchTickerQuotes();
         res.json(data);
@@ -242,6 +247,9 @@ const searchCache = new Map();
 const SEARCH_CACHE_MS = 10 * 60 * 1000; // 10 minutes
 
 app.get('/api/stock-search', async (req, res) => {
+    if (!GAME_ENABLED) {
+        return res.status(503).json({ code: 'GAME_DISABLED', error: 'Stock game is disabled by server config' });
+    }
     try {
         const query = (req.query.q || '').trim();
         if (!query || query.length < 1 || query.length > 30) {
@@ -289,6 +297,9 @@ const singleQuoteCache = new Map();
 const SINGLE_QUOTE_CACHE_MS = 2 * 60 * 1000; // 2 minutes
 
 app.get('/api/stock-quote', async (req, res) => {
+    if (!GAME_ENABLED) {
+        return res.status(503).json({ code: 'GAME_DISABLED', error: 'Stock game is disabled by server config' });
+    }
     try {
         const symbol = (req.query.symbol || '').trim().toUpperCase().replace(/[^A-Z0-9.\-^]/g, '');
         if (!symbol || symbol.length > 12) {
@@ -351,7 +362,11 @@ app.get('/api/nostalgia-config', (req, res) => {
 
 // ============== SOCKET HANDLERS ==============
 
-registerSocketHandlers(io, { fetchTickerQuotes: fetchTickerQuotes, getYahooFinance: getYahooFinance });
+registerSocketHandlers(io, {
+    fetchTickerQuotes,
+    getYahooFinance,
+    isStockGameEnabled: GAME_ENABLED
+});
 
 // ============== PERIODIC CLEANUP ==============
 
@@ -402,6 +417,9 @@ setInterval(() => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, async () => {
     console.log(`✓ StrictHotel Server: http://localhost:${PORT}`);
+    if (!GAME_ENABLED) {
+        console.log('⚠ GAME_ENABLED=false: stock game APIs and socket trades are disabled');
+    }
 
     // Discord Bot starten
     try {

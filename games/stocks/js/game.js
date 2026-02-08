@@ -445,12 +445,18 @@
 
     // --- Leaderboard ---
     var leaderboardContainer = $('leaderboard-container');
+    var performanceLeaderboardContainer = $('performance-leaderboard-container');
     var refreshBtn = $('refresh-leaderboard');
     var myName = localStorage.getItem(NAME_KEY) || '';
 
     socket.on('stock-leaderboard', function (data) {
         if (!Array.isArray(data)) return;
         renderLeaderboard(data);
+    });
+
+    socket.on('stock-performance-leaderboard', function (data) {
+        if (!Array.isArray(data)) return;
+        renderPerformanceLeaderboard(data);
     });
 
     function renderLeaderboard(players) {
@@ -499,6 +505,39 @@
         }
 
         leaderboardContainer.innerHTML = html;
+    }
+
+    function renderPerformanceLeaderboard(players) {
+        if (!performanceLeaderboardContainer) return;
+        if (players.length === 0) {
+            performanceLeaderboardContainer.innerHTML = '<div class="no-holdings">No active trade performance yet.</div>';
+            return;
+        }
+
+        var html = '';
+        for (var i = 0; i < players.length; i++) {
+            var p = players[i];
+            var isMe = p.name === myName;
+            var cls = p.openPnl >= 0 ? 'positive' : 'negative';
+
+            html += '<div class="leaderboard-card">'
+                + '<div class="leaderboard-header">'
+                + '<span class="leaderboard-rank">#' + (i + 1) + '</span>'
+                + '<span class="leaderboard-name' + (isMe ? ' is-you' : '') + '">'
+                + escapeHtml(p.name) + (isMe ? ' (YOU)' : '') + '</span>'
+                + '<div class="leaderboard-stats">'
+                + '<div class="leaderboard-networth ' + cls + '">'
+                + (p.performancePct >= 0 ? '+' : '') + p.performancePct.toFixed(2) + '%</div>'
+                + '<div class="leaderboard-breakdown">'
+                + 'PnL: ' + (p.openPnl >= 0 ? '+' : '') + '$' + Math.abs(p.openPnl).toFixed(2)
+                + ' | Base: $' + p.investedCapital.toFixed(2)
+                + '</div>'
+                + '</div>'
+                + '</div>'
+                + '</div>';
+        }
+
+        performanceLeaderboardContainer.innerHTML = html;
     }
 
     // Event delegation for leaderboard card expand/collapse

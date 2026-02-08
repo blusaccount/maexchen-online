@@ -57,6 +57,9 @@ Server runs at `http://localhost:3000`.
 - `SESSION_SECRET` (required in production)
 - `SITE_PASSWORD` (login password, default: ADMIN)
 - `CLIENT_ID` and `GUILD_ID` for Discord bot (optional)
+- `GAME_ENABLED` (default: `true`)
+  - `true`: stock APIs and stock socket events are active.
+  - `false`: stock APIs return `503` with `{ code: "GAME_DISABLED" }` and stock socket events emit `stock-error` with `code: "GAME_DISABLED"`.
 
 ## In Short
 This repository bundles a playable website and multiplayer features with a focus on creative minigames, social interaction, and a stylized retro atmosphere.
