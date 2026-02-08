@@ -1,3 +1,50 @@
+# HANDOFF - Complete Player Registration Implementation Across All Games
+
+## What Was Done
+
+### Problem Fixed
+Ensured that ALL games and pages properly register players in the global online status system. Following the Loop Machine fix, an audit revealed that Strict Club was also missing the `register-player` emission.
+
+### Changes Made
+
+**Audit Results:**
+- ✅ games/lol-betting - already properly registers
+- ✅ games/strictbrain - already properly registers
+- ✅ games/stocks - already properly registers
+- ✅ games/loop-machine - fixed in previous commit
+- ✅ games/maexchen - uses lobby.js which registers
+- ✅ games/watchparty - uses lobby.js which registers
+- ✅ public/lobby.js - already properly registers
+- ✅ public/contacts.js - already properly registers
+- ❌ **public/strict-club/club.js** - FIXED in this commit
+
+**Fix A: Add 'strict-club' game type (`server/socket-utils.js`)**
+- Added 'strict-club' to the allowed game types array in `validateGameType()`
+- Server now accepts and validates 'strict-club' as a legitimate game type
+
+**Fix B: Add `register-player` emission (`public/strict-club/club.js`)**
+- Modified the `socket.on('connect', ...)` handler to emit `register-player` before `club-join`
+- Retrieves player name from `localStorage.getItem('stricthotel-name')`
+- Checks for character data from `window.MaexchenCreator` or `window.StrictHotelCreator`
+- Emits `register-player` with `{ name, character, game: 'strict-club' }`
+
+### How to Verify
+
+1. Set a player name in localStorage (via lobby or any game)
+2. Navigate to Strict Club (`/strict-club/`)
+3. Open Contacts page in another tab (`/contacts.html`)
+4. Verify the player appears in Contacts with status "strict-club"
+5. All games now properly register players in global online status
+
+### Files Modified
+- `server/socket-utils.js` — Added 'strict-club' to allowed game types
+- `public/strict-club/club.js` — Added `register-player` emission in socket connect handler
+
+### Security Summary
+- CodeQL scan completed: 0 alerts found
+- No security vulnerabilities introduced
+
+## Previous Changes
 # HANDOFF - Loop Machine: Player Registration for Global Online Status
 
 ## What Was Done
