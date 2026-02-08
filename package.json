@@ -1,7 +1,7 @@
 {
   "name": "stricthotel",
   "version": "1.0.0",
-  "description": "StrictHotel",
+  "description": "Full-stack multiplayer gaming platform built with Express, Socket.IO & Discord.js – real-time games, voice bot, PostgreSQL persistence, Docker-ready deployment",
   "main": "server.js",
   "type": "module",
   "scripts": {
