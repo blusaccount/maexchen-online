@@ -548,6 +548,8 @@
         socket.on('picto-state', function (data) {
             if (!data) return;
             strokes = Array.isArray(data.strokes) ? data.strokes : [];
+            undoStack.length = 0;
+            redoStack.length = 0;
             renderPage();
             updateStatus('Ready');
 
@@ -595,6 +597,10 @@
             if (!data) return;
             var stroke = strokeFromPayload(data);
             applyStroke(stroke, true);
+            if (data.authorId === socket.id) {
+                undoStack.push(data.strokeId);
+                redoStack.length = 0;
+            }
         });
 
         socket.on('picto-undo', function (data) {
@@ -621,11 +627,9 @@
         socket.on('picto-clear', function (data) {
             if (!data) return;
             strokes = [];
+            undoStack.length = 0;
+            redoStack.length = 0;
             renderPage();
-            if (data.byId === socket.id) {
-                undoStack.length = 0;
-                redoStack.length = 0;
-            }
         });
 
         socket.on('picto-cursor', function (data) {
