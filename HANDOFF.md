@@ -431,6 +431,28 @@
 
 ---
 
+# HANDOFF - Persistent Brain Leaderboards
+
+## What Was Done
+
+- Added DB-backed persistence for Strict Brain leaderboards (overall brain age + per-game best scores).
+- Added a server module for leaderboard upserts/queries with in-memory fallback.
+- Wired socket handlers to use the DB-backed leaderboards and throttled broadcasts.
+- Added DB tables for brain leaderboards.
+
+## Files Changed
+- `server/brain-leaderboards.js`
+- `server/sql/persistence.sql`
+- `server/socket-handlers.js`
+- `PLANS.md`
+
+## Verification
+- Not run here. Suggested:
+  - `node --check server/brain-leaderboards.js`
+  - `node --check server/socket-handlers.js`
+
+---
+
 # HANDOFF - Turkish Quiz State Machine Stabilization
 
 ## What Was Done

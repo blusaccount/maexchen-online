@@ -14,6 +14,13 @@ import {
 import { getBalance, addBalance, deductBalance } from './currency.js';
 import { isDatabaseEnabled, query } from './db.js';
 import {
+    updateBrainAgeLeaderboard,
+    updateGameLeaderboard,
+    getBrainLeaderboard,
+    getGameLeaderboards,
+    VALID_BRAIN_GAME_IDS
+} from './brain-leaderboards.js';
+import {
     sanitizeName,
     validateCharacter,
     validateRoomCode,
@@ -169,53 +176,6 @@ function cleanupPictoForSocket(socketId, io) {
 
 // ============== STRICT BRAIN STATE ==============
 
-const brainLeaderboard = new Map(); // playerName -> brainAge (best daily test)
-const BRAIN_LEADERBOARD_MAX = 100;
-const VALID_BRAIN_GAME_IDS = ['math', 'stroop', 'chimp', 'reaction', 'scramble'];
-
-// Per-game leaderboards: gameId -> Map(playerName -> bestScore)
-const brainGameLeaderboards = {
-    math: new Map(),
-    stroop: new Map(),
-    chimp: new Map(),
-    reaction: new Map(),
-    scramble: new Map()
-};
-
-function getBrainLeaderboardSorted() {
-    const entries = [];
-    for (const [name, brainAge] of brainLeaderboard) {
-        entries.push({ name, brainAge });
-    }
-    // Sort by brain age ascending (lower = better)
-    entries.sort((a, b) => a.brainAge - b.brainAge);
-    return entries.slice(0, 10);
-}
-
-function getGameLeaderboardSorted(gameId) {
-    const board = brainGameLeaderboards[gameId];
-    if (!board) return [];
-    const entries = [];
-    for (const [name, score] of board) {
-        entries.push({ name, score });
-    }
-    // Reaction: lower ms = better (ascending); others: higher = better (descending)
-    if (gameId === 'reaction') {
-        entries.sort((a, b) => a.score - b.score);
-    } else {
-        entries.sort((a, b) => b.score - a.score);
-    }
-    return entries.slice(0, 10);
-}
-
-function getAllGameLeaderboards() {
-    const result = {};
-    for (const gameId of Object.keys(brainGameLeaderboards)) {
-        result[gameId] = getGameLeaderboardSorted(gameId);
-    }
-    return result;
-}
-
 function calculateBrainCoins(brainAge) {
     if (brainAge <= 25) return 50;
     if (brainAge <= 35) return 30;
@@ -231,29 +191,7 @@ function calculateTrainingCoins(score) {
     return Math.max(2, Math.floor(calculateBrainCoins(clamped) / 2));
 }
 
-function updateGameScore(gameId, name, score) {
-    const board = brainGameLeaderboards[gameId];
-    if (!board) return;
-    const current = board.get(name);
-    // Reaction: lower ms = better; others: higher = better
-    if (gameId === 'reaction') {
-        if (current === undefined || score < current) {
-            board.set(name, score);
-        }
-    } else {
-        if (current === undefined || score > current) {
-            board.set(name, score);
-        }
-    }
-    // Limit size
-    if (board.size > BRAIN_LEADERBOARD_MAX) {
-        const sorted = getGameLeaderboardSorted(gameId);
-        const keepNames = new Set(sorted.map(e => e.name));
-        for (const [n] of board) {
-            if (!keepNames.has(n)) board.delete(n);
-        }
-    }
-}
+ 
 
 function getUtcDayNumber(date = new Date()) {
     return Math.floor(date.getTime() / (1000 * 60 * 60 * 24));
@@ -286,7 +224,9 @@ function scheduleBrainLeaderboardBroadcast() {
     if (brainLeaderboardBroadcastTimer) return;
     brainLeaderboardBroadcastTimer = setTimeout(() => {
         brainLeaderboardBroadcastTimer = null;
-        _io?.emit('brain-leaderboard', getBrainLeaderboardSorted());
+        getBrainLeaderboard().then((board) => {
+            _io?.emit('brain-leaderboard', board);
+        }).catch(err => console.error('brain-leaderboard error:', err.message));
     }, BRAIN_LEADERBOARD_THROTTLE_MS);
 }
 
@@ -294,7 +234,9 @@ function scheduleBrainGameLeaderboardsBroadcast() {
     if (brainGameLeaderboardsTimer) return;
     brainGameLeaderboardsTimer = setTimeout(() => {
         brainGameLeaderboardsTimer = null;
-        _io?.emit('brain-game-leaderboards', getAllGameLeaderboards());
+        getGameLeaderboards().then((boards) => {
+            _io?.emit('brain-game-leaderboards', boards);
+        }).catch(err => console.error('brain-game-leaderboards error:', err.message));
     }, BRAIN_LEADERBOARD_THROTTLE_MS);
 }
 
@@ -1384,10 +1326,12 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
 
         // ============== STRICT BRAIN HANDLERS ==============
 
-        socket.on('brain-get-leaderboard', () => { try {
+        socket.on('brain-get-leaderboard', async () => { try {
             if (!checkRateLimit(socket)) return;
-            socket.emit('brain-leaderboard', getBrainLeaderboardSorted());
-            socket.emit('brain-game-leaderboards', getAllGameLeaderboards());
+            const leaderboard = await getBrainLeaderboard();
+            const gameBoards = await getGameLeaderboards();
+            socket.emit('brain-leaderboard', leaderboard);
+            socket.emit('brain-game-leaderboards', gameBoards);
         } catch (err) { console.error('brain-get-leaderboard error:', err.message); } });
 
         socket.on('brain-submit-score', async (data) => { try {
@@ -1403,19 +1347,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
             const coins = calculateBrainCoins(brainAge);
 
             // Update leaderboard (keep best score = lowest brain age)
-            const current = brainLeaderboard.get(name);
-            if (current === undefined || brainAge < current) {
-                brainLeaderboard.set(name, brainAge);
-            }
-
-            // Limit leaderboard size to prevent unbounded growth
-            if (brainLeaderboard.size > BRAIN_LEADERBOARD_MAX) {
-                const sorted = getBrainLeaderboardSorted();
-                const keepNames = new Set(sorted.map(e => e.name));
-                for (const [n] of brainLeaderboard) {
-                    if (!keepNames.has(n)) brainLeaderboard.delete(n);
-                }
-            }
+            await updateBrainAgeLeaderboard(name, brainAge);
 
             // Award coins (once per UTC day)
             const dailyStatus = await hasBrainDailyReward(name);
@@ -1439,7 +1371,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
                         const s = Number(g.score);
                         const maxScore = g.gameId === 'reaction' ? 10000 : 100;
                         if (Number.isFinite(s) && s >= 0 && s <= maxScore) {
-                            updateGameScore(g.gameId, name, s);
+                            await updateGameLeaderboard(g.gameId, name, s);
                         }
                     }
                 }
@@ -1458,8 +1390,8 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
                 const s = Number(data.score);
                 const maxScore = data.gameId === 'reaction' ? 10000 : 100;
                 if (Number.isFinite(s) && s >= 0 && s <= maxScore) {
-                    updateGameScore(data.gameId, name, s);
-                    io.emit('brain-game-leaderboards', getAllGameLeaderboards());
+                    await updateGameLeaderboard(data.gameId, name, s);
+                    scheduleBrainGameLeaderboardsBroadcast();
 
                     // Server calculates coins (don't trust client)
                     // For reaction, convert sum of ms to normalized 0-100 score for coin calc

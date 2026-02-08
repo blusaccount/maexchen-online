@@ -47,3 +47,17 @@ create table if not exists turkish_streaks (
   max_streak integer not null default 0,
   last_completed_day integer
 );
+
+create table if not exists brain_leaderboards (
+  player_id bigint primary key references players(id) on delete cascade,
+  best_brain_age integer not null,
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists brain_game_leaderboards (
+  player_id bigint not null references players(id) on delete cascade,
+  game_id text not null,
+  best_score integer not null,
+  updated_at timestamptz not null default now(),
+  primary key (player_id, game_id)
+);

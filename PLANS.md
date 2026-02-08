@@ -205,6 +205,47 @@ Out of scope: UI changes, gameplay changes, or new features.
 ## Outcomes
 Strict Brain mini-game logic is de-duplicated with shared helpers.
 
+## ExecPlan - Persistent Brain Leaderboards
+
+## Purpose
+Persist Strict Brain leaderboards (overall and per-game) in Postgres while keeping an in-memory fallback for local dev.
+
+## Scope
+In scope: DB schema additions, server-side leaderboard storage/query, socket handlers wired to DB-backed leaderboards.
+Out of scope: UI changes, new gameplay mechanics.
+
+## Context
+- `server/socket-handlers.js`
+- `server/sql/persistence.sql`
+- `server/db.js`
+
+## Plan of Work
+1. Add DB tables for brain leaderboards and per-game scores.
+2. Add server module for upserting/querying leaderboards with memory fallback.
+3. Wire socket handlers to use the new module and remove in-file maps.
+4. Update handoff notes and verify with syntax checks.
+
+## Progress
+- [x] Start plan
+- [x] Implement changes
+- [ ] Verify behavior
+- [x] Update handoff notes
+
+## Surprises and Discoveries
+- None.
+
+## Decision Log
+- Decision: Use per-game upsert rules (reaction: lower better, others: higher better).
+  Rationale: Matches existing leaderboard semantics.
+  Date: 2026-02-08
+
+## Verification
+- `node --check server/brain-leaderboards.js`
+- `node --check server/socket-handlers.js`
+
+## Outcomes
+Strict Brain leaderboards are persisted in DB with a safe in-memory fallback.
+
 ## ExecPlan - Docker Bot Runtime Fixes
 
 ## Purpose
