@@ -1,3 +1,35 @@
+# HANDOFF - Strict Club Audio Visualizer Rework
+
+## What Was Done
+
+### Strict Club Visualizer Overhaul
+Reworked the audio visualizer in Strict Club to fix jitter, make it the dominant UI element, and add colorful visuals.
+
+**Changes Made:**
+
+- `public/strict-club/visualizer.js` — Full rewrite of the draw loop:
+  - Added lerp-based smoothing (fast attack / slow release) to eliminate jitter
+  - Replaced random-based simulated mode with deterministic layered sine waves
+  - Added per-bar rainbow hue cycling that shifts over time
+  - Added bright cap highlights on bar tops and dynamic glow
+  - Used translucent clear for subtle trail effect
+  - Set `analyser.smoothingTimeConstant = 0.8` for real audio
+  - Fixed DPR scaling with `setTransform` instead of cumulative `scale()`
+
+- `public/strict-club/club.css` — Made the visualizer the main element:
+  - Default canvas height: 250px -> 380px, min-height: 300px -> 420px
+  - Mobile canvas height: 200px -> 280px, min-height 320px
+  - Large screen canvas height: 440px, min-height 480px
+  - Added dark semi-transparent background for better bar contrast
+
+**How to Verify:**
+- Open `/strict-club/` in a browser
+- Idle mode: gentle rainbow wave at the bottom, no jitter
+- Click play with a queued track: bars animate smoothly with layered sine simulation
+- Colors cycle through the full rainbow spectrum continuously
+
+---
+
 # HANDOFF - LoL Betting System Auto-Completion Fixes
 
 ## What Was Done
