@@ -1,3 +1,43 @@
+# HANDOFF - LoL Betting: Stop Retrying on Invalid API Key (401/403)
+
+## What Was Done
+
+### Problem Fixed
+The LoL match checker repeatedly called the Riot API with an invalid key, generating continuous 401 errors in logs (e.g., `Error backfilling bet 4: Riot API error (401)`). Every 60-second polling cycle retried the same failing calls indefinitely.
+
+### Changes Made
+
+**Fix: Detect and stop on auth failures (`server/riot-api.js`)**
+- Added module-level `riotApiDisabledReason` variable
+- All three API functions (`lookupRiotAccount`, `getMatchHistory`, `getMatchDetails`) now detect 401/403 responses and set the disabled reason
+- `isRiotApiEnabled()` now also returns false when the API key has been rejected
+- Added `getRiotApiDisabledReason()` export so callers can check why the API is disabled
+
+**Fix: Match checker stops polling on auth failure (`server/lol-match-checker.js`)**
+- Imported `getRiotApiDisabledReason` from riot-api.js
+- `checkPendingBets()` now checks for disabled reason at the start of each cycle and skips with a warning log instead of making futile API calls
+
+**Tests (`server/__tests__/riot-api.test.js`)**
+- Added tests for `getRiotApiDisabledReason` (returns empty string when no auth failure)
+- Added test for `isRiotApiEnabled` (returns false when RIOT_API_KEY not set)
+
+### How to Verify
+
+1. Start server with an invalid `RIOT_API_KEY`
+2. Place a LoL bet — should succeed with graceful degradation
+3. Match checker should log one `Riot API key rejected (401)` error, then subsequent cycles should log `Skipping cycle: Riot API key rejected (401)` instead of retrying
+4. No more repeated 401 error spam in logs
+
+### Files Modified
+- `server/riot-api.js` — Added 401/403 detection, `riotApiDisabledReason`, `getRiotApiDisabledReason()`
+- `server/lol-match-checker.js` — Skip polling when API key is rejected
+- `server/__tests__/riot-api.test.js` — Added tests for new exports
+
+### Known Limitations
+- Once the API key is flagged as invalid, the server must be restarted to retry with a new key. This is intentional — a 401 means the key itself is wrong, not a transient issue.
+
+## Previous Changes
+
 # HANDOFF - LoL Betting System Auto-Completion Fixes
 
 ## What Was Done

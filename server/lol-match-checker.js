@@ -2,7 +2,7 @@
 
 import { getPendingBetsForChecking, resolveBet, getActiveBets, getPendingBetsWithoutPuuid, updateBetPuuid } from './lol-betting.js';
 import { addBalance } from './currency.js';
-import { getMatchHistory, getMatchDetails, isRiotApiEnabled, validateRiotId } from './riot-api.js';
+import { getMatchHistory, getMatchDetails, isRiotApiEnabled, validateRiotId, getRiotApiDisabledReason } from './riot-api.js';
 import { withTransaction } from './db.js';
 
 let checkerInterval = null;
@@ -112,6 +112,13 @@ async function backfillMissingPuuids() {
  */
 async function checkPendingBets() {
     try {
+        // Bail out early if API key was rejected (401/403)
+        const disabledReason = getRiotApiDisabledReason();
+        if (disabledReason) {
+            console.warn(`[LoL Match Checker] Skipping cycle: ${disabledReason}`);
+            return;
+        }
+
         // STEP 1: Backfill PUUID and lastMatchId for bets that were placed without them
         await backfillMissingPuuids();
 
