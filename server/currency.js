@@ -69,10 +69,10 @@ export async function addBalance(playerName, amount, reason = 'adjustment', meta
     return _addBalanceDB(playerName, amount, reason, metadata, client);
 }
 
-async function _addBalanceDB(playerName, amount, reason, metadata, runner) {
-    await getOrCreatePlayerBalance(playerName, runner);
+async function _addBalanceDB(playerName, amount, reason, metadata, client) {
+    await getOrCreatePlayerBalance(playerName, client);
 
-    const updated = await runner.query(
+    const updated = await client.query(
         'update players set balance = round((balance + $1)::numeric, 2), updated_at = now() where name = $2 returning id, balance',
         [amount, playerName]
     );
@@ -80,7 +80,7 @@ async function _addBalanceDB(playerName, amount, reason, metadata, runner) {
     const row = updated.rows[0];
     if (!row) return null;
 
-    await runner.query(
+    await client.query(
         `insert into wallet_ledger (player_id, delta, reason, metadata)
          values ($1, $2, $3, $4)`,
         [row.id, amount, reason, metadata]
@@ -111,10 +111,10 @@ export async function deductBalance(playerName, amount, reason = 'adjustment', m
     return _deductBalanceDB(playerName, amount, reason, metadata, client);
 }
 
-async function _deductBalanceDB(playerName, amount, reason, metadata, runner) {
-    await getOrCreatePlayerBalance(playerName, runner);
+async function _deductBalanceDB(playerName, amount, reason, metadata, client) {
+    await getOrCreatePlayerBalance(playerName, client);
 
-    const updated = await runner.query(
+    const updated = await client.query(
         `update players
          set balance = round((balance - $1)::numeric, 2), updated_at = now()
          where name = $2 and balance >= $1
@@ -125,7 +125,7 @@ async function _deductBalanceDB(playerName, amount, reason, metadata, runner) {
     const row = updated.rows[0];
     if (!row) return null;
 
-    await runner.query(
+    await client.query(
         `insert into wallet_ledger (player_id, delta, reason, metadata)
          values ($1, $2, $3, $4)`,
         [row.id, -amount, reason, metadata]
