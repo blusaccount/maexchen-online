@@ -388,9 +388,11 @@
 ## What Was Done
 
 - Added a small helper to emit balance updates and replaced repeated inline emissions in brain-versus rewards and Mäxchen bet updates.
+- Extracted shared socket sanitizers/utilities into a new module to slim `server/socket-handlers.js`.
 
 ## Files Changed
 - `server/socket-handlers.js`
+- `server/socket-utils.js`
 
 ## Verification
 - Not run here. Suggested:
