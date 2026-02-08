@@ -1,3 +1,40 @@
+# HANDOFF - Strict Club: Enhanced glassmorphism effects
+
+## What Was Done
+
+### Enhancement: Made all Strict Club UI elements more glassy
+
+Upgraded the Frutiger Aero glass effects throughout the Strict Club page for a more polished, premium glass look.
+
+**Changes to `.glass-panel`:**
+- Background changed from flat `rgba()` to a directional `linear-gradient` with varying opacity (bright top-left, subtle center, medium bottom-right) for realistic glass refraction
+- Backdrop-filter increased from `blur(20px)` to `blur(28px) saturate(1.4)` for deeper frosted glass
+- Added differentiated border edges: brighter `border-top` and `border-left` to simulate light source
+- Added `inset 0 -1px 0` bottom highlight for glass thickness
+- Added `::before` pseudo-element with top-half gradient overlay for glass reflection/sheen
+
+**Other elements enhanced:**
+- Home button: gradient background, stronger blur, brighter top border, dual inset shadows
+- Control buttons: gradient glass background, stronger blur with `saturate(1.2)`, differentiated top border
+- Primary button: three-stop gradient for more depth
+- URL input: gradient glass background, `backdrop-filter: blur(12px)`, inset top highlight
+- Queue/listener items: gradient backgrounds, `backdrop-filter: blur(8px)`, differentiated borders, inset highlights
+- Count badges: gradient background, glass border, inset highlight
+- Floating bubbles: enhanced radial gradient with three stops, `backdrop-filter: blur(4px)`, glass border, dual inset shadows
+- Background: added `background-size: 200% 200%` so gradient animation actually shifts
+
+## Files Modified
+
+- `public/strict-club/club.css` — All glass effect enhancements (CSS only, no HTML/JS changes)
+- `HANDOFF.md` — This file
+
+## Verification
+
+- `npm test` — all 128 tests pass
+- Navigate to Strict Club — all panels show enhanced glass effects with visible background blur, gradient reflections, and differentiated borders
+
+---
+
 # HANDOFF - Strict Club: Fix audio visualizer and add visible queue
 
 ## What Was Done
