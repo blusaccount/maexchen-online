@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StrictHotel – LoL Betting</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👽</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/shared/css/theme.css">
+    <style>
+        /* ===== Nintendo DS Pixel Style ===== */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --ds-bg: #1a1a1a;
+            --ds-surface: #111111;
+            --ds-border: #cccccc;
+            --ds-text: #e8e8e8;
+            --ds-text-dim: #888888;
+            --ds-highlight: #333333;
+            --ds-gold: #ffd700;
+            --ds-radius: 0px;
+        }
+
+        body {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            background: var(--ds-bg);
+            color: var(--ds-text);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            image-rendering: pixelated;
+            line-height: 1.8;
+        }
+
+        .lol-page {
+            max-width: 900px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 16px 12px 40px;
+        }
+
+        /* ===== DS Header ===== */
+        .lol-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 3px solid var(--ds-border);
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .back-link {
+            color: var(--ds-text-dim);
+            text-decoration: none;
+            font-size: 8px;
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: var(--ds-text); text-decoration: underline; }
+
+        .lol-title {
+            font-size: 14px;
+            color: var(--ds-text);
+            letter-spacing: 2px;
+        }
+
+        .balance-display {
+            font-size: 9px;
+            color: var(--ds-gold);
+        }
+
+        /* ===== Betting Section ===== */
+        .bet-section {
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .bet-section h2 {
+            font-size: 11px;
+            margin-bottom: 12px;
+            color: var(--ds-text);
+            letter-spacing: 1px;
+        }
+
+        .bet-form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .form-row {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-row label {
+            font-size: 9px;
+            color: var(--ds-text-dim);
+        }
+
+        .form-row input {
+            background: var(--ds-bg);
+            border: 2px solid var(--ds-border);
+            color: var(--ds-text);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 9px;
+            padding: 8px;
+            border-radius: 0;
+        }
+
+        .bet-type-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .bet-type-btn {
+            flex: 1;
+            background: var(--ds-bg);
+            border: 2px solid var(--ds-border);
+            color: var(--ds-text);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 9px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .bet-type-btn:hover {
+            background: var(--ds-highlight);
+        }
+
+        .bet-type-btn.active {
+            background: var(--ds-gold);
+            color: #000;
+            border-color: var(--ds-gold);
+        }
+
+        .submit-btn {
+            background: var(--ds-gold);
+            border: 2px solid var(--ds-gold);
+            color: #000;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 9px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 0 var(--ds-border);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .error-message {
+            color: #ff6b6b;
+            font-size: 8px;
+            margin-top: 4px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        /* ===== Bets List ===== */
+        .bets-section {
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .bets-section h2 {
+            font-size: 11px;
+            margin-bottom: 12px;
+            color: var(--ds-text);
+            letter-spacing: 1px;
+        }
+
+        .bets-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .bet-item {
+            background: var(--ds-bg);
+            border: 1px solid var(--ds-border);
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .bet-info {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .bet-player {
+            font-size: 9px;
+            color: var(--ds-text-dim);
+        }
+
+        .bet-target {
+            font-size: 10px;
+            color: var(--ds-text);
+            margin: 4px 0;
+        }
+
+        .bet-prediction {
+            font-size: 8px;
+            color: var(--ds-text-dim);
+        }
+
+        .bet-amount {
+            font-size: 11px;
+            color: var(--ds-gold);
+            font-weight: bold;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--ds-text-dim);
+            font-size: 9px;
+        }
+
+        /* ===== Mobile ===== */
+        @media (max-width: 600px) {
+            .lol-title {
+                font-size: 12px;
+            }
+
+            .bet-type-buttons {
+                flex-direction: column;
+            }
+
+            .bet-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="lol-page">
+        <div class="lol-header">
+            <a href="/" class="back-link">← BACK TO LOBBY</a>
+            <div class="lol-title">⚔️ LOL BETTING</div>
+            <div class="balance-display" id="balance-display">💰 Loading...</div>
+        </div>
+
+        <!-- Betting Form -->
+        <div class="bet-section">
+            <h2>PLACE YOUR BET</h2>
+            <form class="bet-form" id="bet-form">
+                <div class="form-row">
+                    <label for="lol-username">League of Legends Username</label>
+                    <input 
+                        type="text" 
+                        id="lol-username" 
+                        placeholder="Enter summoner name..."
+                        minlength="3"
+                        maxlength="16"
+                        required
+                    >
+                </div>
+
+                <div class="form-row">
+                    <label for="bet-amount">Bet Amount (Strict Coins)</label>
+                    <input 
+                        type="number" 
+                        id="bet-amount" 
+                        placeholder="Enter amount (1-1000)..."
+                        min="1"
+                        max="1000"
+                        required
+                    >
+                </div>
+
+                <div class="form-row">
+                    <label>What will happen in their next game?</label>
+                    <div class="bet-type-buttons">
+                        <button type="button" class="bet-type-btn" data-bet="win">
+                            ✅ THEY WIN
+                        </button>
+                        <button type="button" class="bet-type-btn" data-bet="lose">
+                            ❌ THEY LOSE
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submit-btn" disabled>
+                    PLACE BET
+                </button>
+
+                <div class="error-message" id="error-message"></div>
+            </form>
+        </div>
+
+        <!-- Active Bets List -->
+        <div class="bets-section">
+            <h2>ACTIVE BETS</h2>
+            <div class="bets-list" id="bets-list">
+                <div class="empty-state">Loading bets...</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="js/game.js"></script>
+    
+    <!-- Switch Sound on Back Button -->
+    <script>
+    (function () {
+        var switchSound = new Audio('/userinput/switch.mp3');
+        switchSound.preload = 'auto';
+        switchSound.volume = 0.25;
+        var backLink = document.querySelector('.back-link');
+        if (backLink) {
+            backLink.addEventListener('click', function (e) {
+                e.preventDefault();
+                var href = backLink.getAttribute('href');
+                try { switchSound.currentTime = 0; switchSound.play().catch(function(){}); } catch(ex) {}
+                setTimeout(function () { window.location.href = href; }, 250);
+            });
+        }
+    })();
+    </script>
+</body>
+</html>

@@ -70,3 +70,23 @@ create table if not exists brain_game_leaderboards (
 
 create index if not exists brain_game_leaderboards_game_idx
   on brain_game_leaderboards (game_id, best_score, updated_at desc);
+
+create table if not exists lol_bets (
+  id bigserial primary key,
+  player_id bigint not null references players(id) on delete cascade,
+  player_name text not null,
+  lol_username text not null,
+  bet_amount numeric(14,2) not null,
+  bet_on_win boolean not null,
+  status text not null default 'pending',
+  game_id text,
+  result boolean,
+  created_at timestamptz not null default now(),
+  resolved_at timestamptz
+);
+
+create index if not exists lol_bets_status_idx
+  on lol_bets (status, created_at desc);
+
+create index if not exists lol_bets_player_idx
+  on lol_bets (player_id, created_at desc);
