@@ -574,7 +574,7 @@
             return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
         });
         var netWorthData = snapshots.map(function (s) { return s.netWorth; });
-        var portfolioData2 = snapshots.map(function (s) { return s.portfolioValue; });
+        var portfolioValueData = snapshots.map(function (s) { return s.portfolioValue; });
         var cashData = snapshots.map(function (s) { return s.cash; });
 
         var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -584,7 +584,7 @@
         if (portfolioChart) {
             portfolioChart.data.labels = labels;
             portfolioChart.data.datasets[0].data = netWorthData;
-            portfolioChart.data.datasets[1].data = portfolioData2;
+            portfolioChart.data.datasets[1].data = portfolioValueData;
             portfolioChart.data.datasets[2].data = cashData;
             portfolioChart.options.scales.x.ticks.color = textColor;
             portfolioChart.options.scales.y.ticks.color = textColor;
@@ -611,7 +611,7 @@
                     },
                     {
                         label: 'Portfolio',
-                        data: portfolioData2,
+                        data: portfolioValueData,
                         borderColor: isDark ? '#6699cc' : '#336699',
                         backgroundColor: 'transparent',
                         borderWidth: 1.5,
