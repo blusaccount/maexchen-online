@@ -649,4 +649,27 @@ Users must now enter a valid Riot ID (Name#Tag format) when placing LoL bets. Th
 - `npm test` (58 tests pass, including 4 new portfolio-history tests)
 - Manual: server starts, stocks page loads with chart section visible
 
+---
+
+# HANDOFF - Fix LoL Bet Placement Failure
+
+## What Was Done
+
+### Bug Fix: Bet placement failing after successful username validation
+
+The `lol-place-bet` socket handler was making a redundant Riot API call (`validateRiotId()`) to re-validate the Riot ID, even though it was already validated in the separate `lol-validate-username` step. This second API call could fail due to rate limiting (the same account was just looked up moments earlier), causing bet placement to fail with "Failed to place bet" despite the username showing as valid.
+
+**Fix 1: Remove redundant API call** — Replaced `validateRiotId()` (full API lookup) with `parseRiotId()` (format-only validation) in the `lol-place-bet` handler. The Riot API validation already happened in `lol-validate-username` and doesn't need to be repeated.
+
+**Fix 2: Add deductBalance null guard** — Added a null check on the `deductBalance()` return value. Previously, if balance deduction failed (e.g., race condition between balance check and deduction), the bet would still be placed and `null` balance would be sent to the client, causing a client-side crash.
+
+## Files Changed
+
+- `server/socket-handlers.js` — import `parseRiotId`, replace API call with format validation, add deductBalance null check
+- `server/__tests__/lol-betting.test.js` — new test file with 5 unit tests for lol-betting in-memory operations
+
+## Verification
+
+- `npm test` (84 tests pass, including 5 new lol-betting tests)
+- CodeQL: 0 alerts
 
