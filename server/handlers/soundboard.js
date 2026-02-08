@@ -4,7 +4,7 @@ const SOUNDBOARD_VALID_IDS = new Set([
     'reverbfart', 'rizz', 'seyuh', 'vineboom'
 ]);
 
-function getPictoName(socketId, onlinePlayers) {
+function getPlayerName(socketId, onlinePlayers) {
     const entry = onlinePlayers.get(socketId);
     return entry?.name || 'Anon';
 }
@@ -24,7 +24,7 @@ export function registerSoundboardHandlers(socket, io, deps) {
 
         io.to(SOUNDBOARD_ROOM).emit('soundboard-played', {
             soundId,
-            playerName: getPictoName(socket.id, onlinePlayers),
+            playerName: getPlayerName(socket.id, onlinePlayers),
             timestamp: Date.now()
         });
     } catch (err) { console.error('soundboard-play error:', err.message); } });

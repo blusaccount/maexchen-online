@@ -22,6 +22,9 @@ export function registerCurrencyHandlers(socket, io, { checkRateLimit, onlinePla
     } catch (err) { console.error('register-player error:', err.message); } });
 
     // --- Get Player Diamonds (for contacts list) ---
+    // NOTE: This handler and the one below share the same event name but have different signatures.
+    // This is pre-existing design: contacts.js passes {name}, shop.js passes nothing.
+    // Both handlers will fire; the first validates data.name, the second uses socket's player.
     socket.on('get-player-diamonds', async (data) => { try {
         if (!checkRateLimit(socket)) return;
         if (!data || typeof data !== 'object') return;
