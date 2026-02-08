@@ -168,6 +168,43 @@ Out of scope: full session store migration or large refactors of socket logic.
 ## Outcomes
 Review items addressed with targeted server-side hardening and performance optimizations.
 
+## ExecPlan - Lean Strict Brain Refactor
+
+## Purpose
+Reduce duplication in Strict Brain mini-game logic while keeping behavior identical.
+
+## Scope
+In scope: refactor shared mini-game logic for single and versus modes.
+Out of scope: UI changes, gameplay changes, or new features.
+
+## Context
+- `games/strictbrain/js/game.js`
+
+## Plan of Work
+1. Extract shared mini-game logic into reusable helpers.
+2. Rewire single-player and versus wrappers to use helpers.
+3. Update handoff notes and run a syntax check.
+
+## Progress
+- [x] Start plan
+- [x] Implement changes
+- [x] Verify behavior
+- [x] Update handoff notes
+
+## Surprises and Discoveries
+- None.
+
+## Decision Log
+- Decision: Keep helpers in the same file to avoid adding new script tags.
+  Rationale: Minimize integration risk and keep scope tight.
+  Date: 2026-02-08
+
+## Verification
+- `node --check games/strictbrain/js/game.js`
+
+## Outcomes
+Strict Brain mini-game logic is de-duplicated with shared helpers.
+
 ## ExecPlan - Docker Bot Runtime Fixes
 
 ## Purpose

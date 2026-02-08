@@ -365,22 +365,20 @@
         clearInterval(gameTimer);
     }
 
-    // ============== 1. MATHE-BLITZ ==============
-
-    function startMathGame() {
+    function runMathGame({ areaId, problemId, answerId, feedbackId, onScore, onFinish, startTimerFn }) {
         let score = 0;
         let streak = 0;
         let difficulty = 1;
 
-        const area = $('game-area');
+        const area = $(areaId);
         area.innerHTML =
-            '<div class="math-problem" id="math-problem"></div>' +
-            '<input type="number" class="math-input" id="math-answer" autocomplete="off" inputmode="numeric">' +
-            '<div class="math-feedback" id="math-feedback"></div>';
+            '<div class="math-problem" id="' + problemId + '"></div>' +
+            '<input type="number" class="math-input" id="' + answerId + '" autocomplete="off" inputmode="numeric">' +
+            '<div class="math-feedback" id="' + feedbackId + '"></div>';
 
-        const problemEl = $('math-problem');
-        const answerEl = $('math-answer');
-        const feedbackEl = $('math-feedback');
+        const problemEl = $(problemId);
+        const answerEl = $(answerId);
+        const feedbackEl = $(feedbackId);
         let currentAnswer = 0;
 
         function nextProblem() {
@@ -418,7 +416,7 @@
                     if (streak >= 3) { difficulty++; streak = 0; }
                     feedbackEl.textContent = '✓ Richtig!';
                     feedbackEl.className = 'math-feedback correct';
-                    $('game-score').textContent = score;
+                    onScore(score);
                     nextProblem();
                 } else {
                     streak = 0;
@@ -431,16 +429,13 @@
 
         nextProblem();
 
-        startTimer(60, null, () => {
-            // Score: map number of correct answers to 0-100
+        startTimerFn(() => {
             const normalized = Math.min(100, Math.round((score / 25) * 100));
-            onGameFinished('math', normalized, { correct: score });
+            onFinish(normalized, { correct: score });
         });
     }
 
-    // ============== 2. FARBE VS. WORT (Stroop) ==============
-
-    function startStroopGame() {
+    function runStroopGame({ areaId, wordId, buttonsId, onScore, onFinish, durationSec, startTimerFn }) {
         const COLORS = [
             { name: 'ROT', hex: '#cc3333' },
             { name: 'BLAU', hex: '#3366cc' },
@@ -451,32 +446,35 @@
         let score = 0;
         let total = 0;
 
-        const area = $('game-area');
+        const area = $(areaId);
         area.innerHTML =
             '<div class="stroop-hint">Drücke die FARBE in der das Wort geschrieben ist!</div>' +
-            '<div class="stroop-word" id="stroop-word"></div>' +
-            '<div class="stroop-buttons" id="stroop-buttons"></div>';
+            '<div class="stroop-word" id="' + wordId + '"></div>' +
+            '<div class="stroop-buttons" id="' + buttonsId + '"></div>';
 
-        const wordEl = $('stroop-word');
-        const btnsEl = $('stroop-buttons');
+        const wordEl = $(wordId);
+        const btnsEl = $(buttonsId);
+        let currentColor = '';
 
-        // Create buttons
         COLORS.forEach(c => {
             const btn = document.createElement('button');
             btn.className = 'stroop-btn';
             btn.style.background = c.hex;
             btn.textContent = c.name;
             btn.dataset.color = c.name;
-            btn.addEventListener('click', () => checkStroop(c.name));
+            btn.addEventListener('click', () => {
+                total++;
+                if (c.name === currentColor) {
+                    score++;
+                }
+                onScore(score);
+                nextStroop();
+            });
             btnsEl.appendChild(btn);
         });
 
-        let currentColor = '';
-
         function nextStroop() {
-            // Word text (random color name)
             const wordColor = COLORS[Math.floor(Math.random() * COLORS.length)];
-            // Ink color (different from word)
             let inkColor;
             do {
                 inkColor = COLORS[Math.floor(Math.random() * COLORS.length)];
@@ -487,52 +485,39 @@
             currentColor = inkColor.name;
         }
 
-        function checkStroop(chosen) {
-            total++;
-            if (chosen === currentColor) {
-                score++;
-            }
-            $('game-score').textContent = score;
-            nextStroop();
-        }
-
         nextStroop();
 
-        startTimer(45, null, () => {
+        startTimerFn(durationSec, null, () => {
             const accuracy = total > 0 ? score / total : 0;
-            const speed = total / 45; // answers per second
+            const speed = total / durationSec;
             const normalized = Math.min(100, Math.round((accuracy * 60) + (speed * 40)));
-            onGameFinished('stroop', normalized, { correct: score, total: total });
+            onFinish(normalized, { correct: score, total: total });
         });
     }
 
-    // ============== 3. ZAHLEN-MEMORY (Chimp Test) ==============
-
-    function startChimpGame() {
-        let level = 3; // start with 3 numbers
+    function runChimpGame({ areaId, infoId, gridId, onScore, setLives, onFinish, stopTimerFn, scorePrefix }) {
+        let level = 3;
         let maxLevel = 3;
         let lives = 3;
 
-        const area = $('game-area');
-        $('game-timer').textContent = '♥'.repeat(lives);
+        const area = $(areaId);
+        setLives('♥'.repeat(lives));
 
         function renderLevel() {
-            $('game-score').textContent = 'Level ' + level;
+            onScore(scorePrefix ? scorePrefix + level : level);
             area.innerHTML =
-                '<div class="chimp-info" id="chimp-info">Merke dir die Reihenfolge der Zahlen!</div>' +
-                '<div class="chimp-grid" id="chimp-grid"></div>';
+                '<div class="chimp-info" id="' + infoId + '">Merke dir die Reihenfolge der Zahlen!</div>' +
+                '<div class="chimp-grid" id="' + gridId + '"></div>';
 
-            const grid = $('chimp-grid');
-            const totalCells = 20; // 5x4 grid
+            const grid = $(gridId);
+            const totalCells = 20;
             const positions = [];
 
-            // Pick random positions for numbers
             while (positions.length < level) {
                 const pos = Math.floor(Math.random() * totalCells);
                 if (!positions.includes(pos)) positions.push(pos);
             }
 
-            // Create cells
             const cells = [];
             for (let i = 0; i < totalCells; i++) {
                 const cell = document.createElement('div');
@@ -542,7 +527,6 @@
                 grid.appendChild(cell);
             }
 
-            // Place numbers
             const numberMap = {};
             positions.forEach((pos, idx) => {
                 numberMap[pos] = idx + 1;
@@ -550,7 +534,6 @@
                 cells[pos].classList.add('revealed');
             });
 
-            // Show numbers briefly, then hide
             let numbersHidden = false;
             let nextExpected = 1;
 
@@ -561,10 +544,9 @@
                     cells[pos].classList.add('hidden-number');
                 });
                 numbersHidden = true;
-                $('chimp-info').textContent = 'Tippe die Zahlen in der richtigen Reihenfolge!';
+                $(infoId).textContent = 'Tippe die Zahlen in der richtigen Reihenfolge!';
             }, Math.min(2000 + level * 200, 4000));
 
-            // Click handler
             cells.forEach(cell => {
                 cell.addEventListener('click', () => {
                     if (!numbersHidden) return;
@@ -575,7 +557,6 @@
                         cell.classList.add('correct');
                         nextExpected++;
                         if (nextExpected > level) {
-                            // Level complete
                             maxLevel = Math.max(maxLevel, level);
                             level++;
                             if (level > 9) {
@@ -589,7 +570,7 @@
                         cell.classList.add('wrong');
                         cell.textContent = numberMap[idx];
                         lives--;
-                        $('game-timer').textContent = '♥'.repeat(Math.max(0, lives));
+                        setLives('♥'.repeat(Math.max(0, lives)));
                         if (lives <= 0) {
                             finishChimp();
                         } else {
@@ -601,45 +582,34 @@
         }
 
         function finishChimp() {
-            stopTimer();
-            // Score: level 3 = 0, level 9 = 100
+            if (stopTimerFn) stopTimerFn();
             const normalized = Math.min(100, Math.round(((maxLevel - 3) / 6) * 100));
-            onGameFinished('chimp', normalized, { maxLevel: maxLevel });
+            onFinish(normalized, { maxLevel: maxLevel });
         }
 
         renderLevel();
     }
 
-    // ============== 4. REAKTIONSTEST ==============
-
-    function startReactionGame() {
-        const area = $('game-area');
+    function runReactionGame({ areaId, zoneId, resultsId, setTimerText, onScore, onFinish, showResults }) {
+        const area = $(areaId);
         let round = 0;
         const maxRounds = 5;
         let reactionTimes = [];
         let falseStarts = 0;
         let waitTimeout = null;
         let startTime = 0;
-        let state = 'idle'; // idle, waiting, ready
+        let state = 'idle';
 
-        $('game-timer').textContent = round + '/' + maxRounds;
-        $('game-score').textContent = '';
+        setTimerText(round + '/' + maxRounds);
 
         function renderRound() {
             area.innerHTML =
-                '<div class="reaction-area waiting" id="reaction-zone">' +
-                'Warte auf GRÜN...<br>Dann so schnell wie möglich klicken!' +
-                '</div>' +
-                '<div class="reaction-results" id="reaction-results"></div>';
-
+                '<div class="reaction-area waiting" id="' + zoneId + '">Warte auf GRÜN...<br>Dann so schnell wie möglich klicken!</div>' +
+                '<div class="reaction-results" id="' + resultsId + '"></div>';
             state = 'waiting';
-            const zone = $('reaction-zone');
-
-            // Random delay 1-4 seconds
+            const zone = $(zoneId);
             const delay = 1000 + Math.random() * 3000;
-
-            // Randomly decide: green (click) or stay red (don't click)
-            const isGreen = Math.random() > 0.2; // 80% green, 20% red trap
+            const isGreen = Math.random() > 0.2;
 
             waitTimeout = setTimeout(() => {
                 if (isGreen) {
@@ -647,8 +617,6 @@
                     zone.innerHTML = 'JETZT KLICKEN!';
                     state = 'ready';
                     startTime = performance.now();
-
-                    // Auto-fail after 2 seconds
                     waitTimeout = setTimeout(() => {
                         if (state === 'ready') {
                             reactionTimes.push(2000);
@@ -656,7 +624,6 @@
                         }
                     }, 2000);
                 } else {
-                    // Red trap - wait 2 seconds then auto-pass
                     waitTimeout = setTimeout(() => {
                         if (state === 'waiting') {
                             nextRound();
@@ -674,6 +641,10 @@
                     reactionTimes.push(Math.round(rt));
                     zone.className = 'reaction-area result';
                     zone.innerHTML = Math.round(rt) + ' ms';
+                    if (onScore) {
+                        const sumMs = Math.round(reactionTimes.reduce((a, b) => a + b, 0));
+                        onScore(sumMs);
+                    }
                     setTimeout(nextRound, 800);
                 } else if (state === 'waiting') {
                     falseStarts++;
@@ -687,7 +658,7 @@
 
         function nextRound() {
             round++;
-            $('game-timer').textContent = round + '/' + maxRounds;
+            setTimerText(round + '/' + maxRounds);
             if (round >= maxRounds) {
                 finishReaction();
             } else {
@@ -696,7 +667,6 @@
         }
 
         function finishReaction() {
-            stopTimer();
             const validTimes = reactionTimes.filter(t => t < 2000);
             const sumTime = validTimes.length > 0
                 ? Math.round(validTimes.reduce((a, b) => a + b, 0))
@@ -705,34 +675,26 @@
                 ? Math.round(sumTime / validTimes.length)
                 : 2000;
 
-            // Normalized score for brain age: 150ms = 100, 500ms+ = 0
             let normalized = Math.round(Math.max(0, Math.min(100, ((500 - avgTime) / 350) * 100)));
-            // Penalize false starts
             normalized = Math.max(0, normalized - falseStarts * 10);
 
-            const resultsEl = $('reaction-results');
-            if (resultsEl) {
+            const resultsEl = $(resultsId);
+            if (showResults && resultsEl) {
                 resultsEl.innerHTML = 'Summe: ' + sumTime + 'ms | Fehlstarts: ' + falseStarts;
             }
 
-            // Score = sum of reaction times in ms; normalized kept for brain age
-            onGameFinished('reaction', sumTime, { avgTime, falseStarts, normalized });
+            onFinish(sumTime, { avgTime, falseStarts, normalized });
         }
 
         renderRound();
     }
 
-    // ============== 5. WORT-SCRAMBLE ==============
-
-    function startScrambleGame() {
+    function runScrambleGame({ areaId, displayId, answerId, feedbackId, onScore, onFinish, durationSec, maxScore, startTimerFn }) {
         let score = 0;
-        let wordIndex = 0;
         const usedWords = [];
-
-        const area = $('game-area');
+        const area = $(areaId);
 
         function nextWord() {
-            // Reset used words pool when exhausted
             if (usedWords.length >= SCRAMBLE_WORDS.length) {
                 usedWords.length = 0;
             }
@@ -745,11 +707,11 @@
             const scrambled = scrambleWord(word);
 
             area.innerHTML =
-                '<div class="scramble-letters" id="scramble-display"></div>' +
-                '<input type="text" class="scramble-input" id="scramble-answer" autocomplete="off" maxlength="' + (word.length + 2) + '" placeholder="Wort eingeben...">' +
-                '<div class="math-feedback" id="scramble-feedback"></div>';
+                '<div class="scramble-letters" id="' + displayId + '"></div>' +
+                '<input type="text" class="scramble-input" id="' + answerId + '" autocomplete="off" maxlength="' + (word.length + 2) + '" placeholder="Wort eingeben...">' +
+                '<div class="math-feedback" id="' + feedbackId + '"></div>';
 
-            const display = $('scramble-display');
+            const display = $(displayId);
             scrambled.split('').forEach(ch => {
                 const el = document.createElement('div');
                 el.className = 'scramble-letter';
@@ -757,22 +719,21 @@
                 display.appendChild(el);
             });
 
-            const answerEl = $('scramble-answer');
+            const answerEl = $(answerId);
             answerEl.focus();
-
             answerEl.addEventListener('keydown', function handler(e) {
                 if (e.key === 'Enter') {
                     answerEl.removeEventListener('keydown', handler);
                     const guess = answerEl.value.trim().toUpperCase();
                     if (guess === word) {
                         score++;
-                        $('scramble-feedback').textContent = '✓ Richtig!';
-                        $('scramble-feedback').className = 'math-feedback correct';
-                        $('game-score').textContent = score;
+                        $(feedbackId).textContent = '✓ Richtig!';
+                        $(feedbackId).className = 'math-feedback correct';
+                        onScore(score);
                         setTimeout(nextWord, 500);
                     } else {
-                        $('scramble-feedback').textContent = '✗ ' + word;
-                        $('scramble-feedback').className = 'math-feedback wrong';
+                        $(feedbackId).textContent = '✗ ' + word;
+                        $(feedbackId).className = 'math-feedback wrong';
                         setTimeout(nextWord, 800);
                     }
                 }
@@ -781,9 +742,83 @@
 
         nextWord();
 
-        startTimer(60, null, () => {
-            const normalized = Math.min(100, Math.round((score / 12) * 100));
-            onGameFinished('scramble', normalized, { correct: score });
+        startTimerFn(durationSec, null, () => {
+            const normalized = Math.min(100, Math.round((score / maxScore) * 100));
+            onFinish(normalized, { correct: score });
+        });
+    }
+
+    // ============== 1. MATHE-BLITZ ==============
+
+    function startMathGame() {
+        runMathGame({
+            areaId: 'game-area',
+            problemId: 'math-problem',
+            answerId: 'math-answer',
+            feedbackId: 'math-feedback',
+            onScore: (val) => { $('game-score').textContent = val; },
+            onFinish: (normalized, raw) => onGameFinished('math', normalized, raw),
+            startTimerFn: (onEnd) => startTimer(60, null, onEnd)
+        });
+    }
+
+    // ============== 2. FARBE VS. WORT (Stroop) ==============
+
+    function startStroopGame() {
+        runStroopGame({
+            areaId: 'game-area',
+            wordId: 'stroop-word',
+            buttonsId: 'stroop-buttons',
+            onScore: (val) => { $('game-score').textContent = val; },
+            onFinish: (normalized, raw) => onGameFinished('stroop', normalized, raw),
+            durationSec: 45,
+            startTimerFn: (seconds, onTick, onEnd) => startTimer(seconds, onTick, onEnd)
+        });
+    }
+
+    // ============== 3. ZAHLEN-MEMORY (Chimp Test) ==============
+
+    function startChimpGame() {
+        runChimpGame({
+            areaId: 'game-area',
+            infoId: 'chimp-info',
+            gridId: 'chimp-grid',
+            onScore: (val) => { $('game-score').textContent = 'Level ' + val; },
+            setLives: (text) => { $('game-timer').textContent = text; },
+            onFinish: (normalized, raw) => onGameFinished('chimp', normalized, raw),
+            stopTimerFn: stopTimer,
+            scorePrefix: null
+        });
+    }
+
+    // ============== 4. REAKTIONSTEST ==============
+
+    function startReactionGame() {
+        $('game-score').textContent = '';
+        runReactionGame({
+            areaId: 'game-area',
+            zoneId: 'reaction-zone',
+            resultsId: 'reaction-results',
+            setTimerText: (text) => { $('game-timer').textContent = text; },
+            onScore: null,
+            onFinish: (sumTime, raw) => onGameFinished('reaction', sumTime, raw),
+            showResults: true
+        });
+    }
+
+    // ============== 5. WORT-SCRAMBLE ==============
+
+    function startScrambleGame() {
+        runScrambleGame({
+            areaId: 'game-area',
+            displayId: 'scramble-display',
+            answerId: 'scramble-answer',
+            feedbackId: 'scramble-feedback',
+            onScore: (val) => { $('game-score').textContent = val; },
+            onFinish: (normalized, raw) => onGameFinished('scramble', normalized, raw),
+            durationSec: 60,
+            maxScore: 12,
+            startTimerFn: (seconds, onTick, onEnd) => startTimer(seconds, onTick, onEnd)
         });
     }
 
@@ -1100,309 +1135,70 @@
 
     // ----- Versus: Math -----
     function startVersusMathGame() {
-        let score = 0;
-        let streak = 0;
-        let difficulty = 1;
-
-        const area = $('versus-game-area');
-        area.innerHTML =
-            '<div class="math-problem" id="v-math-problem"></div>' +
-            '<input type="number" class="math-input" id="v-math-answer" autocomplete="off" inputmode="numeric">' +
-            '<div class="math-feedback" id="v-math-feedback"></div>';
-
-        const problemEl = $('v-math-problem');
-        const answerEl = $('v-math-answer');
-        const feedbackEl = $('v-math-feedback');
-        let currentAnswer = 0;
-
-        function nextProblem() {
-            const ops = ['+', '-', '×'];
-            const op = ops[Math.floor(Math.random() * Math.min(ops.length, 1 + difficulty))];
-            let a, b, answer;
-            const maxNum = Math.min(10 + difficulty * 5, 50);
-            a = Math.floor(Math.random() * maxNum) + 1;
-            b = Math.floor(Math.random() * maxNum) + 1;
-            if (op === '+') { answer = a + b; }
-            else if (op === '-') { if (a < b) { const t = a; a = b; b = t; } answer = a - b; }
-            else { a = Math.floor(Math.random() * Math.min(12, 5 + difficulty * 2)) + 1; b = Math.floor(Math.random() * Math.min(12, 5 + difficulty * 2)) + 1; answer = a * b; }
-            currentAnswer = answer;
-            problemEl.textContent = a + ' ' + op + ' ' + b + ' = ?';
-            answerEl.value = '';
-            answerEl.focus();
-        }
-
-        answerEl.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                const val = parseInt(answerEl.value, 10);
-                if (val === currentAnswer) {
-                    score++; streak++;
-                    if (streak >= 3) { difficulty++; streak = 0; }
-                    feedbackEl.textContent = '✓ Richtig!';
-                    feedbackEl.className = 'math-feedback correct';
-                    versusScoreUpdate(score);
-                    nextProblem();
-                } else {
-                    streak = 0;
-                    feedbackEl.textContent = '✗ ' + currentAnswer;
-                    feedbackEl.className = 'math-feedback wrong';
-                    setTimeout(nextProblem, 600);
-                }
-            }
-        });
-
-        nextProblem();
-        startVersusTimer(60, null, () => {
-            const normalized = Math.min(100, Math.round((score / 25) * 100));
-            versusFinish(normalized);
+        runMathGame({
+            areaId: 'versus-game-area',
+            problemId: 'v-math-problem',
+            answerId: 'v-math-answer',
+            feedbackId: 'v-math-feedback',
+            onScore: (val) => { versusScoreUpdate(val); },
+            onFinish: (normalized) => versusFinish(normalized),
+            startTimerFn: (onEnd) => startVersusTimer(60, null, onEnd)
         });
     }
 
     // ----- Versus: Stroop -----
     function startVersusStroopGame() {
-        const COLORS = [
-            { name: 'ROT', hex: '#cc3333' },
-            { name: 'BLAU', hex: '#3366cc' },
-            { name: 'GRÜN', hex: '#228833' },
-            { name: 'GELB', hex: '#cc9900' }
-        ];
-        let score = 0;
-        let total = 0;
-        const area = $('versus-game-area');
-        area.innerHTML =
-            '<div class="stroop-hint">Drücke die FARBE in der das Wort geschrieben ist!</div>' +
-            '<div class="stroop-word" id="v-stroop-word"></div>' +
-            '<div class="stroop-buttons" id="v-stroop-buttons"></div>';
-        const wordEl = $('v-stroop-word');
-        const btnsEl = $('v-stroop-buttons');
-        let currentColor = '';
-
-        COLORS.forEach(c => {
-            const btn = document.createElement('button');
-            btn.className = 'stroop-btn';
-            btn.style.background = c.hex;
-            btn.textContent = c.name;
-            btn.addEventListener('click', () => {
-                total++;
-                if (c.name === currentColor) { score++; }
-                versusScoreUpdate(score);
-                nextStroop();
-            });
-            btnsEl.appendChild(btn);
-        });
-
-        function nextStroop() {
-            const wordColor = COLORS[Math.floor(Math.random() * COLORS.length)];
-            let inkColor;
-            do { inkColor = COLORS[Math.floor(Math.random() * COLORS.length)]; } while (inkColor.name === wordColor.name);
-            wordEl.textContent = wordColor.name;
-            wordEl.style.color = inkColor.hex;
-            currentColor = inkColor.name;
-        }
-
-        nextStroop();
-        startVersusTimer(45, null, () => {
-            const accuracy = total > 0 ? score / total : 0;
-            const speed = total / 45;
-            const normalized = Math.min(100, Math.round((accuracy * 60) + (speed * 40)));
-            versusFinish(normalized);
+        runStroopGame({
+            areaId: 'versus-game-area',
+            wordId: 'v-stroop-word',
+            buttonsId: 'v-stroop-buttons',
+            onScore: (val) => { versusScoreUpdate(val); },
+            onFinish: (normalized) => versusFinish(normalized),
+            durationSec: 45,
+            startTimerFn: (seconds, onTick, onEnd) => startVersusTimer(seconds, onTick, onEnd)
         });
     }
 
     // ----- Versus: Chimp -----
     function startVersusChimpGame() {
-        let level = 3;
-        let maxLevel = 3;
-        let lives = 3;
-        const area = $('versus-game-area');
-        $('versus-game-timer').textContent = '♥'.repeat(lives);
-
-        function renderLevel() {
-            versusScoreUpdate(level);
-            area.innerHTML =
-                '<div class="chimp-info" id="v-chimp-info">Merke dir die Reihenfolge!</div>' +
-                '<div class="chimp-grid" id="v-chimp-grid"></div>';
-            const grid = $('v-chimp-grid');
-            const totalCells = 20;
-            const positions = [];
-            while (positions.length < level) {
-                const pos = Math.floor(Math.random() * totalCells);
-                if (!positions.includes(pos)) positions.push(pos);
-            }
-            const cells = [];
-            for (let i = 0; i < totalCells; i++) {
-                const cell = document.createElement('div');
-                cell.className = 'chimp-cell';
-                cell.dataset.index = i;
-                cells.push(cell);
-                grid.appendChild(cell);
-            }
-            const numberMap = {};
-            positions.forEach((pos, idx) => {
-                numberMap[pos] = idx + 1;
-                cells[pos].textContent = idx + 1;
-                cells[pos].classList.add('revealed');
-            });
-            let numbersHidden = false;
-            let nextExpected = 1;
-            setTimeout(() => {
-                positions.forEach(pos => {
-                    cells[pos].textContent = '';
-                    cells[pos].classList.remove('revealed');
-                    cells[pos].classList.add('hidden-number');
-                });
-                numbersHidden = true;
-                $('v-chimp-info').textContent = 'Tippe die Zahlen in der richtigen Reihenfolge!';
-            }, Math.min(2000 + level * 200, 4000));
-            cells.forEach(cell => {
-                cell.addEventListener('click', () => {
-                    if (!numbersHidden) return;
-                    const idx = parseInt(cell.dataset.index);
-                    if (numberMap[idx] === nextExpected) {
-                        cell.textContent = nextExpected;
-                        cell.classList.remove('hidden-number');
-                        cell.classList.add('correct');
-                        nextExpected++;
-                        if (nextExpected > level) {
-                            maxLevel = Math.max(maxLevel, level);
-                            level++;
-                            if (level > 9) { finishChimp(); } else { setTimeout(renderLevel, 800); }
-                        }
-                    } else if (numberMap[idx] !== undefined) {
-                        cell.classList.remove('hidden-number');
-                        cell.classList.add('wrong');
-                        cell.textContent = numberMap[idx];
-                        lives--;
-                        $('versus-game-timer').textContent = '♥'.repeat(Math.max(0, lives));
-                        if (lives <= 0) { finishChimp(); } else { setTimeout(renderLevel, 1000); }
-                    }
-                });
-            });
-        }
-
-        function finishChimp() {
-            const normalized = Math.min(100, Math.round(((maxLevel - 3) / 6) * 100));
-            versusFinish(normalized);
-        }
-
-        renderLevel();
+        runChimpGame({
+            areaId: 'versus-game-area',
+            infoId: 'v-chimp-info',
+            gridId: 'v-chimp-grid',
+            onScore: (val) => { versusScoreUpdate(val); },
+            setLives: (text) => { $('versus-game-timer').textContent = text; },
+            onFinish: (normalized) => versusFinish(normalized),
+            stopTimerFn: null,
+            scorePrefix: null
+        });
     }
 
     // ----- Versus: Reaction -----
     function startVersusReactionGame() {
-        const area = $('versus-game-area');
-        let round = 0;
-        const maxRounds = 5;
-        let reactionTimes = [];
-        let falseStarts = 0;
-        let waitTimeout = null;
-        let startTime = 0;
-        let state = 'idle';
-        $('versus-game-timer').textContent = round + '/' + maxRounds;
         $('versus-game-score').textContent = '';
-
-        function renderRound() {
-            area.innerHTML =
-                '<div class="reaction-area waiting" id="v-reaction-zone">Warte auf GRÜN...<br>Dann so schnell wie möglich klicken!</div>' +
-                '<div class="reaction-results" id="v-reaction-results"></div>';
-            state = 'waiting';
-            const zone = $('v-reaction-zone');
-            const delay = 1000 + Math.random() * 3000;
-            const isGreen = Math.random() > 0.2;
-            waitTimeout = setTimeout(() => {
-                if (isGreen) {
-                    zone.className = 'reaction-area ready';
-                    zone.innerHTML = 'JETZT KLICKEN!';
-                    state = 'ready';
-                    startTime = performance.now();
-                    waitTimeout = setTimeout(() => { if (state === 'ready') { reactionTimes.push(2000); nextRound(); } }, 2000);
-                } else {
-                    waitTimeout = setTimeout(() => { if (state === 'waiting') { nextRound(); } }, 2000);
-                }
-            }, delay);
-            zone.addEventListener('click', function handler() {
-                zone.removeEventListener('click', handler);
-                clearTimeout(waitTimeout);
-                if (state === 'ready') {
-                    const rt = performance.now() - startTime;
-                    reactionTimes.push(Math.round(rt));
-                    zone.className = 'reaction-area result';
-                    zone.innerHTML = Math.round(rt) + ' ms';
-                    const sumMs = Math.round(reactionTimes.reduce((a, b) => a + b, 0));
-                    versusScoreUpdate(sumMs);
-                    setTimeout(nextRound, 800);
-                } else if (state === 'waiting') {
-                    falseStarts++;
-                    zone.className = 'reaction-area too-early';
-                    zone.innerHTML = 'Zu früh! Warte auf GRÜN!';
-                    setTimeout(nextRound, 1000);
-                }
-                state = 'idle';
-            });
-        }
-
-        function nextRound() {
-            round++;
-            $('versus-game-timer').textContent = round + '/' + maxRounds;
-            if (round >= maxRounds) { finishReaction(); } else { renderRound(); }
-        }
-
-        function finishReaction() {
-            const validTimes = reactionTimes.filter(t => t < 2000);
-            const sumTime = validTimes.length > 0 ? Math.round(validTimes.reduce((a, b) => a + b, 0)) : maxRounds * 2000;
-            versusFinish(sumTime);
-        }
-
-        renderRound();
+        runReactionGame({
+            areaId: 'versus-game-area',
+            zoneId: 'v-reaction-zone',
+            resultsId: 'v-reaction-results',
+            setTimerText: (text) => { $('versus-game-timer').textContent = text; },
+            onScore: (sumMs) => { versusScoreUpdate(sumMs); },
+            onFinish: (sumTime, raw) => versusFinish(sumTime),
+            showResults: false
+        });
     }
 
     // ----- Versus: Scramble -----
     function startVersusScrambleGame() {
-        let score = 0;
-        const usedWords = [];
-        const area = $('versus-game-area');
-
-        function nextWord() {
-            if (usedWords.length >= SCRAMBLE_WORDS.length) usedWords.length = 0;
-            let word;
-            do { word = SCRAMBLE_WORDS[Math.floor(Math.random() * SCRAMBLE_WORDS.length)]; } while (usedWords.includes(word));
-            usedWords.push(word);
-            const scrambled = scrambleWord(word);
-            area.innerHTML =
-                '<div class="scramble-letters" id="v-scramble-display"></div>' +
-                '<input type="text" class="scramble-input" id="v-scramble-answer" autocomplete="off" maxlength="' + (word.length + 2) + '" placeholder="Wort eingeben...">' +
-                '<div class="math-feedback" id="v-scramble-feedback"></div>';
-            const display = $('v-scramble-display');
-            scrambled.split('').forEach(ch => {
-                const el = document.createElement('div');
-                el.className = 'scramble-letter';
-                el.textContent = ch;
-                display.appendChild(el);
-            });
-            const answerEl = $('v-scramble-answer');
-            answerEl.focus();
-            answerEl.addEventListener('keydown', function handler(e) {
-                if (e.key === 'Enter') {
-                    answerEl.removeEventListener('keydown', handler);
-                    const guess = answerEl.value.trim().toUpperCase();
-                    if (guess === word) {
-                        score++;
-                        $('v-scramble-feedback').textContent = '✓ Richtig!';
-                        $('v-scramble-feedback').className = 'math-feedback correct';
-                        versusScoreUpdate(score);
-                        setTimeout(nextWord, 500);
-                    } else {
-                        $('v-scramble-feedback').textContent = '✗ ' + word;
-                        $('v-scramble-feedback').className = 'math-feedback wrong';
-                        setTimeout(nextWord, 800);
-                    }
-                }
-            });
-        }
-
-        nextWord();
-        startVersusTimer(60, null, () => {
-            const normalized = Math.min(100, Math.round((score / 12) * 100));
-            versusFinish(normalized);
+        runScrambleGame({
+            areaId: 'versus-game-area',
+            displayId: 'v-scramble-display',
+            answerId: 'v-scramble-answer',
+            feedbackId: 'v-scramble-feedback',
+            onScore: (val) => { versusScoreUpdate(val); },
+            onFinish: (normalized) => versusFinish(normalized),
+            durationSec: 60,
+            maxScore: 12,
+            startTimerFn: (seconds, onTick, onEnd) => startVersusTimer(seconds, onTick, onEnd)
         });
     }
 

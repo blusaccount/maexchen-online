@@ -400,6 +400,22 @@
 
 ---
 
+# HANDOFF - Lean Refactor (Strict Brain Games)
+
+## What Was Done
+
+- Extracted shared mini-game logic (math, stroop, chimp, reaction, scramble) into reusable helpers.
+- Rewired both single-player and versus modes to use the shared helpers, reducing duplication.
+
+## Files Changed
+- `games/strictbrain/js/game.js`
+
+## Verification
+- Not run here. Suggested:
+  - `node --check games/strictbrain/js/game.js`
+
+---
+
 # HANDOFF - Turkish Quiz State Machine Stabilization
 
 ## What Was Done
