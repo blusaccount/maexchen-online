@@ -1,3 +1,26 @@
+# HANDOFF - Fix Portfolio Graph Not Showing on First Visit
+
+## What Was Done
+
+### Bug Fix: Portfolio graph only appeared on second visit to stock game
+
+**Root cause:** Race condition between `stock-get-portfolio` and `stock-get-portfolio-history` socket events. On connect, the client emitted both events simultaneously. The portfolio handler is async (awaits DB/API calls before calling `recordSnapshot()`), so by the time `stock-get-portfolio-history` executed and returned, no snapshot had been recorded yet. The client received an empty history array (< 2 data points) and showed the placeholder message instead of the chart. On the second visit, snapshots from the first visit already existed, so the graph rendered.
+
+**Fix:** The `stock-get-portfolio` handler (and buy/sell handlers) now emit `stock-portfolio-history` after recording the snapshot. This guarantees the client always receives up-to-date history data after each portfolio fetch, eliminating the race condition. The client no longer needs to separately request portfolio history.
+
+## Files Changed
+
+- `server/socket-handlers.js` — emit `stock-portfolio-history` after `recordSnapshot()` in buy/sell/get-portfolio handlers
+- `games/stocks/js/game.js` — removed separate `stock-get-portfolio-history` emits from connect handler and periodic interval (now handled server-side)
+
+## Verification
+
+- `node --check server/socket-handlers.js`
+- `node --check games/stocks/js/game.js`
+- `npm test` — all 89 tests pass
+
+---
+
 # HANDOFF - Riot API Username Validation for LoL Betting
 
 ## What Was Done
