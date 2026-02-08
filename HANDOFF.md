@@ -1,6 +1,36 @@
-# HANDOFF - Strict Club: Enhanced glassmorphism effects
+# HANDOFF - Stock Game: Leaderboard character profile pictures
 
 ## What Was Done
+
+### Feature: Show character profile pictures in stock game leaderboards
+
+Added user character avatars (pixel art profile pictures) to both the Player Portfolios and Trade Performance leaderboard sections in the stock game.
+
+**Server-side (`server/socket-handlers.js`):**
+- In the `stock-get-leaderboard` handler, build a name→character lookup from `onlinePlayers` and attach each player's `character` object to the leaderboard entries before emitting
+
+**Client-side (`games/stocks/js/game.js`):**
+- `renderLeaderboard()` — renders `<img>` with the character's `dataURL` (pixelated) between the rank number and player name, or a 👽 emoji fallback
+- `renderPerformanceLeaderboard()` — same avatar rendering
+
+**Styles (`games/stocks/index.html`):**
+- Added `.leaderboard-avatar` (22×22 pixelated image) and `.leaderboard-avatar-placeholder` (emoji fallback) CSS classes
+
+### Verification
+- All 128 existing tests pass
+- Leaderboard renders correctly; avatars appear inline between rank and name
+- Players without a character see the 👽 fallback emoji
+
+## Files Modified
+
+- `server/socket-handlers.js` — Enrich leaderboard data with character from onlinePlayers
+- `games/stocks/js/game.js` — Render avatar in both leaderboard functions
+- `games/stocks/index.html` — CSS for leaderboard avatars
+- `HANDOFF.md` — This file
+
+---
+
+## Previous: Strict Club: Enhanced glassmorphism effects
 
 ### Enhancement: Made all Strict Club UI elements more glassy
 
