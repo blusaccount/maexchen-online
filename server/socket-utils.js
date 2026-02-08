@@ -30,7 +30,7 @@ export function validateRoomCode(code) {
 
 export function validateGameType(gameType) {
     if (typeof gameType !== 'string') return 'maexchen';
-    const allowed = ['maexchen', 'lobby', 'watchparty', 'stocks', 'strictbrain', 'lol-betting'];
+    const allowed = ['maexchen', 'lobby', 'watchparty', 'stocks', 'strictbrain', 'lol-betting', 'loop-machine'];
     const clean = gameType.replace(/[^a-z-]/g, '').slice(0, 20);
     return allowed.includes(clean) ? clean : 'maexchen';
 }

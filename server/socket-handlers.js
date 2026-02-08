@@ -118,6 +118,25 @@ const clubState = {
     listeners: new Map() // socketId -> name
 };
 
+// ============== LOOP MACHINE STATE ==============
+
+const LOOP_ROOM = 'loop-machine-room';
+const EMPTY_GRID_ROW = [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0];
+const loopState = {
+    grid: {
+        kick:   [...EMPTY_GRID_ROW],
+        snare:  [...EMPTY_GRID_ROW],
+        hihat:  [...EMPTY_GRID_ROW],
+        clap:   [...EMPTY_GRID_ROW],
+        bass:   [...EMPTY_GRID_ROW],
+        synth:  [...EMPTY_GRID_ROW],
+    },
+    bpm: 120,
+    isPlaying: false,
+    currentStep: 0,
+    listeners: new Map(),  // socketId -> playerName
+};
+
 // ============== PICTOCHAT STATE ==============
 
 const PICTO_ROOM = 'lobby-picto';
@@ -513,10 +532,25 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
             if (!player) return;
 
             const quotes = _fetchTickerQuotes ? await _fetchTickerQuotes() : [];
+
+            // Build name -> character lookup from online players
+            const charByName = new Map();
+            for (const p of onlinePlayers.values()) {
+                if (p.name && p.character) charByName.set(p.name, p.character);
+            }
+
             const leaderboard = await getLeaderboardSnapshot(quotes);
+            for (const entry of leaderboard) {
+                const ch = charByName.get(entry.name);
+                if (ch) entry.character = ch;
+            }
             socket.emit('stock-leaderboard', leaderboard);
 
             const performanceLeaderboard = await getTradePerformanceLeaderboard(quotes);
+            for (const entry of performanceLeaderboard) {
+                const ch = charByName.get(entry.name);
+                if (ch) entry.character = ch;
+            }
             socket.emit('stock-performance-leaderboard', performanceLeaderboard);
         } catch (err) { console.error('stock-get-leaderboard error:', err.message); } });
 
@@ -1955,6 +1989,124 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
 
         // ============== END STRICT CLUB ==============
 
+        // ============== LOOP MACHINE HANDLERS ==============
+
+        socket.on('loop-join', () => { try {
+            if (!checkRateLimit(socket, 5)) return;
+
+            const player = onlinePlayers.get(socket.id);
+            const playerName = player?.name || 'Guest';
+
+            socket.join(LOOP_ROOM);
+            loopState.listeners.set(socket.id, playerName);
+
+            // Send current state to the joining user
+            socket.emit('loop-sync', {
+                grid: loopState.grid,
+                bpm: loopState.bpm,
+                isPlaying: loopState.isPlaying,
+                listeners: Array.from(loopState.listeners.values())
+            });
+
+            // Broadcast updated listener list to all
+            io.to(LOOP_ROOM).emit('loop-listeners', {
+                listeners: Array.from(loopState.listeners.values())
+            });
+
+            console.log(`[LoopMachine] ${playerName} joined (${loopState.listeners.size} listeners)`);
+        } catch (err) { console.error('loop-join error:', err.message); } });
+
+        socket.on('loop-leave', () => { try {
+            if (!checkRateLimit(socket, 5)) return;
+
+            const playerName = loopState.listeners.get(socket.id) || 'Guest';
+            socket.leave(LOOP_ROOM);
+            loopState.listeners.delete(socket.id);
+
+            // Broadcast updated listener list
+            io.to(LOOP_ROOM).emit('loop-listeners', {
+                listeners: Array.from(loopState.listeners.values())
+            });
+
+            console.log(`[LoopMachine] ${playerName} left (${loopState.listeners.size} listeners)`);
+        } catch (err) { console.error('loop-leave error:', err.message); } });
+
+        socket.on('loop-toggle-cell', (data) => { try {
+            if (!checkRateLimit(socket, 20)) return;
+
+            const { instrument, step } = data;
+
+            // Validate instrument
+            const validInstruments = ['kick', 'snare', 'hihat', 'clap', 'bass', 'synth'];
+            if (!validInstruments.includes(instrument)) return;
+
+            // Validate step
+            const stepNum = Number(step);
+            if (!Number.isInteger(stepNum) || stepNum < 0 || stepNum > 15) return;
+
+            // Toggle the cell
+            loopState.grid[instrument][stepNum] = loopState.grid[instrument][stepNum] === 1 ? 0 : 1;
+
+            // Broadcast to all listeners
+            io.to(LOOP_ROOM).emit('loop-cell-updated', {
+                instrument,
+                step: stepNum,
+                value: loopState.grid[instrument][stepNum]
+            });
+
+            console.log(`[LoopMachine] Cell toggled: ${instrument}[${stepNum}] = ${loopState.grid[instrument][stepNum]}`);
+        } catch (err) { console.error('loop-toggle-cell error:', err.message); } });
+
+        socket.on('loop-set-bpm', (data) => { try {
+            if (!checkRateLimit(socket, 5)) return;
+
+            const bpm = Number(data.bpm);
+            if (!Number.isInteger(bpm) || bpm < 60 || bpm > 200) return;
+
+            loopState.bpm = bpm;
+
+            // Broadcast to all listeners
+            io.to(LOOP_ROOM).emit('loop-bpm-updated', {
+                bpm: loopState.bpm
+            });
+
+            console.log(`[LoopMachine] BPM set to ${loopState.bpm}`);
+        } catch (err) { console.error('loop-set-bpm error:', err.message); } });
+
+        socket.on('loop-play-pause', () => { try {
+            if (!checkRateLimit(socket, 5)) return;
+
+            loopState.isPlaying = !loopState.isPlaying;
+
+            // Broadcast to all listeners
+            io.to(LOOP_ROOM).emit('loop-state-updated', {
+                isPlaying: loopState.isPlaying
+            });
+
+            console.log(`[LoopMachine] ${loopState.isPlaying ? 'Playing' : 'Paused'}`);
+        } catch (err) { console.error('loop-play-pause error:', err.message); } });
+
+        socket.on('loop-clear', () => { try {
+            if (!checkRateLimit(socket, 3)) return;
+
+            // Reset all grid cells to 0
+            for (const instrument in loopState.grid) {
+                loopState.grid[instrument] = [...EMPTY_GRID_ROW];
+            }
+
+            // Broadcast full sync to all listeners
+            io.to(LOOP_ROOM).emit('loop-sync', {
+                grid: loopState.grid,
+                bpm: loopState.bpm,
+                isPlaying: loopState.isPlaying,
+                listeners: Array.from(loopState.listeners.values())
+            });
+
+            console.log('[LoopMachine] Grid cleared');
+        } catch (err) { console.error('loop-clear error:', err.message); } });
+
+        // ============== END LOOP MACHINE ==============
+
         // --- Leave Room ---
         socket.on('leave-room', async () => { try {
             if (!checkRateLimit(socket)) return;
@@ -1979,6 +2131,14 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
                 clubState.listeners.delete(socket.id);
                 io.to(CLUB_ROOM).emit('club-listeners', {
                     listeners: Array.from(clubState.listeners.values())
+                });
+            }
+
+            // Cleanup Loop Machine
+            if (loopState.listeners.has(socket.id)) {
+                loopState.listeners.delete(socket.id);
+                io.to(LOOP_ROOM).emit('loop-listeners', {
+                    listeners: Array.from(loopState.listeners.values())
                 });
             }
 

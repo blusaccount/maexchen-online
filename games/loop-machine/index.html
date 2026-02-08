@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StrictHotel – Loop Machine</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👽</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/shared/css/theme.css">
+    <style>
+        /* ===== Nintendo DS Pixel Style ===== */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --ds-bg: #1a1a1a;
+            --ds-surface: #111111;
+            --ds-border: #cccccc;
+            --ds-text: #e8e8e8;
+            --ds-text-dim: #888888;
+            --ds-highlight: #333333;
+            --ds-gold: #ffd700;
+            --ds-accent: #00ff00;
+            --ds-radius: 0px;
+        }
+
+        body {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            background: var(--ds-bg);
+            color: var(--ds-text);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            image-rendering: pixelated;
+            line-height: 1.8;
+        }
+
+        .loop-page {
+            max-width: 1000px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 16px 12px 40px;
+        }
+
+        /* ===== DS Header ===== */
+        .loop-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 3px solid var(--ds-border);
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .back-link {
+            color: var(--ds-text-dim);
+            text-decoration: none;
+            font-size: 8px;
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: var(--ds-text); text-decoration: underline; }
+
+        .loop-title {
+            font-size: 14px;
+            color: var(--ds-text);
+            letter-spacing: 2px;
+        }
+
+        /* ===== Sequencer Section ===== */
+        .sequencer-section {
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .sequencer-section h2 {
+            font-size: 11px;
+            margin-bottom: 12px;
+            color: var(--ds-text);
+            letter-spacing: 1px;
+        }
+
+        .sequencer-grid {
+            overflow-x: auto;
+            margin-bottom: 16px;
+        }
+
+        .grid-container {
+            display: inline-block;
+            min-width: 100%;
+        }
+
+        .grid-row {
+            display: flex;
+            margin-bottom: 4px;
+            align-items: center;
+        }
+
+        .instrument-label {
+            width: 80px;
+            font-size: 8px;
+            color: var(--ds-text-dim);
+            padding-right: 8px;
+            text-align: right;
+        }
+
+        .grid-cells {
+            display: flex;
+            gap: 2px;
+        }
+
+        .grid-cell {
+            width: 32px;
+            height: 32px;
+            background: var(--ds-bg);
+            border: 2px solid var(--ds-border);
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+
+        .grid-cell:hover {
+            background: var(--ds-highlight);
+        }
+
+        .grid-cell.active {
+            background: var(--ds-gold);
+            border-color: var(--ds-gold);
+        }
+
+        .grid-cell.current-step {
+            box-shadow: 0 0 0 2px var(--ds-accent);
+        }
+
+        /* Visual separator every 4 steps */
+        .grid-cell:nth-child(4n+1) {
+            margin-left: 4px;
+        }
+
+        .grid-cell:first-child {
+            margin-left: 0;
+        }
+
+        /* ===== Controls ===== */
+        .controls-section {
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .controls-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .control-label {
+            font-size: 9px;
+            color: var(--ds-text-dim);
+            min-width: 80px;
+        }
+
+        .control-btn {
+            background: var(--ds-bg);
+            border: 2px solid var(--ds-border);
+            color: var(--ds-text);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 9px;
+            padding: 10px 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover:not(:disabled) {
+            background: var(--ds-highlight);
+        }
+
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .control-btn.primary {
+            background: var(--ds-gold);
+            color: #000;
+            border-color: var(--ds-gold);
+        }
+
+        .control-btn.primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 0 var(--ds-border);
+        }
+
+        .bpm-input {
+            background: var(--ds-bg);
+            border: 2px solid var(--ds-border);
+            color: var(--ds-text);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 9px;
+            padding: 8px;
+            width: 80px;
+            border-radius: 0;
+        }
+
+        /* ===== Listeners Section ===== */
+        .listeners-section {
+            background: var(--ds-surface);
+            border: 2px solid var(--ds-border);
+            padding: 16px;
+        }
+
+        .listeners-section h2 {
+            font-size: 11px;
+            margin-bottom: 12px;
+            color: var(--ds-text);
+            letter-spacing: 1px;
+        }
+
+        .listeners-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .listener-tag {
+            background: var(--ds-bg);
+            border: 1px solid var(--ds-border);
+            padding: 6px 10px;
+            font-size: 8px;
+            color: var(--ds-text-dim);
+        }
+
+        .status-message {
+            font-size: 8px;
+            color: var(--ds-text-dim);
+            margin-top: 8px;
+        }
+
+        .status-message.error {
+            color: #ff6b6b;
+        }
+
+        .status-message.success {
+            color: var(--ds-accent);
+        }
+
+        /* ===== Mobile ===== */
+        @media (max-width: 768px) {
+            .loop-title {
+                font-size: 12px;
+            }
+
+            .grid-cell {
+                width: 28px;
+                height: 28px;
+            }
+
+            .instrument-label {
+                width: 60px;
+                font-size: 7px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .controls-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .grid-cell {
+                width: 24px;
+                height: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="loop-page">
+        <div class="loop-header">
+            <a href="/" class="back-link">← BACK TO LOBBY</a>
+            <div class="loop-title">🎹 LOOP MACHINE</div>
+        </div>
+
+        <!-- Sequencer Grid -->
+        <div class="sequencer-section">
+            <h2>STEP SEQUENCER</h2>
+            <div class="sequencer-grid">
+                <div class="grid-container" id="grid-container">
+                    <!-- Kick -->
+                    <div class="grid-row">
+                        <div class="instrument-label">KICK</div>
+                        <div class="grid-cells" data-instrument="kick">
+                            <!-- 16 cells generated by JS -->
+                        </div>
+                    </div>
+                    <!-- Snare -->
+                    <div class="grid-row">
+                        <div class="instrument-label">SNARE</div>
+                        <div class="grid-cells" data-instrument="snare">
+                            <!-- 16 cells -->
+                        </div>
+                    </div>
+                    <!-- Hi-Hat -->
+                    <div class="grid-row">
+                        <div class="instrument-label">HI-HAT</div>
+                        <div class="grid-cells" data-instrument="hihat">
+                            <!-- 16 cells -->
+                        </div>
+                    </div>
+                    <!-- Clap -->
+                    <div class="grid-row">
+                        <div class="instrument-label">CLAP</div>
+                        <div class="grid-cells" data-instrument="clap">
+                            <!-- 16 cells -->
+                        </div>
+                    </div>
+                    <!-- Bass -->
+                    <div class="grid-row">
+                        <div class="instrument-label">BASS</div>
+                        <div class="grid-cells" data-instrument="bass">
+                            <!-- 16 cells -->
+                        </div>
+                    </div>
+                    <!-- Synth -->
+                    <div class="grid-row">
+                        <div class="instrument-label">SYNTH</div>
+                        <div class="grid-cells" data-instrument="synth">
+                            <!-- 16 cells -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="status-message" id="status-message">Connecting...</div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls-section">
+            <h2>CONTROLS</h2>
+            <div class="controls-row">
+                <button class="control-btn primary" id="play-pause-btn" disabled>
+                    ▶ PLAY
+                </button>
+                <button class="control-btn" id="clear-btn" disabled>
+                    🗑️ CLEAR
+                </button>
+            </div>
+            <div class="controls-row">
+                <label class="control-label" for="bpm-input">BPM (60-200):</label>
+                <input type="number" id="bpm-input" class="bpm-input" min="60" max="200" value="120" disabled>
+            </div>
+        </div>
+
+        <!-- Listeners -->
+        <div class="listeners-section">
+            <h2>LISTENERS (<span id="listener-count">0</span>)</h2>
+            <div class="listeners-list" id="listeners-list">
+                <div class="listener-tag">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="js/game.js"></script>
+    
+    <!-- Switch Sound on Back Button -->
+    <script>
+    (function () {
+        var switchSound = new Audio('/userinput/switch.mp3');
+        switchSound.preload = 'auto';
+        switchSound.volume = 0.25;
+        var backLink = document.querySelector('.back-link');
+        if (backLink) {
+            backLink.addEventListener('click', function (e) {
+                e.preventDefault();
+                var href = backLink.getAttribute('href');
+                try { switchSound.currentTime = 0; switchSound.play().catch(function(){}); } catch(ex) {}
+                setTimeout(function () { window.location.href = href; }, 250);
+            });
+        }
+    })();
+    </script>
+</body>
+</html>

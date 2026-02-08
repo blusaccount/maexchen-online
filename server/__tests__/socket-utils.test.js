@@ -95,6 +95,7 @@ describe('validateGameType', () => {
         expect(validateGameType('stocks')).toBe('stocks');
         expect(validateGameType('strictbrain')).toBe('strictbrain');
         expect(validateGameType('lol-betting')).toBe('lol-betting');
+        expect(validateGameType('loop-machine')).toBe('loop-machine');
     });
 
     it('returns default for invalid types', () => {
