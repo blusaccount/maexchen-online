@@ -47,11 +47,11 @@ async function getOrCreatePlayerId(playerName, client = null) {
  * @returns {Promise<{ ok:boolean, error?:string, shares?:number, newBalance?:number }>}
  */
 export async function buyStock(playerName, symbol, price, amount) {
-    if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) {
-        return { ok: false, error: 'Invalid amount' };
+    if (typeof amount !== 'number' || !Number.isFinite(amount) || !Number.isInteger(amount) || amount <= 0) {
+        return { ok: false, code: 'INVALID_AMOUNT', error: 'Amount must be a positive integer' };
     }
     if (typeof price !== 'number' || !Number.isFinite(price) || price <= 0) {
-        return { ok: false, error: 'Invalid price' };
+        return { ok: false, code: 'INVALID_PRICE', error: 'Invalid price' };
     }
 
     amount = round2(amount);
@@ -59,7 +59,7 @@ export async function buyStock(playerName, symbol, price, amount) {
     if (!isDatabaseEnabled()) {
         const newBalance = await deductBalance(playerName, amount, 'stock_buy', { symbol, price, amount });
         if (newBalance === null) {
-            return { ok: false, error: 'Insufficient funds' };
+            return { ok: false, code: 'INSUFFICIENT_FUNDS', error: 'Insufficient funds' };
         }
 
         const shares = amount / price;
@@ -119,7 +119,7 @@ export async function buyStock(playerName, symbol, price, amount) {
         return txResult;
     } catch (err) {
         console.error('buyStock DB error:', err.message);
-        return { ok: false, error: 'Transaction failed' };
+        return { ok: false, code: 'TRANSACTION_FAILED', error: 'Transaction failed' };
     }
 }
 
@@ -128,11 +128,11 @@ export async function buyStock(playerName, symbol, price, amount) {
  * @returns {Promise<{ ok:boolean, error?:string, shares?:number, newBalance?:number }>}
  */
 export async function sellStock(playerName, symbol, price, amount) {
-    if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) {
-        return { ok: false, error: 'Invalid amount' };
+    if (typeof amount !== 'number' || !Number.isFinite(amount) || !Number.isInteger(amount) || amount <= 0) {
+        return { ok: false, code: 'INVALID_AMOUNT', error: 'Amount must be a positive integer' };
     }
     if (typeof price !== 'number' || !Number.isFinite(price) || price <= 0) {
-        return { ok: false, error: 'Invalid price' };
+        return { ok: false, code: 'INVALID_PRICE', error: 'Invalid price' };
     }
 
     amount = round2(amount);
@@ -142,12 +142,12 @@ export async function sellStock(playerName, symbol, price, amount) {
         const holding = portfolio.get(symbol);
 
         if (!holding || holding.shares <= 0) {
-            return { ok: false, error: 'No shares to sell' };
+            return { ok: false, code: 'NO_SHARES', error: 'No shares to sell' };
         }
 
         const sharesToSell = amount / price;
         if (sharesToSell > holding.shares * FP_TOLERANCE) {
-            return { ok: false, error: 'Not enough shares' };
+            return { ok: false, code: 'NOT_ENOUGH_SHARES', error: 'Not enough shares' };
         }
 
         const actualShares = Math.min(sharesToSell, holding.shares);
@@ -169,13 +169,13 @@ export async function sellStock(playerName, symbol, price, amount) {
             );
             const holding = current.rows[0];
             if (!holding || Number(holding.shares) <= 0) {
-                return { ok: false, error: 'No shares to sell' };
+                return { ok: false, code: 'NO_SHARES', error: 'No shares to sell' };
             }
 
             const heldShares = Number(holding.shares);
             const sharesToSell = amount / price;
             if (sharesToSell > heldShares * FP_TOLERANCE) {
-                return { ok: false, error: 'Not enough shares' };
+                return { ok: false, code: 'NOT_ENOUGH_SHARES', error: 'Not enough shares' };
             }
 
             const actualShares = Math.min(sharesToSell, heldShares);
@@ -201,7 +201,7 @@ export async function sellStock(playerName, symbol, price, amount) {
         return txResult;
     } catch (err) {
         console.error('sellStock DB error:', err.message);
-        return { ok: false, error: 'Transaction failed' };
+        return { ok: false, code: 'TRANSACTION_FAILED', error: 'Transaction failed' };
     }
 }
 

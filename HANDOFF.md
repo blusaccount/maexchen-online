@@ -358,3 +358,28 @@
 
 - Attempted: `docker compose config` (environment limitation: docker not installed in this runtime)
 - Attempted: `npm test` (environment limitation: `vitest` binary missing because dependencies are not installed in this runtime)
+
+---
+
+# HANDOFF - PR #2 Stock Command Hardening
+
+## What Was Done
+
+- Hardened stock trade input validation to accept only positive integer trade amounts for `stock-buy` and `stock-sell`.
+- Added a lightweight per-socket stock trade cooldown (400ms) to reduce trade-spam bursts.
+- Standardized stock error payloads via `{ code, message, error }` so clients can use structured codes while keeping backward compatibility with existing `error` handling.
+- Extended stock engine error returns in `server/stock-game.js` with stable error `code` values (e.g. `INVALID_AMOUNT`, `INSUFFICIENT_FUNDS`, `NOT_ENOUGH_SHARES`, `TRANSACTION_FAILED`).
+- Cleans up trade cooldown state on socket disconnect.
+
+## Files Changed
+
+- `server/socket-handlers.js`
+- `server/stock-game.js`
+- `HANDOFF.md`
+
+## Verification
+
+- `node --check server/socket-handlers.js`
+- `node --check server/stock-game.js`
+- `npm test`
+
