@@ -1,3 +1,53 @@
+# HANDOFF - Riot API Username Validation for LoL Betting
+
+## What Was Done
+
+### LoL Betting: Riot ID Validation via Riot Games API
+
+Users must now enter a valid Riot ID (Name#Tag format) when placing LoL bets. The username is validated against the Riot Games Account API before a bet is accepted.
+
+**New file: `server/riot-api.js`**
+- `parseRiotId(riotId)` — parses "Name#Tag" into gameName + tagLine
+- `isRiotApiEnabled()` — checks if `RIOT_API_KEY` env var is set
+- `lookupRiotAccount(gameName, tagLine)` — calls Riot Account v1 API
+- `validateRiotId(riotId)` — end-to-end validation (parse + API lookup)
+- Graceful degradation: accepts well-formatted IDs when API key is missing
+
+**Server changes: `server/socket-handlers.js`**
+- New socket event `lol-validate-username` — validates Riot ID and returns result
+- Updated `lol-place-bet` — validates Riot ID via API before accepting bet; uses canonical name from API response
+
+**Client changes: `games/lol-betting/`**
+- Input now expects Riot ID format (Name#Tag) with placeholder "e.g. Player#EUW"
+- Added SEARCH button next to input to validate before submitting
+- Validation status indicator (green checkmark or red X with reason)
+- PLACE BET button requires validated username
+- Re-editing the username field resets validation
+
+**Config: `.env.example`**
+- Added `RIOT_API_KEY` and `RIOT_REGION` environment variables
+
+**Tests: `server/__tests__/riot-api.test.js`**
+- 13 tests covering `parseRiotId` — valid formats, edge cases, invalid inputs
+
+## Files Changed
+- `server/riot-api.js` (new)
+- `server/__tests__/riot-api.test.js` (new)
+- `server/socket-handlers.js`
+- `games/lol-betting/index.html`
+- `games/lol-betting/js/game.js`
+- `.env.example`
+
+## Verification
+- All 71 tests pass (`npm test`)
+- Server starts, LoL betting page renders correctly
+- SEARCH button enables only when input matches Name#Tag format
+- Validation status displays correctly (green/red)
+- PLACE BET disabled until username is validated
+- Without `RIOT_API_KEY`, accepts any well-formatted Riot ID (graceful degradation)
+
+---
+
 # HANDOFF - Compact Main Menu Layout
 
 ## What Was Done

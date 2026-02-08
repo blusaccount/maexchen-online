@@ -44,6 +44,7 @@ import {
 import { recordSnapshot, getHistory } from './portfolio-history.js';
 import { loadStrokes, saveStroke, deleteStroke, clearStrokes, loadMessages, saveMessage, clearMessages, PICTO_MAX_MESSAGES } from './pictochat-store.js';
 import { placeBet, getActiveBets, getPlayerBets } from './lol-betting.js';
+import { validateRiotId } from './riot-api.js';
 
 // ============== INPUT VALIDATION ==============
 
@@ -1611,6 +1612,24 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
 
         // ============== LOL BETTING ==============
 
+        // --- Validate LoL Username (Riot ID) ---
+        socket.on('lol-validate-username', async (data) => { try {
+            if (!checkRateLimit(socket, 5)) return;
+            if (!data || typeof data !== 'object') return;
+
+            const { riotId } = data;
+            if (typeof riotId !== 'string') {
+                socket.emit('lol-username-result', { valid: false, reason: 'Invalid input' });
+                return;
+            }
+
+            const result = await validateRiotId(riotId);
+            socket.emit('lol-username-result', result);
+        } catch (err) {
+            console.error('lol-validate-username error:', err.message);
+            socket.emit('lol-username-result', { valid: false, reason: err.message || 'Validation failed' });
+        } });
+
         // --- Place LoL Bet ---
         socket.on('lol-place-bet', async (data) => { try {
             if (!checkRateLimit(socket, 5)) return;
@@ -1625,11 +1644,13 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
 
             const { lolUsername, amount, betOnWin } = data;
 
-            // Validate inputs
-            if (typeof lolUsername !== 'string' || lolUsername.trim().length < 3 || lolUsername.trim().length > 16) {
-                socket.emit('lol-bet-error', { message: 'Invalid League username (3-16 characters)' });
+            // Validate Riot ID via API
+            const validation = await validateRiotId(lolUsername);
+            if (!validation.valid) {
+                socket.emit('lol-bet-error', { message: validation.reason || 'Invalid Riot ID' });
                 return;
             }
+            const resolvedName = validation.gameName + '#' + validation.tagLine;
 
             const betAmount = Number(amount);
             if (!Number.isFinite(betAmount) || !Number.isInteger(betAmount) || betAmount <= 0 || betAmount > 1000) {
@@ -1651,12 +1672,12 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
 
             // Deduct bet amount
             const newBalance = await deductBalance(playerName, betAmount, 'lol_bet', {
-                lolUsername: lolUsername.trim(),
+                lolUsername: resolvedName,
                 betOnWin
             });
 
             // Place bet
-            const bet = await placeBet(playerName, lolUsername.trim(), betAmount, betOnWin);
+            const bet = await placeBet(playerName, resolvedName, betAmount, betOnWin);
 
             // Send confirmation to player
             socket.emit('lol-bet-placed', {
@@ -1668,7 +1689,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
             const allBets = await getActiveBets();
             io.emit('lol-bets-update', { bets: allBets });
 
-            console.log(`[LoL Bet] ${playerName} bet ${betAmount} on ${lolUsername} to ${betOnWin ? 'WIN' : 'LOSE'}`);
+            console.log(`[LoL Bet] ${playerName} bet ${betAmount} on ${resolvedName} to ${betOnWin ? 'WIN' : 'LOSE'}`);
         } catch (err) {
             console.error('lol-place-bet error:', err.message);
             socket.emit('lol-bet-error', { message: 'Failed to place bet' });

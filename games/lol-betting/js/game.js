@@ -4,6 +4,8 @@ const socket = io();
 
 let playerBalance = 0;
 let selectedBetType = null;
+let usernameValidated = false;
+let validatedRiotId = null;
 
 // Constants
 const NAME_KEY = 'stricthotel-name';
@@ -18,6 +20,8 @@ const betTypeButtons = document.querySelectorAll('.bet-type-btn');
 const submitBtn = document.getElementById('submit-btn');
 const errorMessage = document.getElementById('error-message');
 const betsList = document.getElementById('bets-list');
+const validateBtn = document.getElementById('validate-btn');
+const validationStatus = document.getElementById('validation-status');
 
 // ============== INITIALIZATION ==============
 
@@ -64,21 +68,56 @@ function setupEventListeners() {
         });
     });
     
+    // Username input — invalidate on change
+    lolUsernameInput.addEventListener('input', () => {
+        usernameValidated = false;
+        validatedRiotId = null;
+        validationStatus.textContent = '';
+        validationStatus.className = 'validation-status';
+        updateValidateButton();
+        updateSubmitButton();
+    });
+
+    // Validate button
+    validateBtn.addEventListener('click', handleValidateUsername);
+
+    // Allow pressing Enter in the username field to trigger validation
+    lolUsernameInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (!validateBtn.disabled) handleValidateUsername();
+        }
+    });
+
     // Form inputs
-    lolUsernameInput.addEventListener('input', updateSubmitButton);
     betAmountInput.addEventListener('input', updateSubmitButton);
     
     // Form submission
     betForm.addEventListener('submit', handleBetSubmit);
 }
 
+/**
+ * Check whether the input looks like a Riot ID (contains #).
+ */
+function hasRiotIdFormat(value) {
+    const trimmed = value.trim();
+    const hashIndex = trimmed.lastIndexOf('#');
+    if (hashIndex < 1) return false;
+    const name = trimmed.slice(0, hashIndex).trim();
+    const tag = trimmed.slice(hashIndex + 1).trim();
+    return name.length >= 3 && name.length <= 16 && tag.length >= 2 && tag.length <= 5;
+}
+
+function updateValidateButton() {
+    const value = lolUsernameInput.value;
+    validateBtn.disabled = !hasRiotIdFormat(value) || usernameValidated;
+}
+
 function updateSubmitButton() {
-    const username = lolUsernameInput.value.trim();
     const amount = parseInt(betAmountInput.value);
     
     const isValid = 
-        username.length >= 3 && 
-        username.length <= 16 &&
+        usernameValidated &&
         amount >= 1 && 
         amount <= 1000 &&
         selectedBetType !== null;
@@ -86,15 +125,53 @@ function updateSubmitButton() {
     submitBtn.disabled = !isValid;
 }
 
+// ============== USERNAME VALIDATION ==============
+
+function handleValidateUsername() {
+    const riotId = lolUsernameInput.value.trim();
+    if (!hasRiotIdFormat(riotId)) return;
+
+    validateBtn.disabled = true;
+    validateBtn.textContent = '...';
+    validationStatus.textContent = 'Searching...';
+    validationStatus.className = 'validation-status loading';
+
+    socket.emit('lol-validate-username', { riotId });
+}
+
+socket.on('lol-username-result', (data) => {
+    validateBtn.textContent = 'SEARCH';
+
+    if (data.valid) {
+        usernameValidated = true;
+        validatedRiotId = data.gameName + '#' + data.tagLine;
+        lolUsernameInput.value = validatedRiotId;
+        validationStatus.textContent = '✓ ' + validatedRiotId + ' found';
+        validationStatus.className = 'validation-status valid';
+    } else {
+        usernameValidated = false;
+        validatedRiotId = null;
+        validationStatus.textContent = '✗ ' + (data.reason || 'Not found');
+        validationStatus.className = 'validation-status invalid';
+    }
+
+    updateValidateButton();
+    updateSubmitButton();
+});
+
 // ============== BET SUBMISSION ==============
 
 function handleBetSubmit(e) {
     e.preventDefault();
     
-    const username = lolUsernameInput.value.trim();
+    if (!usernameValidated || !validatedRiotId) {
+        showError('Please validate the Riot ID first');
+        return;
+    }
+
     const amount = parseInt(betAmountInput.value);
     
-    if (!username || amount < 1 || amount > 1000 || selectedBetType === null) {
+    if (amount < 1 || amount > 1000 || selectedBetType === null) {
         showError('Please fill in all fields correctly');
         return;
     }
@@ -110,7 +187,7 @@ function handleBetSubmit(e) {
     
     // Send bet to server
     socket.emit('lol-place-bet', {
-        lolUsername: username,
+        lolUsername: validatedRiotId,
         amount: amount,
         betOnWin: selectedBetType
     });
@@ -142,8 +219,13 @@ socket.on('lol-bet-placed', (data) => {
     betForm.reset();
     betTypeButtons.forEach(b => b.classList.remove('active'));
     selectedBetType = null;
+    usernameValidated = false;
+    validatedRiotId = null;
+    validationStatus.textContent = '';
+    validationStatus.className = 'validation-status';
     submitBtn.disabled = true;
     submitBtn.textContent = 'PLACE BET';
+    updateValidateButton();
     
     // Show success message
     showSuccessMessage();
