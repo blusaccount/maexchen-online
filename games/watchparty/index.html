@@ -129,6 +129,17 @@
                 font-size: 0.7rem;
             }
         }
+
+        /* Large screens */
+        @media (min-width: 1024px) {
+            body:has(#screen-game.active) #app {
+                max-width: 1200px;
+            }
+
+            .video-wrapper {
+                max-width: 1100px;
+            }
+        }
     </style>
 </head>
 <body>

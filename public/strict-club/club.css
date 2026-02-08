@@ -577,3 +577,10 @@ body {
         height: 200px;
     }
 }
+
+/* ===== Large screens ===== */
+@media (min-width: 1024px) {
+    .club-container {
+        max-width: 1100px;
+    }
+}

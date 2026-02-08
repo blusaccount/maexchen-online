@@ -2615,3 +2615,15 @@ h3 { font-size: 1.3rem; color: var(--text-dim); letter-spacing: 2px; text-transf
     border-color: var(--danger);
     background: rgba(255,50,50,0.2);
 }
+
+/* ===== Responsive - Large screens ===== */
+@media (min-width: 1024px) {
+    body {
+        font-size: 22px;
+    }
+
+    #app {
+        max-width: 900px;
+        padding: 30px;
+    }
+}
