@@ -1595,3 +1595,47 @@ Performed a full-codebase review covering security, correctness, performance, an
 
 - `npm test` — 122 tests pass (89 original + 33 new)
 - All existing tests remain green
+
+# HANDOFF - LoL Bet Resolution Reliability (Riot 502 + Baseline Window)
+
+## What Was Done
+- Improved Riot API resilience by adding bounded retry/backoff for transient failures (HTTP 502/503/504 and network fetch errors) in LoL match history/details requests.
+- Increased LoL bet checker match-history lookup depth from 5 to 20 for both background and manual checks, reducing false "no new match" outcomes when the baseline match falls outside a short history window.
+- Extended LoL match checker tests to assert the new history depth and verify manual resolution when baseline IDs are older than a short history window.
+
+## How to Verify
+1. Syntax checks:
+   - `node --check server/riot-api.js`
+   - `node --check server/lol-match-checker.js`
+   - `node --check server/__tests__/lol-match-checker.test.js`
+2. Targeted test:
+   - `npm test -- server/__tests__/lol-match-checker.test.js`
+   - Note: in this environment, `vitest` binary was unavailable (`sh: 1: vitest: not found`).
+
+### Files Modified
+- `server/riot-api.js`
+- `server/lol-match-checker.js`
+- `server/__tests__/lol-match-checker.test.js`
+- `PLANS.md`
+
+# HANDOFF - LoL Bet Resolution Follow-up (Per-Bet Match Selection)
+
+## What Was Done
+- Reworked LoL match checker selection logic to choose a resolving match **per bet** instead of using one shared baseline for all bets of the same PUUID.
+- Added a shared per-cycle match-details cache to avoid duplicate `getMatchDetails` calls.
+- Improved baseline-missing behavior: when a bet baseline is not found in the history window, the resolver now scans recent matches and picks the newest one that ended after the bet creation timestamp (if present).
+- Applied the same selection helper to manual checks to keep background/manual behavior consistent.
+- Added a test covering the negative case where baseline is outside the window but all scanned matches ended before bet placement (must stay unresolved).
+
+## How to Verify
+1. Syntax checks:
+   - `node --check server/lol-match-checker.js`
+   - `node --check server/__tests__/lol-match-checker.test.js`
+2. Targeted test:
+   - `npm test -- server/__tests__/lol-match-checker.test.js`
+   - Note: this environment still lacks `vitest` binary (`sh: 1: vitest: not found`).
+
+### Files Modified
+- `server/lol-match-checker.js`
+- `server/__tests__/lol-match-checker.test.js`
+- `PLANS.md`

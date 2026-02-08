@@ -2,6 +2,8 @@
 
 const RIOT_API_KEY = process.env.RIOT_API_KEY || '';
 const RIOT_REGION = process.env.RIOT_REGION || 'europe';
+const RIOT_MAX_RETRIES = Math.max(0, Number(process.env.RIOT_API_MAX_RETRIES) || 2);
+const RIOT_RETRY_BASE_MS = Math.max(50, Number(process.env.RIOT_API_RETRY_BASE_MS) || 250);
 
 const VALID_REGIONS = ['americas', 'europe', 'asia', 'esports'];
 
@@ -111,7 +113,7 @@ export async function getMatchHistory(puuid, count = 5) {
     const region = VALID_REGIONS.includes(RIOT_REGION) ? RIOT_REGION : 'europe';
     const url = `https://${region}.api.riotgames.com/lol/match/v5/matches/by-puuid/${encodeURIComponent(puuid)}/ids?count=${safeCount}`;
 
-    const res = await fetch(url, {
+    const res = await fetchWithRetry(url, {
         headers: { 'X-Riot-Token': RIOT_API_KEY }
     });
 
@@ -141,7 +143,7 @@ export async function getMatchDetails(matchId) {
     const region = VALID_REGIONS.includes(RIOT_REGION) ? RIOT_REGION : 'europe';
     const url = `https://${region}.api.riotgames.com/lol/match/v5/matches/${encodeURIComponent(matchId)}`;
 
-    const res = await fetch(url, {
+    const res = await fetchWithRetry(url, {
         headers: { 'X-Riot-Token': RIOT_API_KEY }
     });
 
@@ -155,4 +157,40 @@ export async function getMatchDetails(matchId) {
 
     const data = await res.json();
     return data;
+}
+
+function isTransientStatus(status) {
+    return status === 502 || status === 503 || status === 504;
+}
+
+function isRetryableFetchError(err) {
+    const msg = String(err?.message || '').toLowerCase();
+    return msg.includes('fetch failed') || msg.includes('network') || msg.includes('timeout') || msg.includes('socket');
+}
+
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function fetchWithRetry(url, options) {
+    let lastErr = null;
+
+    for (let attempt = 0; attempt <= RIOT_MAX_RETRIES; attempt++) {
+        try {
+            const res = await fetch(url, options);
+            if (isTransientStatus(res.status) && attempt < RIOT_MAX_RETRIES) {
+                await delay(RIOT_RETRY_BASE_MS * (attempt + 1));
+                continue;
+            }
+            return res;
+        } catch (err) {
+            lastErr = err;
+            if (!isRetryableFetchError(err) || attempt >= RIOT_MAX_RETRIES) {
+                throw err;
+            }
+            await delay(RIOT_RETRY_BASE_MS * (attempt + 1));
+        }
+    }
+
+    throw lastErr || new Error('Riot API request failed');
 }

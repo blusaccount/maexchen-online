@@ -277,6 +277,94 @@ describe('manualCheckBetStatus', () => {
         expect(result.payout).toBe(200);
         expect(result.message).toContain('won');
         expect(mockResolveBet).toHaveBeenCalledWith(betId, true);
+        expect(mockGetMatchHistory).toHaveBeenCalledWith('test-puuid', 20);
+    });
+
+    it('resolves bet when baseline match is outside a short history window', async () => {
+        const betId = betIdCounter++;
+        const bet = {
+            id: betId,
+            playerName: 'testPlayer',
+            status: 'pending',
+            puuid: 'test-puuid',
+            lastMatchId: 'older-baseline-match',
+            betOnWin: false,
+            amount: 100,
+            lolUsername: 'TestPlayer#NA1'
+        };
+
+        mockGetBetById.mockResolvedValue(bet);
+        mockGetMatchHistory.mockResolvedValue([
+            'match-20', 'match-19', 'match-18', 'match-17', 'match-16',
+            'match-15', 'match-14', 'match-13', 'match-12', 'match-11',
+            'match-10', 'match-9', 'match-8', 'match-7', 'match-6',
+            'match-5', 'match-4', 'match-3', 'match-2', 'match-1'
+        ]);
+        mockGetMatchDetails.mockResolvedValue({
+            info: {
+                participants: [
+                    { puuid: 'test-puuid', win: false }
+                ]
+            }
+        });
+        mockResolveBet.mockResolvedValue({
+            playerId: 1,
+            playerName: 'testPlayer',
+            wonBet: true,
+            payout: 200
+        });
+        mockAddBalance.mockResolvedValue(300);
+
+        const result = await manualCheckBetStatus(betId, 'testPlayer');
+        expect(result.success).toBe(true);
+        expect(result.resolved).toBe(true);
+        expect(result.wonBet).toBe(true);
+        expect(mockResolveBet).toHaveBeenCalledWith(betId, false);
+        expect(mockGetMatchHistory).toHaveBeenCalledWith('test-puuid', 20);
+    });
+
+
+    it('returns no new match when baseline is outside window but all matches ended before bet placement', async () => {
+        const betId = betIdCounter++;
+        const bet = {
+            id: betId,
+            playerName: 'testPlayer',
+            status: 'pending',
+            puuid: 'test-puuid',
+            lastMatchId: 'older-baseline-match',
+            betOnWin: true,
+            amount: 100,
+            lolUsername: 'TestPlayer#NA1',
+            createdAt: '2024-01-01T10:00:00.000Z'
+        };
+
+        mockGetBetById.mockResolvedValue(bet);
+        mockGetMatchHistory.mockResolvedValue(['match-3', 'match-2', 'match-1']);
+        mockGetMatchDetails
+            .mockResolvedValueOnce({
+                info: {
+                    gameEndTimestamp: 1704090000000,
+                    participants: [{ puuid: 'test-puuid', win: true }]
+                }
+            })
+            .mockResolvedValueOnce({
+                info: {
+                    gameEndTimestamp: 1704090000000,
+                    participants: [{ puuid: 'test-puuid', win: false }]
+                }
+            })
+            .mockResolvedValueOnce({
+                info: {
+                    gameEndTimestamp: 1704090000000,
+                    participants: [{ puuid: 'test-puuid', win: true }]
+                }
+            });
+
+        const result = await manualCheckBetStatus(betId, 'testPlayer');
+        expect(result.success).toBe(true);
+        expect(result.resolved).toBe(false);
+        expect(result.message).toContain('No new match');
+        expect(mockResolveBet).not.toHaveBeenCalled();
     });
 
     it('resolves bet when new match is found and player lost', async () => {

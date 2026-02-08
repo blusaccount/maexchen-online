@@ -369,3 +369,43 @@ Out of scope: game logic, socket behavior, licensing logic.
 ## Outcomes
 Shipped non-disruptive containerization assets and updated setup docs.
 Verification was attempted; docker is unavailable in this environment and `vitest` is missing, so runtime checks are documented as environment-limited warnings.
+
+## ExecPlan - LoL Bet Resolution Reliability
+
+## Purpose
+Reduce false "No new match found" outcomes and transient Riot API failures that block LoL bet resolution.
+
+## Scope
+In scope: Riot API retry/backoff for transient upstream errors, broader match-history lookup for bet checks, targeted tests.
+Out of scope: new admin tooling or UI redesign.
+
+## Context
+- `server/riot-api.js`
+- `server/lol-match-checker.js`
+- `server/__tests__/lol-match-checker.test.js`
+
+## Plan of Work
+1. Add bounded retry/backoff for transient Riot API failures (5xx/network).
+2. Increase match-history depth used by background/manual bet checks.
+3. Add tests for baseline-not-in-window/manual resolution behavior.
+4. Update handoff notes.
+
+## Progress
+- [x] Start plan
+- [x] Implement changes
+- [x] Verify behavior
+- [x] Update handoff notes
+
+## Surprises and Discoveries
+- None yet.
+
+## Decision Log
+- Decision: Retry only transient failures (network + 5xx), not auth/rate-limit errors.
+  Rationale: avoids masking configuration errors while improving reliability.
+  Date: 2026-02-08
+
+## Verification
+- `npm test -- server/__tests__/lol-match-checker.test.js`
+
+## Outcomes
+Shipped with an additional follow-up: per-bet match selection with timestamp-aware scanning when baseline is outside the history window.

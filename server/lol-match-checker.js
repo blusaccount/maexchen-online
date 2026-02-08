@@ -11,6 +11,7 @@ let isRunning = false;
 
 // Configurable interval (default: 60 seconds)
 const CHECK_INTERVAL_MS = Number(process.env.LOL_CHECK_INTERVAL_MS) || 60000;
+const MATCH_HISTORY_CHECK_COUNT = 20;
 
 // Track last check time per PUUID to avoid excessive API calls
 const lastCheckTime = new Map(); // puuid -> timestamp
@@ -175,94 +176,105 @@ async function checkPendingBets() {
  */
 async function checkPlayerMatches(puuid, bets) {
     // Fetch recent match history
-    const matchIds = await getMatchHistory(puuid, 5);
+    const matchIds = await getMatchHistory(puuid, MATCH_HISTORY_CHECK_COUNT);
     
     if (matchIds.length === 0) {
         return; // No matches found
     }
 
-    // Find the most recent lastMatchId among all bets for this player
-    // (bets are ordered oldest first, so later bets have more recent lastMatchIds)
-    let mostRecentLastMatchId = null;
+    const matchDetailsCache = new Map();
+
+    // Resolve each bet against a match selected for that specific bet
     for (const bet of bets) {
-        if (bet.lastMatchId) {
-            mostRecentLastMatchId = bet.lastMatchId;
+        const selection = await selectResolvingMatchForBet(bet, matchIds, matchDetailsCache);
+        if (!selection.matchId) {
+            continue;
         }
+
+        const matchDetails = selection.matchDetails;
+        if (!matchDetails || !matchDetails.info || !matchDetails.info.participants) {
+            console.warn(`[LoL Match Checker] Invalid match data for ${selection.matchId}`);
+            continue;
+        }
+
+        const participant = matchDetails.info.participants.find(p => p.puuid === puuid);
+        if (!participant) {
+            console.warn(`[LoL Match Checker] Player not found in match ${selection.matchId}`);
+            continue;
+        }
+
+        const didPlayerWin = participant.win === true;
+        await resolveBetAndNotify(bet, didPlayerWin, selection.matchId);
+    }
+}
+
+async function getCachedMatchDetails(matchId, cache) {
+    if (cache.has(matchId)) {
+        return cache.get(matchId);
     }
 
-    if (!mostRecentLastMatchId) {
-        return; // No baseline match to compare against
+    const details = await getMatchDetails(matchId);
+    cache.set(matchId, details);
+    return details;
+}
+
+async function selectResolvingMatchForBet(bet, matchIds, matchDetailsCache) {
+    if (!bet || !bet.lastMatchId || matchIds.length === 0) {
+        return { matchId: null, matchDetails: null };
     }
 
-    const baselineMatchIndex = matchIds.indexOf(mostRecentLastMatchId);
-    
-    // If lastMatchId not found in recent matches, check the most recent match
-    let newMatches = [];
-    if (baselineMatchIndex === -1) {
-        // lastMatchId not in recent 5 - check most recent match only
-        newMatches = [matchIds[0]];
-    } else if (baselineMatchIndex > 0) {
-        // Found lastMatchId, get all matches before it
-        newMatches = matchIds.slice(0, baselineMatchIndex);
+    const baselineMatchIndex = matchIds.indexOf(bet.lastMatchId);
+
+    if (baselineMatchIndex > 0) {
+        const matchId = matchIds[0];
+        const matchDetails = await getCachedMatchDetails(matchId, matchDetailsCache);
+        return { matchId, matchDetails };
     }
 
-    let cachedMatchDetails = null;
-    let betsToResolve = bets;
-    if (newMatches.length === 0) {
+    if (baselineMatchIndex === 0) {
+        if (!bet.createdAt) {
+            return { matchId: null, matchDetails: null };
+        }
+
+        const createdAtMs = Date.parse(bet.createdAt);
+        if (!Number.isFinite(createdAtMs)) {
+            return { matchId: null, matchDetails: null };
+        }
+
         const latestMatchId = matchIds[0];
-        const betsWithLatestBaseline = bets.filter(bet => bet.lastMatchId === latestMatchId && bet.createdAt);
-        if (betsWithLatestBaseline.length === 0) {
-            return; // No new matches
+        const matchDetails = await getCachedMatchDetails(latestMatchId, matchDetailsCache);
+        const matchEndMs = getMatchEndTimestamp(matchDetails);
+        if (matchEndMs && matchEndMs > createdAtMs) {
+            return { matchId: latestMatchId, matchDetails };
         }
 
-        cachedMatchDetails = await getMatchDetails(latestMatchId);
-        if (!cachedMatchDetails || !cachedMatchDetails.info || !cachedMatchDetails.info.participants) {
-            console.warn(`[LoL Match Checker] Invalid match data for ${latestMatchId}`);
-            return;
+        return { matchId: null, matchDetails: null };
+    }
+
+    // Baseline not present in current history window:
+    // choose the newest match that ended after bet placement (if timestamp exists).
+    for (const matchId of matchIds) {
+        const matchDetails = await getCachedMatchDetails(matchId, matchDetailsCache);
+        if (!matchDetails || !matchDetails.info || !matchDetails.info.participants) {
+            continue;
         }
 
-        const matchEndMs = getMatchEndTimestamp(cachedMatchDetails);
-        if (!matchEndMs) {
-            return; // Unable to determine match end time
+        if (!bet.createdAt) {
+            return { matchId, matchDetails };
         }
 
-        const eligibleBets = betsWithLatestBaseline.filter(bet => {
-            const createdAtMs = Date.parse(bet.createdAt);
-            return Number.isFinite(createdAtMs) && matchEndMs > createdAtMs;
-        });
-
-        if (eligibleBets.length === 0) {
-            return; // No new matches
+        const createdAtMs = Date.parse(bet.createdAt);
+        if (!Number.isFinite(createdAtMs)) {
+            return { matchId, matchDetails };
         }
 
-        newMatches = [latestMatchId];
-        betsToResolve = eligibleBets;
+        const matchEndMs = getMatchEndTimestamp(matchDetails);
+        if (matchEndMs && matchEndMs > createdAtMs) {
+            return { matchId, matchDetails };
+        }
     }
 
-    // Process the most recent new match
-    const mostRecentMatchId = newMatches[0];
-    const matchDetails = cachedMatchDetails && mostRecentMatchId === matchIds[0]
-        ? cachedMatchDetails
-        : await getMatchDetails(mostRecentMatchId);
-    
-    if (!matchDetails || !matchDetails.info || !matchDetails.info.participants) {
-        console.warn(`[LoL Match Checker] Invalid match data for ${mostRecentMatchId}`);
-        return;
-    }
-
-    // Find the player's participant entry
-    const participant = matchDetails.info.participants.find(p => p.puuid === puuid);
-    if (!participant) {
-        console.warn(`[LoL Match Checker] Player not found in match ${mostRecentMatchId}`);
-        return;
-    }
-
-    const didPlayerWin = participant.win === true;
-    
-    // Resolve all pending bets for this player
-    for (const bet of betsToResolve) {
-        await resolveBetAndNotify(bet, didPlayerWin, mostRecentMatchId);
-    }
+    return { matchId: null, matchDetails: null };
 }
 
 /**
@@ -434,7 +446,7 @@ export async function manualCheckBetStatus(betId, playerName) {
         lastManualCheckTime.set(betId, now);
 
         // Fetch match history
-        const matchIds = await getMatchHistory(bet.puuid, 5);
+        const matchIds = await getMatchHistory(bet.puuid, MATCH_HISTORY_CHECK_COUNT);
         
         if (matchIds.length === 0) {
             return {
@@ -444,31 +456,10 @@ export async function manualCheckBetStatus(betId, playerName) {
             };
         }
 
-        // Check if there's a new match since the bet was placed
-        const baselineMatchIndex = matchIds.indexOf(bet.lastMatchId);
-        
-        let newMatches = [];
-        if (baselineMatchIndex === -1) {
-            // lastMatchId not in recent 5 - check most recent match only
-            newMatches = [matchIds[0]];
-        } else if (baselineMatchIndex > 0) {
-            // Found lastMatchId, get all matches before it
-            newMatches = matchIds.slice(0, baselineMatchIndex);
-        }
+        const matchDetailsCache = new Map();
+        const selection = await selectResolvingMatchForBet(bet, matchIds, matchDetailsCache);
 
-        let cachedMatchDetails = null;
-        if (newMatches.length === 0 && baselineMatchIndex === 0 && bet.createdAt) {
-            const createdAtMs = Date.parse(bet.createdAt);
-            if (Number.isFinite(createdAtMs)) {
-                cachedMatchDetails = await getMatchDetails(matchIds[0]);
-                const matchEndMs = getMatchEndTimestamp(cachedMatchDetails);
-                if (matchEndMs && matchEndMs > createdAtMs) {
-                    newMatches = [matchIds[0]];
-                }
-            }
-        }
-
-        if (newMatches.length === 0) {
+        if (!selection.matchId) {
             return {
                 success: true,
                 resolved: false,
@@ -476,11 +467,9 @@ export async function manualCheckBetStatus(betId, playerName) {
             };
         }
 
-        // Process the most recent new match
-        const mostRecentMatchId = newMatches[0];
-        const matchDetails = cachedMatchDetails && mostRecentMatchId === matchIds[0]
-            ? cachedMatchDetails
-            : await getMatchDetails(mostRecentMatchId);
+        // Process selected match
+        const mostRecentMatchId = selection.matchId;
+        const matchDetails = selection.matchDetails;
         
         if (!matchDetails || !matchDetails.info || !matchDetails.info.participants) {
             return {
