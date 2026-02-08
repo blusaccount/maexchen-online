@@ -84,6 +84,11 @@ function emitStockError(socket, code, message) {
     });
 }
 
+function emitBalanceUpdate(io, socketId, balance) {
+    if (balance === null || balance === undefined) return;
+    io.to(socketId).emit('balance-update', { balance });
+}
+
 // ============== RATE LIMITING ==============
 
 const rateLimiters = new Map(); // socketId -> { count, resetTime }
@@ -1099,9 +1104,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
             if (pot > 0) {
                 for (const p of room.players) {
                     const balance = betBalances.get(p.socketId);
-                    if (balance !== undefined) {
-                        io.to(p.socketId).emit('balance-update', { balance });
-                    }
+                    emitBalanceUpdate(io, p.socketId, balance);
                 }
             }
 
@@ -1488,10 +1491,10 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
             // Award coins (once per UTC day)
             const dailyStatus = await hasBrainDailyReward(name);
             if (!dailyStatus.alreadyCompleted) {
-                const newBalance = await addBalance(name, coins, 'brain_daily', { day: dailyStatus.day });
-                if (newBalance !== null) {
-                    socket.emit('balance-update', { balance: newBalance });
-                }
+                    const newBalance = await addBalance(name, coins, 'brain_daily', { day: dailyStatus.day });
+                    if (newBalance !== null) {
+                        socket.emit('balance-update', { balance: newBalance });
+                    }
                 markBrainDailyReward(name, dailyStatus.day);
             } else {
                 socket.emit('brain-daily-cooldown', { day: dailyStatus.day });
@@ -1672,9 +1675,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
                     else { coins = loserCoins; }
 
                     const newBalance = await addBalance(p.name, coins, 'brain_versus_reward', { roomCode: room.code });
-                    if (newBalance !== null) {
-                        io.to(p.socketId).emit('balance-update', { balance: newBalance });
-                    }
+                    emitBalanceUpdate(io, p.socketId, newBalance);
                 }
 
                 io.to(room.code).emit('brain-versus-result', {
@@ -1705,9 +1706,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
                 const opponent = room.game.players.find(p => p.socketId !== socket.id);
                 if (opponent) {
                     const newBalance = await addBalance(opponent.name, 20, 'brain_versus_forfeit', { roomCode: room.code });
-                    if (newBalance !== null) {
-                        io.to(opponent.socketId).emit('balance-update', { balance: newBalance });
-                    }
+                    emitBalanceUpdate(io, opponent.socketId, newBalance);
                     io.to(opponent.socketId).emit('brain-versus-result', {
                         winner: opponent.name,
                         isDraw: false,
@@ -1767,9 +1766,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
                     const opponent = room.game.players.find(p => p.socketId !== socket.id);
                     if (opponent) {
                         const newBalance = await addBalance(opponent.name, 20, 'brain_versus_forfeit', { roomCode: room.code });
-                        if (newBalance !== null) {
-                            io.to(opponent.socketId).emit('balance-update', { balance: newBalance });
-                        }
+                        emitBalanceUpdate(io, opponent.socketId, newBalance);
                         io.to(opponent.socketId).emit('brain-versus-result', {
                             winner: opponent.name,
                             isDraw: false,

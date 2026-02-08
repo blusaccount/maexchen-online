@@ -383,6 +383,21 @@
 
 ---
 
+# HANDOFF - Lean Refactor (Socket Handlers)
+
+## What Was Done
+
+- Added a small helper to emit balance updates and replaced repeated inline emissions in brain-versus rewards and Mäxchen bet updates.
+
+## Files Changed
+- `server/socket-handlers.js`
+
+## Verification
+- Not run here. Suggested:
+  - `node --check server/socket-handlers.js`
+
+---
+
 # HANDOFF - Turkish Quiz State Machine Stabilization
 
 ## What Was Done
