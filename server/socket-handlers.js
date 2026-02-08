@@ -505,22 +505,19 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
                         pictoState.messages = dbMessages;
                     }
                     pictoState.hydrated = true;
-                    pictoState.hydrationPromise = null;
                 })();
+            }
+
+            // Wait for any in-flight hydration before sending state
+            if (pictoState.hydrationPromise) {
+                await pictoState.hydrationPromise;
+                pictoState.hydrationPromise = null;
             }
 
             socket.emit('picto-state', {
                 strokes: pictoState.strokes,
                 messages: pictoState.messages || []
             });
-
-            if (pictoState.hydrationPromise) {
-                await pictoState.hydrationPromise;
-                socket.emit('picto-state', {
-                    strokes: pictoState.strokes,
-                    messages: pictoState.messages || []
-                });
-            }
         } catch (err) { console.error('picto-join error:', err.message); } });
 
         // --- Pictochat Cursor ---
