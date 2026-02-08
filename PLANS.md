@@ -38,6 +38,49 @@ Summarize what shipped and what remains.
 
 ---
 
+## ExecPlan - Docker Bot Runtime Fixes
+
+## Purpose
+Ensure the Discord bot and yt-dlp work in Docker builds without breaking existing workflows.
+
+## Scope
+In scope: Dockerfile and .dockerignore adjustments for bot runtime and security hardening.
+Out of scope: bot feature changes, game logic, or non-Docker deployment changes.
+
+## Context
+- `Dockerfile` build steps and runtime user
+- `.dockerignore` image size and sensitive artifacts
+- `bot/scripts/setup.js` postinstall downloader
+
+## Plan of Work
+1. Ensure postinstall can run during Docker build (copy bot scripts early, allow scripts).
+2. Install curl in the image for yt-dlp download.
+3. Run container as a non-root user.
+4. Exclude platform binaries from Docker context.
+5. Update handoff notes.
+
+## Progress
+- [x] Start plan
+- [x] Implement changes
+- [ ] Verify behavior
+- [x] Update handoff notes
+
+## Surprises and Discoveries
+- `postinstall` requires `bot/scripts/setup.js` to exist during `npm ci`.
+
+## Decision Log
+- Decision: Copy `bot/scripts` before `npm ci` so postinstall can run without disabling install scripts.
+  Rationale: Keeps dependency install scripts intact while ensuring yt-dlp is downloaded.
+  Date: 2026-02-08
+
+## Verification
+- `docker compose build`
+- `docker compose up`
+- `curl http://localhost:3000/health`
+
+## Outcomes
+Docker builds now include yt-dlp and run as non-root; verification pending.
+
 ## ExecPlan - PR #1 Self-hosting Baseline
 
 ## Purpose

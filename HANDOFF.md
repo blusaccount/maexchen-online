@@ -286,6 +286,29 @@
 
 ---
 
+# HANDOFF - Docker Bot Runtime Fixes
+
+## What Was Done
+
+- Ensured Docker builds can run `postinstall` by copying `bot/scripts` before `npm ci`.
+- Installed `curl` in the image for `yt-dlp` download.
+- Removed `--ignore-scripts` from Docker build to allow dependency install scripts.
+- Added non-root `app` user and ownership on `/app`.
+- Excluded `yt-dlp` binaries from Docker context to keep image small.
+
+## Files Changed
+- `Dockerfile`
+- `.dockerignore`
+- `PLANS.md`
+
+## Verification
+- Not run here. Suggested:
+  - `docker compose build`
+  - `docker compose up`
+  - `curl http://localhost:3000/health`
+
+---
+
 # HANDOFF - Turkish Quiz State Machine Stabilization
 
 ## What Was Done
