@@ -6,6 +6,7 @@ const STARTING_BALANCE = 1000;
 
 // Fallback in-memory storage for local development without DATABASE_URL
 const balances = new Map(); // playerName -> number
+const diamonds = new Map(); // playerName -> number
 
 function isValidAmount(amount) {
     return typeof amount === 'number' && Number.isFinite(amount) && amount > 0;
@@ -136,6 +137,65 @@ async function _deductBalanceDB(playerName, amount, reason, metadata, client) {
 
 export function getAllPlayerNamesMemory() {
     return Array.from(balances.keys());
+}
+
+// ============== DIAMOND MANAGEMENT ==============
+
+async function getDiamondsMemory(playerName) {
+    return diamonds.get(playerName) || 0;
+}
+
+export async function getDiamonds(playerName) {
+    if (!isDatabaseEnabled()) {
+        return getDiamondsMemory(playerName);
+    }
+
+    await getOrCreatePlayerBalance(playerName);
+    const result = await query(
+        'select diamonds from players where name = $1',
+        [playerName]
+    );
+    return result.rows[0]?.diamonds || 0;
+}
+
+export async function buyDiamonds(playerName, count = 1) {
+    if (!Number.isInteger(count) || count <= 0) return null;
+    
+    const cost = 25 * count;
+
+    if (!isDatabaseEnabled()) {
+        const currentBalance = await getBalanceMemory(playerName);
+        if (cost > currentBalance) return null;
+        
+        const newBalance = normalizeMoney(currentBalance - cost);
+        balances.set(playerName, newBalance);
+        
+        const currentDiamonds = diamonds.get(playerName) || 0;
+        const newDiamonds = currentDiamonds + count;
+        diamonds.set(playerName, newDiamonds);
+        
+        return {
+            balance: newBalance,
+            diamonds: newDiamonds
+        };
+    }
+
+    return withTransaction(async (txClient) => {
+        // Deduct coins
+        const newBalance = await _deductBalanceDB(playerName, cost, 'diamond_purchase', { count }, txClient);
+        if (newBalance === null) return null;
+        
+        // Add diamonds
+        const result = await txClient.query(
+            'update players set diamonds = diamonds + $1 where name = $2 returning diamonds',
+            [count, playerName]
+        );
+        
+        return {
+            balance: newBalance,
+            diamonds: result.rows[0]?.diamonds || 0
+        };
+    });
 }
 
 export { STARTING_BALANCE };

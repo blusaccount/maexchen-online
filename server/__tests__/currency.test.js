@@ -11,7 +11,9 @@ const {
     addBalance,
     deductBalance,
     getAllPlayerNamesMemory,
-    STARTING_BALANCE
+    STARTING_BALANCE,
+    buyDiamonds,
+    getDiamonds
 } = await import('../currency.js');
 
 describe('currency (in-memory mode)', () => {
@@ -100,6 +102,67 @@ describe('currency (in-memory mode)', () => {
             const names = getAllPlayerNamesMemory();
             expect(names).toContain('player_names_a');
             expect(names).toContain('player_names_b');
+        });
+    });
+
+    describe('getDiamonds', () => {
+        it('returns 0 for a new player', async () => {
+            const diamonds = await getDiamonds('player_diamonds_new');
+            expect(diamonds).toBe(0);
+        });
+    });
+
+    describe('buyDiamonds', () => {
+        it('deducts 25 coins and adds 1 diamond', async () => {
+            const player = 'player_buy_diamond';
+            const initialBalance = await getBalance(player);
+            expect(initialBalance).toBe(STARTING_BALANCE);
+
+            const result = await buyDiamonds(player, 1);
+            expect(result).not.toBeNull();
+            expect(result.balance).toBe(STARTING_BALANCE - 25);
+            expect(result.diamonds).toBe(1);
+
+            const balance = await getBalance(player);
+            expect(balance).toBe(STARTING_BALANCE - 25);
+
+            const diamonds = await getDiamonds(player);
+            expect(diamonds).toBe(1);
+        });
+
+        it('deducts 50 coins and adds 2 diamonds', async () => {
+            const player = 'player_buy_2_diamonds';
+            const result = await buyDiamonds(player, 2);
+            expect(result).not.toBeNull();
+            expect(result.balance).toBe(STARTING_BALANCE - 50);
+            expect(result.diamonds).toBe(2);
+        });
+
+        it('returns null when insufficient balance', async () => {
+            const player = 'player_insufficient_diamonds';
+            await deductBalance(player, 990); // Leave 10 coins
+            const result = await buyDiamonds(player, 1); // Needs 25 coins
+            expect(result).toBeNull();
+        });
+
+        it('returns null for invalid count', async () => {
+            const player = 'player_invalid_diamond_count';
+            expect(await buyDiamonds(player, 0)).toBeNull();
+            expect(await buyDiamonds(player, -1)).toBeNull();
+            expect(await buyDiamonds(player, 1.5)).toBeNull();
+        });
+
+        it('accumulates diamonds over multiple purchases', async () => {
+            const player = 'player_accumulate_diamonds';
+            
+            const result1 = await buyDiamonds(player, 1);
+            expect(result1.diamonds).toBe(1);
+            
+            const result2 = await buyDiamonds(player, 2);
+            expect(result2.diamonds).toBe(3);
+            
+            const diamonds = await getDiamonds(player);
+            expect(diamonds).toBe(3);
         });
     });
 });
