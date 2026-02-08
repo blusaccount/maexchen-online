@@ -121,14 +121,15 @@ const clubState = {
 // ============== LOOP MACHINE STATE ==============
 
 const LOOP_ROOM = 'loop-machine-room';
+const EMPTY_GRID_ROW = [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0];
 const loopState = {
     grid: {
-        kick:   [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0],
-        snare:  [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0],
-        hihat:  [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0],
-        clap:   [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0],
-        bass:   [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0],
-        synth:  [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0],
+        kick:   [...EMPTY_GRID_ROW],
+        snare:  [...EMPTY_GRID_ROW],
+        hihat:  [...EMPTY_GRID_ROW],
+        clap:   [...EMPTY_GRID_ROW],
+        bass:   [...EMPTY_GRID_ROW],
+        synth:  [...EMPTY_GRID_ROW],
     },
     bpm: 120,
     isPlaying: false,
@@ -2075,7 +2076,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
 
             // Reset all grid cells to 0
             for (const instrument in loopState.grid) {
-                loopState.grid[instrument] = [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0];
+                loopState.grid[instrument] = [...EMPTY_GRID_ROW];
             }
 
             // Broadcast full sync to all listeners
