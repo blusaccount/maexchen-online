@@ -1596,6 +1596,55 @@ Performed a full-codebase review covering security, correctness, performance, an
 - `npm test` — 122 tests pass (89 original + 33 new)
 - All existing tests remain green
 
+# HANDOFF - Loop Machine Variable Bars (1-8)
+
+## What Was Done
+
+Added configurable bar length for Loop Machine so users can set pattern size from **1 to 8 bars** (default remains 4).
+
+### Server (`server/socket-handlers.js`)
+- Added loop constants for bar limits and steps-per-bar.
+- Added helper to create empty rows from a dynamic bar count.
+- Added `bars` to shared `loopState` and to all `loop-sync` payloads.
+- Updated `loop-toggle-cell` validation to use dynamic max step based on current bars.
+- Added new `loop-set-bars` socket event:
+  - validates integer range 1-8
+  - resizes every instrument row (truncate/extend with zeros)
+  - keeps playhead in range
+  - broadcasts fresh `loop-sync` to all listeners
+- Updated `loop-clear` to preserve current bar count while clearing.
+
+### Client (`games/loop-machine/js/game.js`)
+- Added bar/step constants and dynamic empty-row creator.
+- Added `bars` to client state.
+- Updated playback loop wrap-around to dynamic step count (`bars * 4`).
+- Updated grid rendering to generate dynamic columns from current bars.
+- Added per-bar separator class assignment in JS (`bar-start`).
+- On `loop-sync`, now applies `bars`, updates bars input, and clamps playhead to range.
+- Added new `bars-input` control behavior and emits `loop-set-bars`.
+- Updated disconnect/sync enable-disable logic to include bars input.
+
+### UI (`games/loop-machine/index.html`)
+- Added **BARS (1-8)** numeric input in controls.
+- Replaced static `nth-child` separator styling with `.bar-start` class for dynamic grid lengths.
+
+## How to Verify
+1. Open Loop Machine.
+2. Change bars to values between 1 and 8.
+3. Verify grid width updates accordingly (4 steps per bar).
+4. Verify playback cycles at the selected bar length.
+5. Open a second client and verify bar changes sync live.
+6. Clear grid and verify selected bar length stays unchanged.
+
+## Verification in This Environment
+- `node --check server/socket-handlers.js`
+- `node --check games/loop-machine/js/game.js`
+- Full app run was blocked by missing local dependencies (`dotenv` missing), so browser-based manual verification was not possible in this environment.
+
+## Files Changed
+- `server/socket-handlers.js`
+- `games/loop-machine/js/game.js`
+- `games/loop-machine/index.html`
 # HANDOFF - LoL Bet Resolution Reliability (Riot 502 + Baseline Window)
 
 ## What Was Done

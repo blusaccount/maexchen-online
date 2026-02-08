@@ -135,8 +135,8 @@
             box-shadow: 0 0 0 2px var(--ds-accent);
         }
 
-        /* Visual separator every 4 steps */
-        .grid-cell:nth-child(4n+1) {
+        /* Visual separator every bar */
+        .grid-cell.bar-start {
             margin-left: 4px;
         }
 
@@ -539,6 +539,10 @@
             <div class="controls-row">
                 <label class="control-label" for="bpm-input">BPM (60-200):</label>
                 <input type="number" id="bpm-input" class="bpm-input" min="60" max="200" value="120" disabled>
+            </div>
+            <div class="controls-row">
+                <label class="control-label" for="bars-input">BARS (1-8):</label>
+                <input type="number" id="bars-input" class="bpm-input" min="1" max="8" value="4" disabled>
             </div>
             <div class="controls-row">
                 <label class="control-label" for="master-volume">MASTER VOL:</label>

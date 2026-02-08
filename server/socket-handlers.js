@@ -122,7 +122,17 @@ const clubState = {
 // ============== LOOP MACHINE STATE ==============
 
 const LOOP_ROOM = 'loop-machine-room';
-const EMPTY_GRID_ROW = [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0];
+const LOOP_MIN_BARS = 1;
+const LOOP_MAX_BARS = 8;
+const LOOP_STEPS_PER_BAR = 4;
+const LOOP_DEFAULT_BARS = 4;
+
+function createEmptyLoopRow(bars = LOOP_DEFAULT_BARS) {
+    const totalSteps = bars * LOOP_STEPS_PER_BAR;
+    return new Array(totalSteps).fill(0);
+}
+
+const EMPTY_GRID_ROW = createEmptyLoopRow();
 const loopState = {
     grid: {
         kick:    [...EMPTY_GRID_ROW],
@@ -138,6 +148,7 @@ const loopState = {
         pad:     [...EMPTY_GRID_ROW],
     },
     bpm: 120,
+    bars: LOOP_DEFAULT_BARS,
     isPlaying: false,
     currentStep: 0,
     masterVolume: 1.0,
@@ -2241,6 +2252,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
             socket.emit('loop-sync', {
                 grid: loopState.grid,
                 bpm: loopState.bpm,
+                bars: loopState.bars,
                 isPlaying: loopState.isPlaying,
                 listeners: Array.from(loopState.listeners.values()),
                 synth: loopState.synth,
@@ -2282,7 +2294,8 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
 
             // Validate step
             const stepNum = Number(step);
-            if (!Number.isInteger(stepNum) || stepNum < 0 || stepNum > 15) return;
+            const maxStep = (loopState.bars * LOOP_STEPS_PER_BAR) - 1;
+            if (!Number.isInteger(stepNum) || stepNum < 0 || stepNum > maxStep) return;
 
             // Toggle the cell
             loopState.grid[instrument][stepNum] = loopState.grid[instrument][stepNum] === 1 ? 0 : 1;
@@ -2312,6 +2325,40 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
 
             console.log(`[LoopMachine] BPM set to ${loopState.bpm}`);
         } catch (err) { console.error('loop-set-bpm error:', err.message); } });
+
+        socket.on('loop-set-bars', (data) => { try {
+            if (!checkRateLimit(socket, 5)) return;
+
+            const bars = Number(data?.bars);
+            if (!Number.isInteger(bars) || bars < LOOP_MIN_BARS || bars > LOOP_MAX_BARS) return;
+            if (bars === loopState.bars) return;
+
+            const nextSteps = bars * LOOP_STEPS_PER_BAR;
+            for (const instrument in loopState.grid) {
+                const currentRow = loopState.grid[instrument] || [];
+                if (currentRow.length > nextSteps) {
+                    loopState.grid[instrument] = currentRow.slice(0, nextSteps);
+                } else if (currentRow.length < nextSteps) {
+                    loopState.grid[instrument] = [...currentRow, ...new Array(nextSteps - currentRow.length).fill(0)];
+                }
+            }
+
+            loopState.bars = bars;
+            loopState.currentStep = loopState.currentStep % nextSteps;
+
+            io.to(LOOP_ROOM).emit('loop-sync', {
+                grid: loopState.grid,
+                bpm: loopState.bpm,
+                bars: loopState.bars,
+                isPlaying: loopState.isPlaying,
+                listeners: Array.from(loopState.listeners.values()),
+                synth: loopState.synth,
+                bass: loopState.bass,
+                masterVolume: loopState.masterVolume
+            });
+
+            console.log(`[LoopMachine] Bars set to ${loopState.bars}`);
+        } catch (err) { console.error('loop-set-bars error:', err.message); } });
 
         socket.on('loop-play-pause', () => { try {
             if (!checkRateLimit(socket, 5)) return;
@@ -2446,7 +2493,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
 
             // Reset all grid cells to 0
             for (const instrument in loopState.grid) {
-                loopState.grid[instrument] = [...EMPTY_GRID_ROW];
+                loopState.grid[instrument] = createEmptyLoopRow(loopState.bars);
             }
 
             // Reset synth to defaults
@@ -2475,6 +2522,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
             io.to(LOOP_ROOM).emit('loop-sync', {
                 grid: loopState.grid,
                 bpm: loopState.bpm,
+                bars: loopState.bars,
                 isPlaying: loopState.isPlaying,
                 listeners: Array.from(loopState.listeners.values()),
                 synth: loopState.synth,
@@ -2552,4 +2600,3 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
         } catch (err) { console.error('disconnect error:', err.message); } });
     });
 }
-

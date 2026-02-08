@@ -370,6 +370,24 @@ Out of scope: game logic, socket behavior, licensing logic.
 Shipped non-disruptive containerization assets and updated setup docs.
 Verification was attempted; docker is unavailable in this environment and `vitest` is missing, so runtime checks are documented as environment-limited warnings.
 
+## ExecPlan - Loop Machine Variable Bars (1-8)
+
+## Purpose
+Allow Loop Machine users to customize pattern length from 1 to 8 bars instead of fixed 4 bars.
+
+## Scope
+In scope: loop-machine client/server state, controls, and validation for bars.
+Out of scope: new instruments, timing model changes, persistence.
+
+## Context
+- `server/socket-handlers.js`
+- `games/loop-machine/js/game.js`
+- `games/loop-machine/index.html`
+
+## Plan of Work
+1. Add shared loop bar limits and dynamic row sizing on the server.
+2. Add bars control + dynamic rendering/playback on the client.
+3. Verify with syntax checks and manual UI screenshot.
 ## ExecPlan - LoL Bet Resolution Reliability
 
 ## Purpose
@@ -397,6 +415,21 @@ Out of scope: new admin tooling or UI redesign.
 - [x] Update handoff notes
 
 ## Surprises and Discoveries
+- None.
+
+## Decision Log
+- Decision: Keep 4 steps per bar and only make bar count configurable.
+  Rationale: Minimal change that matches current sequencer feel while adding requested flexibility.
+  Date: 2026-02-08
+
+## Verification
+- `node --check server/socket-handlers.js`
+- `node --check games/loop-machine/js/game.js`
+- Manual UI check + screenshot of bars control.
+
+## Outcomes
+Shipped variable bars (1-8) for Loop Machine across server sync, client playback/rendering, and controls.
+Automated checks passed via syntax validation; full runtime/manual verification is blocked here by missing local dependencies.
 - None yet.
 
 ## Decision Log

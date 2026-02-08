@@ -2,23 +2,32 @@
 // Socket.IO + Web Audio API for collaborative step sequencer
 
 const socket = io();
+const LOOP_MIN_BARS = 1;
+const LOOP_MAX_BARS = 8;
+const STEPS_PER_BAR = 4;
+const DEFAULT_BARS = 4;
+
+function createEmptyRow(bars = DEFAULT_BARS) {
+    return new Array(bars * STEPS_PER_BAR).fill(0);
+}
 
 // ===== State =====
 const state = {
     grid: {
-        kick: new Array(16).fill(0),
-        snare: new Array(16).fill(0),
-        hihat: new Array(16).fill(0),
-        clap: new Array(16).fill(0),
-        tom: new Array(16).fill(0),
-        ride: new Array(16).fill(0),
-        cowbell: new Array(16).fill(0),
-        bass: new Array(16).fill(0),
-        synth: new Array(16).fill(0),
-        pluck: new Array(16).fill(0),
-        pad: new Array(16).fill(0)
+        kick: createEmptyRow(),
+        snare: createEmptyRow(),
+        hihat: createEmptyRow(),
+        clap: createEmptyRow(),
+        tom: createEmptyRow(),
+        ride: createEmptyRow(),
+        cowbell: createEmptyRow(),
+        bass: createEmptyRow(),
+        synth: createEmptyRow(),
+        pluck: createEmptyRow(),
+        pad: createEmptyRow()
     },
     bpm: 120,
+    bars: DEFAULT_BARS,
     isPlaying: false,
     currentStep: 0,
     listeners: [],
@@ -464,7 +473,8 @@ function startLoop() {
         playStep(state.currentStep);
         updateStepHighlight(state.currentStep);
         
-        state.currentStep = (state.currentStep + 1) % 16;
+        const totalSteps = state.bars * STEPS_PER_BAR;
+        state.currentStep = (state.currentStep + 1) % totalSteps;
     }, stepDuration);
 }
 
@@ -508,9 +518,13 @@ function renderGrid() {
         if (!container) return;
         
         container.innerHTML = '';
-        for (let step = 0; step < 16; step++) {
+        const totalSteps = state.bars * STEPS_PER_BAR;
+        for (let step = 0; step < totalSteps; step++) {
             const cell = document.createElement('div');
             cell.className = 'grid-cell';
+            if (step % STEPS_PER_BAR === 0 && step > 0) {
+                cell.classList.add('bar-start');
+            }
             cell.dataset.instrument = instrument;
             cell.dataset.step = step;
             
@@ -606,6 +620,7 @@ socket.on('disconnect', () => {
     document.getElementById('play-pause-btn').disabled = true;
     document.getElementById('clear-btn').disabled = true;
     document.getElementById('bpm-input').disabled = true;
+    document.getElementById('bars-input').disabled = true;
     document.getElementById('master-volume').disabled = true;
     enableSynthControls(false);
     enableBassControls(false);
@@ -622,6 +637,14 @@ socket.on('loop-sync', (data) => {
     // Update BPM
     state.bpm = data.bpm;
     document.getElementById('bpm-input').value = data.bpm;
+
+    // Update bars
+    if (Number.isInteger(data.bars)) {
+        state.bars = data.bars;
+        document.getElementById('bars-input').value = data.bars;
+        const totalSteps = state.bars * STEPS_PER_BAR;
+        state.currentStep = state.currentStep % totalSteps;
+    }
     
     // Update master volume
     if (typeof data.masterVolume === 'number') {
@@ -666,6 +689,7 @@ socket.on('loop-sync', (data) => {
     document.getElementById('play-pause-btn').disabled = false;
     document.getElementById('clear-btn').disabled = false;
     document.getElementById('bpm-input').disabled = false;
+    document.getElementById('bars-input').disabled = false;
     document.getElementById('master-volume').disabled = false;
     enableSynthControls(true);
     enableBassControls(true);
@@ -868,6 +892,14 @@ document.getElementById('bpm-input').addEventListener('change', (e) => {
     if (bpm > 200) bpm = 200;
     e.target.value = bpm;
     socket.emit('loop-set-bpm', { bpm });
+});
+
+document.getElementById('bars-input').addEventListener('change', (e) => {
+    let bars = parseInt(e.target.value, 10);
+    if (bars < LOOP_MIN_BARS) bars = LOOP_MIN_BARS;
+    if (bars > LOOP_MAX_BARS) bars = LOOP_MAX_BARS;
+    e.target.value = bars;
+    socket.emit('loop-set-bars', { bars });
 });
 
 // Master volume slider
