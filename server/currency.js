@@ -48,6 +48,34 @@ export async function getBalance(playerName, client = null) {
     return getOrCreatePlayerBalance(playerName, client);
 }
 
+export async function getBalancesBatch(names) {
+    if (!isDatabaseEnabled()) {
+        return names.reduce((acc, name) => {
+            acc[name] = balances.get(name) || STARTING_BALANCE;
+            return acc;
+        }, {});
+    }
+    
+    const result = await query(
+        'SELECT player_name, balance FROM players WHERE player_name = ANY($1)',
+        [names]
+    );
+    
+    const balanceMap = {};
+    for (const row of result.rows) {
+        balanceMap[row.player_name] = Number(row.balance);
+    }
+    
+    // Fill in missing players with starting balance
+    for (const name of names) {
+        if (!(name in balanceMap)) {
+            balanceMap[name] = STARTING_BALANCE;
+        }
+    }
+    
+    return balanceMap;
+}
+
 export async function addBalance(playerName, amount, reason = 'adjustment', metadata = null, client = null) {
     if (!isValidAmount(amount)) return null;
     amount = normalizeMoney(amount);

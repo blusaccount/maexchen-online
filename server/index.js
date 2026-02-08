@@ -16,9 +16,11 @@ async function getYahooFinance() {
 }
 
 import { rooms, onlinePlayers, socketToRoom, broadcastOnlinePlayers, broadcastLobbies } from './room-manager.js';
-import { registerSocketHandlers, cleanupRateLimiters } from './socket-handlers.js';
+import { registerSocketHandlers, cleanupRateLimiters, pictoState } from './socket-handlers.js';
 import { getDailyLesson, buildQuiz } from './turkish-lessons.js';
 import { startDiscordBot } from './discord-bot.js';
+import { isDatabaseEnabled } from './db.js';
+import { loadStrokes, loadMessages } from './pictochat-store.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -397,11 +399,30 @@ setInterval(() => {
     }
 }, 5 * 60 * 1000);
 
+// Cleanup rate limiters every minute
+setInterval(cleanupRateLimiters, 60000);
+console.log('[Cleanup] Rate limiter cleanup scheduled every 60s');
+
 // ============== START SERVER ==============
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, async () => {
     console.log(`✓ StrictHotel Server: http://localhost:${PORT}`);
+
+    // Hydrate pictochat state in background if database is enabled
+    if (isDatabaseEnabled()) {
+        console.log('[Startup] Hydrating pictochat state from DB...');
+        (async () => {
+            try {
+                pictoState.strokes = await loadStrokes();
+                pictoState.messages = await loadMessages();
+                pictoState.hydrated = true;
+                console.log(`[Startup] Loaded ${pictoState.strokes.length} strokes, ${pictoState.messages.length} messages`);
+            } catch (err) {
+                console.error('[Startup] Pictochat hydration failed:', err.message);
+            }
+        })();
+    }
 
     // Discord Bot starten
     try {

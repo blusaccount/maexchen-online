@@ -40,3 +40,8 @@ create table if not exists picto_messages (
   message text not null,
   created_at timestamptz not null default now()
 );
+
+create table if not exists brain_test_history (
+  player_name varchar(20) primary key,
+  last_daily_test_at timestamptz not null default now()
+);

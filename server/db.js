@@ -17,7 +17,12 @@ let pool = null;
 if (hasDatabase) {
     pool = new Pool({
         connectionString,
-        ssl: { rejectUnauthorized: false }
+        max: 20, // Max concurrent connections
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 5000,
+        ssl: process.env.NODE_ENV === 'production' 
+            ? { rejectUnauthorized: true } 
+            : { rejectUnauthorized: false }
     });
 
     pool.on('error', (err) => {

@@ -11,7 +11,8 @@ import {
     removePlayerFromRoom, awardPotAndEndGame
 } from './room-manager.js';
 
-import { getBalance, addBalance, deductBalance } from './currency.js';
+import { getBalance, addBalance, deductBalance, getBalancesBatch } from './currency.js';
+import { isDatabaseEnabled, query } from './db.js';
 import {
     buyStock,
     sellStock,
@@ -26,7 +27,9 @@ import { loadStrokes, saveStroke, deleteStroke, clearStrokes, loadMessages, save
 
 function sanitizeName(name) {
     if (typeof name !== 'string') return '';
-    return name.replace(/[<>&"'/]/g, '').trim().slice(0, 20);
+    const clean = name.replace(/[<>&"'/]/g, '').trim().slice(0, 20);
+    if (clean.length < 2) return ''; // Enforce minimum length
+    return clean;
 }
 
 function validateCharacter(character) {
@@ -83,15 +86,15 @@ function emitStockError(socket, code, message) {
 
 // ============== RATE LIMITING ==============
 
-const rateLimiters = new Map(); // socketId -> { count, resetTime }
+const rateLimiters = new Map(); // playerName -> { count, resetTime }
 const stockTradeCooldown = new Map(); // socketId -> timestamp
 
-function checkRateLimit(socketId, maxPerSecond = 10) {
+function checkRateLimit(identifier, maxPerSecond = 10) {
     const now = Date.now();
-    let entry = rateLimiters.get(socketId);
+    let entry = rateLimiters.get(identifier);
     if (!entry || now > entry.resetTime) {
         entry = { count: 0, resetTime: now + 1000 };
-        rateLimiters.set(socketId, entry);
+        rateLimiters.set(identifier, entry);
     }
     entry.count++;
     return entry.count <= maxPerSecond;
@@ -120,7 +123,7 @@ const PICTO_MAX_STROKES = 400;
 const PICTO_MAX_POINTS = 800;
 const PICTO_MAX_POINTS_PER_SEGMENT = 20;
 
-const pictoState = {
+export const pictoState = {
     strokes: [],
     inProgress: new Map(), // strokeId -> stroke
     redoStacks: new Map(), // socketId -> stroke[]
@@ -305,6 +308,8 @@ export function cleanupRateLimiters() {
 
 let _fetchTickerQuotes = null;
 let _getYahooFinance = null;
+const liveQuoteCache = new Map(); // symbol -> { quote, expiry }
+let leaderboardBroadcastPending = false;
 
 export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance } = {}) {
     _fetchTickerQuotes = fetchTickerQuotes || null;
@@ -394,17 +399,24 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance 
             const quotes = _fetchTickerQuotes ? await _fetchTickerQuotes() : [];
             let quote = quotes.find(q => q.symbol === symbol);
             if (!quote && _getYahooFinance) {
-                try {
-                    const yf = await _getYahooFinance();
-                    const q = await yf.quote(symbol);
-                    if (q && q.regularMarketPrice != null) {
-                        quote = {
-                            symbol: (q.symbol || symbol).replace('^', ''),
-                            name: q.shortName || q.longName || symbol,
-                            price: parseFloat(q.regularMarketPrice.toFixed(2)),
-                        };
-                    }
-                } catch (e) { /* symbol not found */ }
+                // Check 5-second cache
+                const cached = liveQuoteCache.get(symbol);
+                if (cached && Date.now() < cached.expiry) {
+                    quote = cached.quote;
+                } else {
+                    try {
+                        const yf = await _getYahooFinance();
+                        const q = await yf.quote(symbol);
+                        if (q && q.regularMarketPrice != null) {
+                            quote = {
+                                symbol: (q.symbol || symbol).replace('^', ''),
+                                name: q.shortName || q.longName || symbol,
+                                price: parseFloat(q.regularMarketPrice.toFixed(2)),
+                            };
+                            liveQuoteCache.set(symbol, { quote, expiry: Date.now() + 5000 });
+                        }
+                    } catch (e) { /* symbol not found */ }
+                }
             }
             if (!quote) {
                 emitStockError(socket, 'PRICE_UNAVAILABLE', 'Price unavailable');
@@ -448,17 +460,24 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance 
             const quotes = _fetchTickerQuotes ? await _fetchTickerQuotes() : [];
             let quote = quotes.find(q => q.symbol === symbol);
             if (!quote && _getYahooFinance) {
-                try {
-                    const yf = await _getYahooFinance();
-                    const q = await yf.quote(symbol);
-                    if (q && q.regularMarketPrice != null) {
-                        quote = {
-                            symbol: (q.symbol || symbol).replace('^', ''),
-                            name: q.shortName || q.longName || symbol,
-                            price: parseFloat(q.regularMarketPrice.toFixed(2)),
-                        };
-                    }
-                } catch (e) { /* symbol not found */ }
+                // Check 5-second cache
+                const cached = liveQuoteCache.get(symbol);
+                if (cached && Date.now() < cached.expiry) {
+                    quote = cached.quote;
+                } else {
+                    try {
+                        const yf = await _getYahooFinance();
+                        const q = await yf.quote(symbol);
+                        if (q && q.regularMarketPrice != null) {
+                            quote = {
+                                symbol: (q.symbol || symbol).replace('^', ''),
+                                name: q.shortName || q.longName || symbol,
+                                price: parseFloat(q.regularMarketPrice.toFixed(2)),
+                            };
+                            liveQuoteCache.set(symbol, { quote, expiry: Date.now() + 5000 });
+                        }
+                    } catch (e) { /* symbol not found */ }
+                }
             }
             if (!quote) {
                 emitStockError(socket, 'PRICE_UNAVAILABLE', 'Price unavailable');
@@ -709,7 +728,7 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance 
         socket.on('picto-message', async (text) => { try {
             if (!checkRateLimit(socket.id, 6)) return;
             if (typeof text !== 'string') return;
-            const message = text.replace(/[<>&]/g, '').slice(0, 200).trim();
+            const message = text.replace(/[<>&"']/g, '').slice(0, 200).trim();
             if (!message) return;
 
             const payload = {
@@ -973,8 +992,10 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance 
 
             // Send updated balances to all players after bet deduction
             if (pot > 0) {
+                const names = room.players.map(p => p.name);
+                const balances = await getBalancesBatch(names);
                 for (const p of room.players) {
-                    io.to(p.socketId).emit('balance-update', { balance: await getBalance(p.name) });
+                    io.to(p.socketId).emit('balance-update', { balance: balances[p.name] });
                 }
             }
 
@@ -1332,13 +1353,35 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance 
         } catch (err) { console.error('brain-get-leaderboard error:', err.message); } });
 
         socket.on('brain-submit-score', async (data) => { try {
-            if (!checkRateLimit(socket.id)) return;
             if (!data || typeof data.playerName !== 'string') return;
             const name = sanitizeName(data.playerName);
             if (!name) return;
+            
+            // Use player name for rate limiting instead of socket ID
+            if (!checkRateLimit(name)) return;
 
             const brainAge = Number(data.brainAge);
             if (!Number.isFinite(brainAge) || brainAge < 20 || brainAge > 80) return;
+
+            // Check 24-hour cooldown for daily test
+            if (isDatabaseEnabled()) {
+                try {
+                    const result = await query(
+                        'SELECT last_daily_test_at FROM brain_test_history WHERE player_name = $1',
+                        [name]
+                    );
+                    if (result.rows.length > 0) {
+                        const lastTest = new Date(result.rows[0].last_daily_test_at);
+                        const hoursSince = (Date.now() - lastTest.getTime()) / (1000 * 60 * 60);
+                        if (hoursSince < 24) {
+                            socket.emit('error', { message: 'Daily test already completed. Try again tomorrow!' });
+                            return;
+                        }
+                    }
+                } catch (err) {
+                    console.error('brain cooldown check error:', err.message);
+                }
+            }
 
             // Server calculates coins (don't trust client)
             const coins = calculateBrainCoins(brainAge);
@@ -1362,8 +1405,28 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance 
             await addBalance(name, coins, 'brain_reward');
             socket.emit('balance-update', { balance: await getBalance(name) });
 
-            // Broadcast updated leaderboard
-            io.emit('brain-leaderboard', getBrainLeaderboardSorted());
+            // Update timestamp in DB
+            if (isDatabaseEnabled()) {
+                try {
+                    await query(
+                        `INSERT INTO brain_test_history (player_name, last_daily_test_at)
+                         VALUES ($1, NOW())
+                         ON CONFLICT (player_name) DO UPDATE SET last_daily_test_at = NOW()`,
+                        [name]
+                    );
+                } catch (err) {
+                    console.error('brain cooldown update error:', err.message);
+                }
+            }
+
+            // Debounce leaderboard broadcast
+            if (!leaderboardBroadcastPending) {
+                leaderboardBroadcastPending = true;
+                setTimeout(() => {
+                    io.emit('brain-leaderboard', getBrainLeaderboardSorted());
+                    leaderboardBroadcastPending = false;
+                }, 5000);
+            }
 
             // Update per-game leaderboards from daily test games
             if (Array.isArray(data.games)) {
