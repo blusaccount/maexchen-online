@@ -513,10 +513,25 @@ export function registerSocketHandlers(io, { fetchTickerQuotes, getYahooFinance,
             if (!player) return;
 
             const quotes = _fetchTickerQuotes ? await _fetchTickerQuotes() : [];
+
+            // Build name -> character lookup from online players
+            const charByName = new Map();
+            for (const p of onlinePlayers.values()) {
+                if (p.name && p.character) charByName.set(p.name, p.character);
+            }
+
             const leaderboard = await getLeaderboardSnapshot(quotes);
+            for (const entry of leaderboard) {
+                const ch = charByName.get(entry.name);
+                if (ch) entry.character = ch;
+            }
             socket.emit('stock-leaderboard', leaderboard);
 
             const performanceLeaderboard = await getTradePerformanceLeaderboard(quotes);
+            for (const entry of performanceLeaderboard) {
+                const ch = charByName.get(entry.name);
+                if (ch) entry.character = ch;
+            }
             socket.emit('stock-performance-leaderboard', performanceLeaderboard);
         } catch (err) { console.error('stock-get-leaderboard error:', err.message); } });
 

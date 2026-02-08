@@ -443,6 +443,13 @@
         });
     }
 
+    function leaderboardAvatarHtml(player) {
+        if (player.character && player.character.dataURL) {
+            return '<img class="leaderboard-avatar" src="' + escapeAttr(player.character.dataURL) + '" alt="' + escapeAttr(player.name) + '">';
+        }
+        return '<span class="leaderboard-avatar-placeholder">👽</span>';
+    }
+
     // --- Leaderboard ---
     var leaderboardContainer = $('leaderboard-container');
     var performanceLeaderboardContainer = $('performance-leaderboard-container');
@@ -493,6 +500,7 @@
             html += '<div class="leaderboard-card" data-idx="' + i + '">'
                 + '<div class="leaderboard-header">'
                 + '<span class="leaderboard-rank">#' + (i + 1) + '</span>'
+                + leaderboardAvatarHtml(p)
                 + '<span class="leaderboard-name' + (isMe ? ' is-you' : '') + '">'
                 + escapeHtml(p.name) + (isMe ? ' (YOU)' : '') + '</span>'
                 + '<div class="leaderboard-stats">'
@@ -523,6 +531,7 @@
             html += '<div class="leaderboard-card">'
                 + '<div class="leaderboard-header">'
                 + '<span class="leaderboard-rank">#' + (i + 1) + '</span>'
+                + leaderboardAvatarHtml(p)
                 + '<span class="leaderboard-name' + (isMe ? ' is-you' : '') + '">'
                 + escapeHtml(p.name) + (isMe ? ' (YOU)' : '') + '</span>'
                 + '<div class="leaderboard-stats">'
