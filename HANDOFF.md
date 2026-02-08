@@ -1,3 +1,19 @@
+# HANDOFF - LoL Bet Rate Limit Backoff + Scan Limit
+
+## What Was Done
+- Added Riot API rate-limit backoff to pause bet checking after 429 responses.
+- Added a match-details scan limit (default 5) to reduce Riot API calls.
+- Manual bet checks now respect the backoff window.
+- Added env knobs: `LOL_MATCH_SCAN_LIMIT`, `LOL_RATE_LIMIT_BACKOFF_MS`.
+
+## How to Verify
+1. `node --check server/lol-match-checker.js`
+2. Trigger a manual check during 429 → should return rate limit message immediately.
+3. Observe logs: `[LoL Match Checker] Skipping cycle: Riot rate limit backoff ...`
+
+### Files Modified
+- `server/lol-match-checker.js`
+
 # HANDOFF - Strictly7s Slot Machine
 
 ## What Was Done

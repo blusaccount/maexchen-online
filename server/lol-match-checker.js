@@ -12,6 +12,8 @@ let isRunning = false;
 // Configurable interval (default: 60 seconds)
 const CHECK_INTERVAL_MS = Number(process.env.LOL_CHECK_INTERVAL_MS) || 60000;
 const MATCH_HISTORY_CHECK_COUNT = 20;
+const MATCH_DETAILS_SCAN_LIMIT = Math.max(1, Number(process.env.LOL_MATCH_SCAN_LIMIT) || 5);
+const RATE_LIMIT_BACKOFF_MS = Math.max(10000, Number(process.env.LOL_RATE_LIMIT_BACKOFF_MS) || 180000);
 
 // Track last check time per PUUID to avoid excessive API calls
 const lastCheckTime = new Map(); // puuid -> timestamp
@@ -20,6 +22,20 @@ const MIN_CHECK_INTERVAL_PER_PUUID = 30000; // 30 seconds minimum between checks
 // Track last manual check time per bet ID to prevent abuse
 const lastManualCheckTime = new Map(); // betId -> timestamp
 const MIN_MANUAL_CHECK_INTERVAL = 10000; // 10 seconds minimum between manual checks for same bet
+let riotRateLimitedUntil = 0;
+
+function isRiotRateLimitError(err) {
+    const msg = String(err?.message || '').toLowerCase();
+    return msg.includes('rate limit');
+}
+
+function setRiotRateLimitBackoff() {
+    riotRateLimitedUntil = Date.now() + RATE_LIMIT_BACKOFF_MS;
+}
+
+function isRiotRateLimited() {
+    return Date.now() < riotRateLimitedUntil;
+}
 
 /**
  * Start the background match checker
@@ -93,6 +109,11 @@ async function backfillMissingPuuids() {
                 // Add small delay to respect rate limits
                 await delay(1000);
             } catch (err) {
+                if (isRiotRateLimitError(err)) {
+                    setRiotRateLimitBackoff();
+                    console.warn('[LoL Match Checker] Riot API rate limited during backfill. Backing off.');
+                    return;
+                }
                 console.error(`[LoL Match Checker] Error backfilling bet ${bet.id}:`, err.message);
                 // Continue with next bet even if one fails
             }
@@ -112,6 +133,12 @@ async function checkPendingBets() {
         const disabledReason = getRiotApiDisabledReason();
         if (disabledReason) {
             console.warn(`[LoL Match Checker] Skipping cycle: ${disabledReason}`);
+            return;
+        }
+
+        if (isRiotRateLimited()) {
+            const waitMs = Math.max(0, riotRateLimitedUntil - Date.now());
+            console.warn(`[LoL Match Checker] Skipping cycle: Riot rate limit backoff (${Math.ceil(waitMs / 1000)}s)`);
             return;
         }
 
@@ -152,6 +179,11 @@ async function checkPendingBets() {
                 // Add small delay between different players to respect rate limits
                 await delay(1000);
             } catch (err) {
+                if (isRiotRateLimitError(err)) {
+                    setRiotRateLimitBackoff();
+                    console.warn('[LoL Match Checker] Riot API rate limited. Backing off.');
+                    return;
+                }
                 console.error(`[LoL Match Checker] Error checking ${bets[0].lolUsername}:`, err.message);
                 // Continue with next player even if one fails
             }
@@ -173,11 +205,12 @@ async function checkPlayerMatches(puuid, bets) {
         return; // No matches found
     }
 
+    const scanIds = matchIds.slice(0, MATCH_DETAILS_SCAN_LIMIT);
     const matchDetailsCache = new Map();
 
     // Resolve each bet against a match selected for that specific bet
     for (const bet of bets) {
-        const selection = await selectResolvingMatchForBet(bet, matchIds, matchDetailsCache);
+        const selection = await selectResolvingMatchForBet(bet, scanIds, matchDetailsCache);
         if (!selection.matchId) {
             continue;
         }
@@ -349,6 +382,14 @@ export async function manualCheckBetStatus(betId, playerName) {
         };
     }
 
+    if (isRiotRateLimited()) {
+        return {
+            success: false,
+            error: 'RATE_LIMIT_EXCEEDED',
+            message: 'Riot API rate limit exceeded. Please try again in a few minutes.'
+        };
+    }
+
     // Check if Riot API is enabled
     if (!isRiotApiEnabled()) {
         const reason = getRiotApiDisabledReason();
@@ -423,7 +464,8 @@ export async function manualCheckBetStatus(betId, playerName) {
         }
 
         const matchDetailsCache = new Map();
-        const selection = await selectResolvingMatchForBet(bet, matchIds, matchDetailsCache);
+        const scanIds = matchIds.slice(0, MATCH_DETAILS_SCAN_LIMIT);
+        const selection = await selectResolvingMatchForBet(bet, scanIds, matchDetailsCache);
 
         if (!selection.matchId) {
             return {
@@ -478,7 +520,8 @@ export async function manualCheckBetStatus(betId, playerName) {
         console.error('[Manual Check] Error:', err.message);
         
         // Handle specific error types
-        if (err.message.includes('rate limit')) {
+        if (isRiotRateLimitError(err)) {
+            setRiotRateLimitBackoff();
             return {
                 success: false,
                 error: 'RATE_LIMIT_EXCEEDED',
