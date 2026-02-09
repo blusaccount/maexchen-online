@@ -1,3 +1,19 @@
+# Handoff: Extract LoL Betting inline CSS (2025-07-15)
+
+## What Changed
+
+Extracted the inline `<style>` block from `games/lol-betting/index.html` into a new external stylesheet `games/lol-betting/lol-betting.css`. The `<style>` tag was replaced with a `<link rel="stylesheet" href="lol-betting.css">` tag. No CSS rules were modified.
+
+### Files Modified
+- `games/lol-betting/index.html` — replaced inline `<style>` block with `<link>` tag
+- `games/lol-betting/lol-betting.css` — new file containing the extracted CSS (349 lines)
+
+### How to Verify
+- Open LoL Betting game in a browser and confirm styles load correctly
+- Compare `lol-betting.css` content against the original inline styles
+
+---
+
 # Handoff: Extract Strictly7s inline CSS (2025-07-15)
 
 ## What Changed
