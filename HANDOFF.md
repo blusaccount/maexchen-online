@@ -1,3 +1,41 @@
+# Handoff: Fix Stock Portfolio/Price Updates (2026-02-09)
+
+## What Changed
+
+Fixed two bugs that prevented stock portfolios and prices from updating.
+
+### Bug 1: fetchTickerQuotes error handling
+`fetchTickerQuotes()` in `server/routes/stocks.js` had no catch block. When the Yahoo Finance API failed, the error propagated to socket handlers which caught it silently and sent nothing to the client. The portfolio/leaderboard would never update during API outages.
+
+**Fix:** Added a catch block that returns stale cached data (or empty array) instead of throwing.
+
+### Bug 2: Non-ticker stock prices never update
+Stocks bought via the search feature (not in the predefined TICKER_SYMBOLS list) never got updated prices. `fetchTickerQuotes()` only fetches prices for predefined symbols. When computing portfolio/leaderboard snapshots, non-ticker stocks fell back to `avgCost` as their current price, so their value never changed.
+
+**Fix:** Added an optional `fetchMissingPrice` callback parameter to `getPortfolioSnapshot`, `getLeaderboardSnapshot`, and `getTradePerformanceLeaderboard`. The handlers pass a callback that uses `getQuoteForSymbol` to look up individual stock prices for symbols not in the ticker list. Results are cached in the price map to avoid duplicate lookups.
+
+### Files Modified
+
+- `server/routes/stocks.js` — Added catch block in `fetchTickerQuotes()` IIFE
+- `server/stock-game.js` — Added optional `fetchMissingPrice` callback to `getPortfolioSnapshot`, `getLeaderboardSnapshot`, `getTradePerformanceLeaderboard`
+- `server/handlers/stocks.js` — Pass `fetchMissingPrice` callback to all portfolio/leaderboard calls
+- `server/__tests__/stock-game.test.js` — 7 new tests covering both fixes
+
+## What Didn't Change
+
+- Buy/sell trade logic, price validation, rate limiting
+- Ticker symbol list and cache durations
+- Client-side code
+- Database schema
+
+## How to Verify
+
+1. `npm test` — All 193 tests pass (186 original + 7 new)
+2. Buy a stock via search (non-ticker), verify portfolio shows updated price on refresh
+3. Simulate Yahoo Finance API failure (e.g. network disconnect), verify portfolio still loads with cached prices
+
+---
+
 # Handoff: Fix LoL Betting Resolution (2026-02-09)
 
 ## What Changed
