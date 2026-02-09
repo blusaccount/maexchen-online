@@ -352,18 +352,18 @@
         if (!audioEnabled) return;
         
         // Map multipliers to sounds:
-        // Small: 2x-10x (CHERRY 10x, LEMON 7x, Two CHERRY 2x)
-        // Medium: 18x-31x (BELL 18x, DIAMOND 31x)
-        // Big: 53x (BAR 53x)
-        // Jackpot: 148x (SEVEN 148x)
+        // Small: 2x-9x (CHERRY 9x, LEMON 7x, Two CHERRY 2x)
+        // Medium: 17x-29x (BELL 17x, DIAMOND 29x)
+        // Big: 50x (BAR 50x)
+        // Jackpot: 140x (SEVEN 140x)
         
-        if (multiplier >= 148) {
+        if (multiplier >= 140) {
             // Jackpot
             playAudioFile(audioFiles.jackpot);
-        } else if (multiplier >= 53) {
+        } else if (multiplier >= 50) {
             // Big win
             playAudioFile(audioFiles.bigWin);
-        } else if (multiplier >= 18) {
+        } else if (multiplier >= 17) {
             // Medium win
             playAudioFile(audioFiles.mediumWin);
         } else if (multiplier >= 2) {

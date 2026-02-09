@@ -160,7 +160,7 @@ describe('evaluateStrictly7sSpin', () => {
 });
 
 describe('RTP simulation test', () => {
-    it('should achieve 91-95% RTP over 1,000,000 spins', { timeout: 30000 }, () => {
+    it('should achieve 87-92% RTP over 1,000,000 spins', { timeout: 30000 }, () => {
         const numSpins = 1000000;
         let totalBet = 0;
         let totalPayout = 0;
@@ -180,9 +180,9 @@ describe('RTP simulation test', () => {
 
         const actualRTP = (totalPayout / totalBet) * 100;
 
-        // Expected RTP: 92.31%, with ±2% tolerance (90-94%)
-        expect(actualRTP).toBeGreaterThanOrEqual(90);
-        expect(actualRTP).toBeLessThanOrEqual(94);
+        // Expected RTP: 89.78%, with ±2% tolerance (87-92%)
+        expect(actualRTP).toBeGreaterThanOrEqual(87);
+        expect(actualRTP).toBeLessThanOrEqual(92);
 
         // Log the actual RTP for verification
         console.log(`RTP over ${numSpins.toLocaleString()} spins: ${actualRTP.toFixed(4)}%`);

@@ -6,30 +6,30 @@ const STRICTLY7S_BETS = [2, 5, 10, 15, 20, 50];
 /**
  * Strictly7s Symbol Configuration
  * 
- * RTP Calculation (Target: 90-93%):
+ * RTP Calculation (Target: 88-90%):
  * Total weight: 28
  * Total outcomes: 28^3 = 21,952
  * 
  * Three-of-a-kind expected values:
- *   SEVEN    3x: P=(1/28)^3  = 0.0000455539, mult=148x, EV=0.0067419825
- *   BAR      3x: P=(2/28)^3  = 0.0003644315, mult= 53x, EV=0.0193148688
- *   DIAMOND  3x: P=(3/28)^3  = 0.0012299563, mult= 31x, EV=0.0381286443
- *   BELL     3x: P=(5/28)^3  = 0.0056942420, mult= 18x, EV=0.1024963557
- *   CHERRY   3x: P=(7/28)^3  = 0.0156250000, mult= 10x, EV=0.1562500000
+ *   SEVEN    3x: P=(1/28)^3  = 0.0000455539, mult=140x, EV=0.0063777543
+ *   BAR      3x: P=(2/28)^3  = 0.0003644315, mult= 50x, EV=0.0182215752
+ *   DIAMOND  3x: P=(3/28)^3  = 0.0012299563, mult= 29x, EV=0.0356687318
+ *   BELL     3x: P=(5/28)^3  = 0.0056942420, mult= 17x, EV=0.0968021328
+ *   CHERRY   3x: P=(7/28)^3  = 0.0156250000, mult=  9x, EV=0.1406250000
  *   LEMON    3x: P=(10/28)^3 = 0.0455539359, mult=  7x, EV=0.3188775510
  * 
  * Partial win (exactly 2 CHERRY, not 3):
  *   2 CHERRY: P=3*(7/28)^2*(21/28) = 0.1406250000, mult=2x, EV=0.2812500000
  * 
- * TOTAL RTP: 92.31%
- * House Edge: 7.69%
+ * TOTAL RTP: 89.78%
+ * House Edge: 10.22%
  */
 const STRICTLY7S_SYMBOLS = [
-    { id: 'SEVEN', label: '7', weight: 1, multiplier: 148 },
-    { id: 'BAR', label: 'BAR', weight: 2, multiplier: 53 },
-    { id: 'DIAMOND', label: 'DIAMOND', weight: 3, multiplier: 31 },
-    { id: 'BELL', label: 'BELL', weight: 5, multiplier: 18 },
-    { id: 'CHERRY', label: 'CHERRY', weight: 7, multiplier: 10 },
+    { id: 'SEVEN', label: '7', weight: 1, multiplier: 140 },
+    { id: 'BAR', label: 'BAR', weight: 2, multiplier: 50 },
+    { id: 'DIAMOND', label: 'DIAMOND', weight: 3, multiplier: 29 },
+    { id: 'BELL', label: 'BELL', weight: 5, multiplier: 17 },
+    { id: 'CHERRY', label: 'CHERRY', weight: 7, multiplier: 9 },
     { id: 'LEMON', label: 'LEMON', weight: 10, multiplier: 7 }
 ];
 const STRICTLY7S_TOTAL_WEIGHT = STRICTLY7S_SYMBOLS.reduce((sum, s) => sum + s.weight, 0);
