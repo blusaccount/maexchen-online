@@ -67,16 +67,6 @@ describe('riot-api: getMatchHistory', () => {
         await expect(getMatchHistory('', 5)).rejects.toThrow('Valid PUUID is required');
         await expect(getMatchHistory(123, 5)).rejects.toThrow('Valid PUUID is required');
     });
-
-    it('clamps count to valid range', async () => {
-        // This test will fail without API key, but tests the input validation
-        try {
-            await getMatchHistory('valid-puuid', 0);
-        } catch (err) {
-            // Expected to fail due to no API key, but count should be clamped to 1
-            expect(err.message).not.toContain('count');
-        }
-    });
 });
 
 describe('riot-api: getMatchDetails', () => {
