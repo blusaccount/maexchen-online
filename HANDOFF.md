@@ -1,3 +1,36 @@
+# Handoff: Add Market Status Indicator to Stock Game (2026-02-09)
+
+## What Changed
+
+### Feature: Market open/closed indicator
+
+Users confused "US market closed = zero price change on stocks like AAPL/GOOGL" with broken prices. Added a market status indicator that shows whether the US stock market is currently open, closed, pre-market, or after-hours.
+
+**Root cause of confusion:** When the US market is closed, Yahoo Finance returns `change: 0` and `pct: 0` for US stocks. Without a status indicator, this looks identical to a pricing bug.
+
+### Files Modified
+
+- `server/routes/stocks.js` — Extract `marketState` field from Yahoo Finance quotes and include it in the `/api/ticker` response
+- `games/stocks/index.html` — Added `#market-status` element above the search bar in the MARKET section
+- `games/stocks/stocks.css` — Styled the market status indicator with colored dots (green=open, red=closed, amber=pre/post)
+- `games/stocks/js/game.js` — Added `updateMarketStatus()` that reads `marketState` from AAPL/MSFT quotes and displays the appropriate status
+- `server/__tests__/stocks-route.test.js` — 2 new tests for `marketState` field inclusion
+
+## What Didn't Change
+
+- Buy/sell trade logic, portfolio calculations, leaderboard
+- Cache durations and merge behavior
+- Database schema
+- Trading is still allowed 24/7 regardless of market status
+
+## How to Verify
+
+1. `npm test` — All 200 tests pass (198 previous + 2 new)
+2. Visit the stock game page — when the US market is closed, a red "US MARKET CLOSED" banner appears above the search bar
+3. When the US market is open (Mon-Fri 9:30-16:00 ET), a green "US MARKET OPEN" banner appears
+
+---
+
 # Handoff: Fix Stale Ticker Prices in Partial API Responses (2026-02-09)
 
 ## What Changed

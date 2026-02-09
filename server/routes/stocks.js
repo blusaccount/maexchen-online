@@ -111,6 +111,7 @@ export function createStocksRouter({ getYahooFinance, isStockGameEnabled }) {
                         change: parseFloat(change.toFixed(2)),
                         pct: parseFloat(pct.toFixed(2)),
                         currency,
+                        marketState: q.marketState || null,
                     });
                 }
 

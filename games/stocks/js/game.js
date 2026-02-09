@@ -15,6 +15,7 @@
     const portfolioNetEl = $('portfolio-net');
     const holdingsContainer = $('holdings-container');
     const marketGrid = $('market-grid');
+    const marketStatusEl = $('market-status');
     const tradeOverlay = $('trade-overlay');
     const tradeTitleEl = $('trade-title');
     const tradePriceEl = $('trade-price');
@@ -147,9 +148,37 @@
                 if (Array.isArray(data) && data.length > 0) {
                     marketData = data;
                     renderMarket();
+                    updateMarketStatus(data);
                 }
             })
             .catch(() => { /* use fallback if already rendered */ });
+    };
+
+    // --- Market status indicator ---
+    const updateMarketStatus = (data) => {
+        if (!marketStatusEl) return;
+        // Derive US market status from a well-known US stock
+        const usStock = data.find((q) => q.symbol === 'AAPL' || q.symbol === 'MSFT');
+        if (!usStock || !usStock.marketState) {
+            marketStatusEl.style.display = 'none';
+            return;
+        }
+        const state = usStock.marketState;
+        let cls = 'closed';
+        let label = 'US MARKET CLOSED';
+        if (state === 'REGULAR') {
+            cls = 'open';
+            label = 'US MARKET OPEN';
+        } else if (state === 'PRE' || state === 'PREPRE') {
+            cls = 'pre';
+            label = 'US MARKET PRE-MARKET';
+        } else if (state === 'POST' || state === 'POSTPOST') {
+            cls = 'post';
+            label = 'US MARKET AFTER-HOURS';
+        }
+        marketStatusEl.className = 'market-status ' + cls;
+        marketStatusEl.innerHTML = '<span class="status-dot"></span>' + label;
+        marketStatusEl.style.display = 'block';
     };
 
     // --- Determine asset type ---

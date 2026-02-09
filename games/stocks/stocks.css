@@ -204,6 +204,28 @@ body {
     border: 2px solid var(--ds-border);
 }
 
+/* ===== Market Status ===== */
+.market-status {
+    font-size: 8px;
+    padding: 6px 8px;
+    margin-bottom: 8px;
+    border: 2px solid var(--ds-border);
+    background: var(--ds-surface);
+    display: none;
+}
+.market-status .status-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-right: 4px;
+    vertical-align: middle;
+}
+.market-status.open .status-dot { background: #22bb22; }
+.market-status.closed .status-dot { background: #bb2222; }
+.market-status.pre .status-dot,
+.market-status.post .status-dot { background: #bb8800; }
+
 /* ===== Search Bar ===== */
 .search-container {
     margin-bottom: 12px;

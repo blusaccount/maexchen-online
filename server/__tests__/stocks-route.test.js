@@ -21,7 +21,7 @@ function makeRouter(mockQuote) {
     });
 }
 
-function makeQuote(symbol, price) {
+function makeQuote(symbol, price, marketState) {
     return {
         symbol,
         regularMarketPrice: price,
@@ -29,6 +29,7 @@ function makeQuote(symbol, price) {
         regularMarketChangePercent: 0,
         currency: 'USD',
         shortName: symbol,
+        ...(marketState !== undefined && { marketState }),
     };
 }
 
@@ -104,5 +105,27 @@ describe('fetchTickerQuotes merge behavior', () => {
         const result = await router.fetchTickerQuotes();
         expect(result).toHaveLength(1);
         expect(result[0].symbol).toBe('AAPL');
+    });
+
+    it('includes marketState from Yahoo Finance quotes', async () => {
+        const mockQuote = vi.fn().mockResolvedValueOnce([
+            makeQuote('AAPL', 150, 'CLOSED'),
+            makeQuote('BTC-USD', 97000, 'REGULAR'),
+        ]);
+        const router = makeRouter(mockQuote);
+
+        const result = await router.fetchTickerQuotes();
+        expect(result.find(r => r.symbol === 'AAPL').marketState).toBe('CLOSED');
+        expect(result.find(r => r.symbol === 'BTC-USD').marketState).toBe('REGULAR');
+    });
+
+    it('sets marketState to null when not provided by API', async () => {
+        const mockQuote = vi.fn().mockResolvedValueOnce([
+            makeQuote('AAPL', 150),
+        ]);
+        const router = makeRouter(mockQuote);
+
+        const result = await router.fetchTickerQuotes();
+        expect(result[0].marketState).toBeNull();
     });
 });
