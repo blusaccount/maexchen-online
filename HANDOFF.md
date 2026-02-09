@@ -1,3 +1,37 @@
+# Handoff: Persistent Character Portraits (2026-02-09)
+
+## What Changed
+
+### Feature: Character portraits saved to database
+
+Character portraits were only stored in browser localStorage and the in-memory `onlinePlayers` Map. This meant stock game leaderboards and the contacts app could only show portraits for currently online players. Offline players appeared with the default 👽 emoji.
+
+**Fix:** Portraits are now persisted in the `players.character_data` (jsonb) column in PostgreSQL.
+
+### Files Modified
+
+- `server/sql/persistence.sql` — Added `character_data jsonb` column to `players` table
+- `server/character-store.js` — **New module**: `saveCharacter()`, `getCharacter()`, `getCharactersByNames()` with in-memory fallback
+- `server/handlers/currency.js` — Saves character to DB on `register-player`; `get-player-character` falls back to DB lookup
+- `server/handlers/stocks.js` — Leaderboard fetches DB characters for players not currently online
+- `server/__tests__/character-store.test.js` — **New**: 6 tests for the character-store module
+
+## What Didn't Change
+
+- Client-side character creator logic (still stores in localStorage)
+- Character validation rules (4KB limit, allowed keys)
+- Online player broadcast structure
+- Stock game trading/portfolio logic
+
+## How to Verify
+
+1. `npm test` — All 206 tests pass (200 previous + 6 new; 7 pre-existing failures in stocks-route unrelated)
+2. Create a character, join the stock game, buy shares, then disconnect
+3. From another browser/session, open the stock leaderboard — the disconnected player's portrait should still appear
+4. In the contacts app, click a player name — their portrait loads from DB even if they reconnect without localStorage
+
+---
+
 # Handoff: Add Market Status Indicator to Stock Game (2026-02-09)
 
 ## What Changed

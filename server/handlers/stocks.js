@@ -2,6 +2,7 @@ import { buyStock, sellStock, getPortfolioSnapshot, getAllPortfolioPlayerNames, 
 import { recordSnapshot, getHistory } from '../portfolio-history.js';
 import { emitStockError, emitBalanceUpdate } from '../socket-utils.js';
 import { getBalance } from '../currency.js';
+import { getCharactersByNames } from '../character-store.js';
 
 const stockQuoteCache = new Map(); // symbol -> { quote, ts }
 const STOCK_QUOTE_CACHE_MS = 60 * 1000;
@@ -196,6 +197,16 @@ export function registerStocksHandlers(socket, io, deps) {
         }
 
         const leaderboard = await getLeaderboardSnapshot(quotes, fetchMissingPrice);
+
+        // Collect names missing a character from online players
+        const missingNames = leaderboard
+            .filter(e => !charByName.has(e.name))
+            .map(e => e.name);
+        if (missingNames.length > 0) {
+            const dbChars = await getCharactersByNames(missingNames);
+            for (const [name, ch] of dbChars) charByName.set(name, ch);
+        }
+
         for (const entry of leaderboard) {
             const ch = charByName.get(entry.name);
             if (ch) entry.character = ch;
