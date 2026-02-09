@@ -52,6 +52,8 @@ export function registerStocksHandlers(socket, io, deps) {
     _stockGameEnabled = isStockGameEnabled;
     _fetchTickerQuotes = fetchTickerQuotes;
     _getYahooFinance = getYahooFinance;
+
+    const fetchMissingPrice = (sym) => getQuoteForSymbol(sym, [], _getYahooFinance);
     
     socket.on('stock-buy', async (data) => { try {
         if (!checkRateLimit(socket)) return;
@@ -94,7 +96,7 @@ export function registerStocksHandlers(socket, io, deps) {
         }
 
         socket.emit('balance-update', { balance: result.newBalance });
-        const snapshot = await getPortfolioSnapshot(player.name, quotes);
+        const snapshot = await getPortfolioSnapshot(player.name, quotes, fetchMissingPrice);
         socket.emit('stock-portfolio', snapshot);
         recordSnapshot(player.name, snapshot.totalValue, result.newBalance);
         socket.emit('stock-portfolio-history', getHistory(player.name));
@@ -141,7 +143,7 @@ export function registerStocksHandlers(socket, io, deps) {
         }
 
         socket.emit('balance-update', { balance: result.newBalance });
-        const snapshot = await getPortfolioSnapshot(player.name, quotes);
+        const snapshot = await getPortfolioSnapshot(player.name, quotes, fetchMissingPrice);
         socket.emit('stock-portfolio', snapshot);
         recordSnapshot(player.name, snapshot.totalValue, result.newBalance);
         socket.emit('stock-portfolio-history', getHistory(player.name));
@@ -158,7 +160,7 @@ export function registerStocksHandlers(socket, io, deps) {
         if (!player) return;
 
         const quotes = _fetchTickerQuotes ? await _fetchTickerQuotes() : [];
-        const snapshot = await getPortfolioSnapshot(player.name, quotes);
+        const snapshot = await getPortfolioSnapshot(player.name, quotes, fetchMissingPrice);
         socket.emit('stock-portfolio', snapshot);
         const cash = await getBalance(player.name);
         recordSnapshot(player.name, snapshot.totalValue, cash);
@@ -192,14 +194,14 @@ export function registerStocksHandlers(socket, io, deps) {
             if (p.name && p.character) charByName.set(p.name, p.character);
         }
 
-        const leaderboard = await getLeaderboardSnapshot(quotes);
+        const leaderboard = await getLeaderboardSnapshot(quotes, fetchMissingPrice);
         for (const entry of leaderboard) {
             const ch = charByName.get(entry.name);
             if (ch) entry.character = ch;
         }
         socket.emit('stock-leaderboard', leaderboard);
 
-        const performanceLeaderboard = await getTradePerformanceLeaderboard(quotes);
+        const performanceLeaderboard = await getTradePerformanceLeaderboard(quotes, fetchMissingPrice);
         for (const entry of performanceLeaderboard) {
             const ch = charByName.get(entry.name);
             if (ch) entry.character = ch;

@@ -256,7 +256,7 @@ export async function getAllPortfolioPlayerNames() {
  * Build the full leaderboard in 2 DB queries instead of N+1.
  * @returns {Promise<Array<{ name, portfolioValue, cash, netWorth, holdings }>>}
  */
-export async function getLeaderboardSnapshot(currentPrices) {
+export async function getLeaderboardSnapshot(currentPrices, fetchMissingPrice) {
     const priceMap = new Map(currentPrices.map(p => [p.symbol, p]));
 
     if (!isDatabaseEnabled()) {
@@ -270,7 +270,11 @@ export async function getLeaderboardSnapshot(currentPrices) {
             let totalValue = 0;
 
             for (const [symbol, pos] of portfolio) {
-                const quote = priceMap.get(symbol);
+                let quote = priceMap.get(symbol);
+                if (!quote && fetchMissingPrice) {
+                    quote = await fetchMissingPrice(symbol);
+                    if (quote) priceMap.set(symbol, quote);
+                }
                 const currentPrice = quote ? quote.price : pos.avgCost;
                 const marketValue = pos.shares * currentPrice;
                 const costBasis = pos.shares * pos.avgCost;
@@ -332,7 +336,11 @@ export async function getLeaderboardSnapshot(currentPrices) {
             const symbol = row.symbol;
             const shares = Number(row.shares);
             const avgCost = Number(row.avg_cost);
-            const quote = priceMap.get(symbol);
+            let quote = priceMap.get(symbol);
+            if (!quote && fetchMissingPrice) {
+                quote = await fetchMissingPrice(symbol);
+                if (quote) priceMap.set(symbol, quote);
+            }
             const currentPrice = quote ? quote.price : avgCost;
             const marketValue = shares * currentPrice;
             const costBasis = shares * avgCost;
@@ -371,8 +379,8 @@ export async function getLeaderboardSnapshot(currentPrices) {
  * Keeps the main leaderboard independent (portfolio value still primary there).
  * @returns {Promise<Array<{ name:string, investedCapital:number, portfolioValue:number, openPnl:number, performancePct:number }>>}
  */
-export async function getTradePerformanceLeaderboard(currentPrices) {
-    const portfolioLeaderboard = await getLeaderboardSnapshot(currentPrices);
+export async function getTradePerformanceLeaderboard(currentPrices, fetchMissingPrice) {
+    const portfolioLeaderboard = await getLeaderboardSnapshot(currentPrices, fetchMissingPrice);
     const performance = [];
 
     for (const player of portfolioLeaderboard) {
@@ -387,7 +395,7 @@ export async function getTradePerformanceLeaderboard(currentPrices) {
 /**
  * @returns {Promise<{ holdings: Array, totalValue: number }>}
  */
-export async function getPortfolioSnapshot(playerName, currentPrices) {
+export async function getPortfolioSnapshot(playerName, currentPrices, fetchMissingPrice) {
     const priceMap = new Map(currentPrices.map(p => [p.symbol, p]));
 
     if (!isDatabaseEnabled()) {
@@ -396,7 +404,11 @@ export async function getPortfolioSnapshot(playerName, currentPrices) {
         let totalValue = 0;
 
         for (const [symbol, pos] of portfolio) {
-            const quote = priceMap.get(symbol);
+            let quote = priceMap.get(symbol);
+            if (!quote && fetchMissingPrice) {
+                quote = await fetchMissingPrice(symbol);
+                if (quote) priceMap.set(symbol, quote);
+            }
             const currentPrice = quote ? quote.price : pos.avgCost;
             const marketValue = pos.shares * currentPrice;
             const costBasis = pos.shares * pos.avgCost;
@@ -438,7 +450,12 @@ export async function getPortfolioSnapshot(playerName, currentPrices) {
         const avgCost = Number(row.avg_cost);
 
         const quote = priceMap.get(symbol);
-        const currentPrice = quote ? quote.price : avgCost;
+        let resolvedQuote = quote;
+        if (!resolvedQuote && fetchMissingPrice) {
+            resolvedQuote = await fetchMissingPrice(symbol);
+            if (resolvedQuote) priceMap.set(symbol, resolvedQuote);
+        }
+        const currentPrice = resolvedQuote ? resolvedQuote.price : avgCost;
         const marketValue = shares * currentPrice;
         const costBasis = shares * avgCost;
         const gainLoss = marketValue - costBasis;
@@ -446,7 +463,7 @@ export async function getPortfolioSnapshot(playerName, currentPrices) {
 
         holdings.push({
             symbol,
-            name: quote?.name || symbol,
+            name: resolvedQuote?.name || symbol,
             shares: parseFloat(shares.toFixed(6)),
             avgCost: parseFloat(avgCost.toFixed(2)),
             currentPrice: parseFloat(currentPrice.toFixed(2)),

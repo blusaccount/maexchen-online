@@ -118,6 +118,9 @@ export function createStocksRouter({ getYahooFinance, isStockGameEnabled }) {
                     tickerCache = { data: results, ts: Date.now() };
                 }
                 return results;
+            } catch (err) {
+                console.error('[fetchTickerQuotes] Error:', err.message);
+                return tickerCache.data || [];
             } finally {
                 tickerFetchPromise = null;
             }
