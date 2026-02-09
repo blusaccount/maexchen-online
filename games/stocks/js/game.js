@@ -8,9 +8,6 @@
     var socket = io();
     var $ = function (id) { return document.getElementById(id); };
 
-    var NAME_KEY = 'stricthotel-name';
-    var CHAR_KEY = 'stricthotel-character';
-
     var balanceEl = $('balance-display');
     var portfolioValueEl = $('portfolio-value');
     var portfolioGainEl = $('portfolio-gain');
@@ -112,12 +109,9 @@
 
     // --- Register with server ---
     function register() {
-        var name = localStorage.getItem(NAME_KEY) || '';
+        var name = window.StrictHotelSocket.getPlayerName();
         if (!name) return;
-        var charJSON = localStorage.getItem(CHAR_KEY);
-        var character = null;
-        try { character = charJSON ? JSON.parse(charJSON) : null; } catch (e) { /* ignore */ }
-        socket.emit('register-player', { name: name, character: character, game: 'stocks' });
+        window.StrictHotelSocket.registerPlayer(socket, 'stocks');
     }
 
     socket.on('connect', register);
@@ -454,7 +448,7 @@
     var leaderboardContainer = $('leaderboard-container');
     var performanceLeaderboardContainer = $('performance-leaderboard-container');
     var refreshBtn = $('refresh-leaderboard');
-    var myName = localStorage.getItem(NAME_KEY) || '';
+    var myName = window.StrictHotelSocket.getPlayerName();
 
     socket.on('stock-leaderboard', function (data) {
         if (!Array.isArray(data)) return;

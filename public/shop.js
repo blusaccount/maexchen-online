@@ -6,7 +6,6 @@
     'use strict';
 
     const socket = io();
-    const NAME_KEY = 'stricthotel-name';
     const Creator = window.StrictHotelCreator || window.MaexchenCreator;
 
     let currentBalance = 0;
@@ -21,13 +20,12 @@
 
     // Register this player so they show up as online in "shop" status
     function registerSelf() {
-        const name = localStorage.getItem(NAME_KEY) || '';
+        const name = window.StrictHotelSocket.getPlayerName();
         if (!name) {
             window.location.href = '/';
             return;
         }
-        const character = (Creator && Creator.hasCharacter()) ? Creator.getCharacter() : null;
-        socket.emit('register-player', { name, character, game: 'shop' });
+        window.StrictHotelSocket.registerPlayer(socket, 'shop');
     }
 
     // Update balance displays

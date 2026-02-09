@@ -67,14 +67,10 @@
         if (lobby.getName) return lobby.getName();
         var input = document.getElementById('input-name');
         if (input && input.value.trim()) return input.value.trim();
-        return localStorage.getItem('stricthotel-name') || '';
+        return window.StrictHotelSocket.getPlayerName();
     }
 
-    function escapeHtml(str) {
-        var div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-    }
+    var escapeHtml = window.StrictHotelSocket.escapeHtml;
 
     function colorFromName(name) {
         var hash = 0;

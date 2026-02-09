@@ -42,15 +42,11 @@
 
     // ============== HELPERS ==============
 
-    function escapeHtml(str) {
-        var div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-    }
+    var escapeHtml = window.StrictHotelSocket.escapeHtml;
 
     function getName() {
         if (lobby.getName) return lobby.getName();
-        return localStorage.getItem('stricthotel-name') || 'Anon';
+        return window.StrictHotelSocket.getPlayerName() || 'Anon';
     }
 
     // ============== AUDIO ==============

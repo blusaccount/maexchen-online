@@ -4,9 +4,6 @@
     'use strict';
 
     var socket = io();
-    var NAME_KEY = 'stricthotel-name';
-    var CHAR_KEY = 'stricthotel-character';
-
     var SYMBOLS = [
         { id: 'SEVEN', label: '7️⃣' },
         { id: 'BAR', label: '🟫' },
@@ -251,22 +248,14 @@
     }
 
     function registerPlayer() {
-        var name = localStorage.getItem(NAME_KEY) || '';
+        var name = window.StrictHotelSocket.getPlayerName();
         if (!name) {
             setStatus('Not logged in. Set a name in the lobby first.', 'loss');
             spinBtn.disabled = true;
             return;
         }
 
-        var character = null;
-        try {
-            var raw = localStorage.getItem(CHAR_KEY);
-            character = raw ? JSON.parse(raw) : null;
-        } catch (err) {
-            character = null;
-        }
-
-        socket.emit('register-player', { name: name, character: character, game: 'strictly7s' });
+        window.StrictHotelSocket.registerPlayer(socket, 'strictly7s');
         socket.emit('get-balance');
     }
 

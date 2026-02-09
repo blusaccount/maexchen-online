@@ -17,7 +17,6 @@
     var modalStatus = $('modal-status');
     var modalClose = $('modal-close');
 
-    var NAME_KEY = 'stricthotel-name';
     var Creator = window.StrictHotelCreator || window.MaexchenCreator;
     
     // Store diamond counts fetched from server
@@ -25,10 +24,9 @@
 
     // Register this player so they show up as online
     function registerSelf() {
-        var name = localStorage.getItem(NAME_KEY) || '';
+        var name = window.StrictHotelSocket.getPlayerName();
         if (!name) return;
-        var character = (Creator && Creator.hasCharacter()) ? Creator.getCharacter() : null;
-        socket.emit('register-player', { name: name, character: character, game: 'lobby' });
+        window.StrictHotelSocket.registerPlayer(socket, 'lobby');
     }
 
     // --- Online Players List ---
@@ -203,11 +201,7 @@
     });
 
     // --- Utility ---
-    function escapeHtml(str) {
-        var div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-    }
+    var escapeHtml = window.StrictHotelSocket.escapeHtml;
 
     function escapeAttr(str) {
         return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

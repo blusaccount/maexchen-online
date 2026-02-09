@@ -569,15 +569,9 @@ function updateListeners(listeners) {
         listEl.innerHTML = '<div class="listener-tag">No one here</div>';
     } else {
         listEl.innerHTML = listeners.map(name => 
-            `<div class="listener-tag">${escapeHtml(name)}</div>`
+            `<div class="listener-tag">${window.StrictHotelSocket.escapeHtml(name)}</div>`
         ).join('');
     }
-}
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
 }
 
 function updatePlayPauseButton() {
@@ -601,11 +595,9 @@ socket.on('connect', () => {
     setStatus('Connected', 'success');
     
     // Register player for global online status
-    const name = localStorage.getItem('stricthotel-name') || '';
+    const name = window.StrictHotelSocket.getPlayerName();
     if (name) {
-        const Creator = window.MaexchenCreator || window.StrictHotelCreator;
-        const character = (Creator && Creator.hasCharacter()) ? Creator.getCharacter() : null;
-        socket.emit('register-player', { name, character, game: 'loop-machine' });
+        window.StrictHotelSocket.registerPlayer(socket, 'loop-machine');
     }
     
     socket.emit('loop-join');

@@ -16,7 +16,6 @@
     var btnCreate = $('btn-create-character');
 
     var STORAGE_KEY = 'stricthotel-character';
-    var NAME_KEY = 'stricthotel-name';
     var registered = false;
     
     // Make It Rain constants
@@ -27,13 +26,13 @@
     window.StrictHotelLobby = window.StrictHotelLobby || {};
     window.StrictHotelLobby.socket = socket;
     window.StrictHotelLobby.getName = function () {
-        return (inputName && inputName.value.trim()) || localStorage.getItem(NAME_KEY) || '';
+        return (inputName && inputName.value.trim()) || window.StrictHotelSocket.getPlayerName();
     };
 
     // --- Init: Load saved state ---
     function init() {
         // Restore name
-        var savedName = localStorage.getItem(NAME_KEY);
+        var savedName = window.StrictHotelSocket.getPlayerName();
         if (savedName && inputName) {
             inputName.value = savedName;
         }
@@ -86,7 +85,7 @@
         inputName.addEventListener('input', function () {
             var name = inputName.value.trim();
             if (name) {
-                localStorage.setItem(NAME_KEY, name);
+                localStorage.setItem(window.StrictHotelSocket.NAME_KEY, name);
             }
         });
 
@@ -100,10 +99,9 @@
         var name = (inputName && inputName.value.trim()) || '';
         if (!name) return;
 
-        localStorage.setItem(NAME_KEY, name);
+        localStorage.setItem(window.StrictHotelSocket.NAME_KEY, name);
 
-        var character = (Creator && Creator.hasCharacter()) ? Creator.getCharacter() : null;
-        socket.emit('register-player', { name: name, character: character, game: 'lobby' });
+        window.StrictHotelSocket.registerPlayer(socket, 'lobby');
         registered = true;
     }
 
@@ -195,13 +193,6 @@
         setTimeout(function () {
             coin.remove();
         }, 5000);
-    }
-
-    // --- Utility ---
-    function escapeHtml(str) {
-        var div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
     }
 
     // --- Start ---

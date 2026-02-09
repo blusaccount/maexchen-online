@@ -19,16 +19,16 @@
     }
 
     // Player state
-    let playerName = localStorage.getItem('stricthotel-name') || '';
+    let playerName = window.StrictHotelSocket.getPlayerName();
 
     // Register player
     if (playerName) {
-        socket.emit('register-player', { name: playerName, character: null, game: 'strictbrain' });
+        window.StrictHotelSocket.registerPlayer(socket, 'strictbrain');
     }
 
     socket.on('connect', () => {
         if (playerName) {
-            socket.emit('register-player', { name: playerName, character: null, game: 'strictbrain' });
+            window.StrictHotelSocket.registerPlayer(socket, 'strictbrain');
         }
         socket.emit('brain-get-leaderboard');
     });
@@ -127,11 +127,7 @@
         });
     });
 
-    function escapeHtml(str) {
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-    }
+    const escapeHtml = window.StrictHotelSocket.escapeHtml;
 
     // ============== NAVIGATION ==============
 

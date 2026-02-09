@@ -8,10 +8,6 @@ let usernameValidated = false;
 let validatedRiotId = null;
 let validatedPuuid = null;
 
-// Constants
-const NAME_KEY = 'stricthotel-name';
-const CHAR_KEY = 'stricthotel-character';
-
 // DOM Elements
 const balanceDisplay = document.getElementById('balance-display');
 const betForm = document.getElementById('bet-form');
@@ -36,21 +32,13 @@ function init() {
 
 // Register player and request data on socket connection
 function register() {
-    const name = localStorage.getItem(NAME_KEY) || '';
+    const name = window.StrictHotelSocket.getPlayerName();
     if (!name) {
         balanceDisplay.textContent = '💰 Not logged in';
         return;
     }
     
-    const charJSON = localStorage.getItem(CHAR_KEY);
-    let character = null;
-    try { 
-        character = charJSON ? JSON.parse(charJSON) : null; 
-    } catch (e) { 
-        /* ignore */ 
-    }
-    
-    socket.emit('register-player', { name: name, character: character, game: 'lol-betting' });
+    window.StrictHotelSocket.registerPlayer(socket, 'lol-betting');
 }
 
 // Wait for socket connection before registering
@@ -264,7 +252,7 @@ socket.on('lol-bet-resolved', (data) => {
     const { playerName, wonBet, payout, lolUsername, matchId } = data;
     
     // Only show notification if this is our bet
-    const myName = localStorage.getItem(NAME_KEY) || '';
+    const myName = window.StrictHotelSocket.getPlayerName();
     if (playerName !== myName) {
         return; // Not our bet, ignore
     }
@@ -288,7 +276,7 @@ socket.on('lol-bet-resolved', (data) => {
 
 // Bet refunded notification
 socket.on('lol-bet-refunded', (data) => {
-    const myName = localStorage.getItem(NAME_KEY) || '';
+    const myName = window.StrictHotelSocket.getPlayerName();
     if (data.playerName !== myName) {
         return;
     }
@@ -361,7 +349,7 @@ function renderBetsList(bets) {
         return;
     }
     
-    const myName = localStorage.getItem(NAME_KEY) || '';
+    const myName = window.StrictHotelSocket.getPlayerName();
     
     betsList.innerHTML = bets.map(bet => {
         const predictionText = bet.betOnWin ? 'WILL WIN' : 'WILL LOSE';
@@ -371,8 +359,8 @@ function renderBetsList(bets) {
         return `
             <div class="bet-item">
                 <div class="bet-info">
-                    <div class="bet-player">👤 ${escapeHtml(bet.playerName)}</div>
-                    <div class="bet-target">⚔️ ${escapeHtml(bet.lolUsername)}</div>
+                    <div class="bet-player">👤 ${window.StrictHotelSocket.escapeHtml(bet.playerName)}</div>
+                    <div class="bet-target">⚔️ ${window.StrictHotelSocket.escapeHtml(bet.lolUsername)}</div>
                     <div class="bet-prediction">${predictionIcon} ${predictionText}</div>
                 </div>
                 <div class="bet-right">
@@ -486,12 +474,6 @@ function showNotification(message, type = 'info') {
             document.body.removeChild(notificationDiv);
         }
     }, 5000);
-}
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
 }
 
 // ============== START ==============
