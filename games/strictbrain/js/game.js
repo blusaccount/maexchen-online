@@ -723,7 +723,12 @@
             const submitBtn = $(submitBtnId);
             answerEl.focus();
 
+            let submitted = false;
+
             function submitAnswer() {
+                if (submitted) return;
+                submitted = true;
+
                 const guess = answerEl.value.trim().toUpperCase();
                 if (guess === word) {
                     score++;
@@ -738,17 +743,13 @@
                 }
             }
 
-            answerEl.addEventListener('keydown', function handler(e) {
+            answerEl.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
-                    answerEl.removeEventListener('keydown', handler);
                     submitAnswer();
                 }
             });
 
-            submitBtn.addEventListener('click', () => {
-                answerEl.removeEventListener('keydown', answerEl._handler);
-                submitAnswer();
-            });
+            submitBtn.addEventListener('click', submitAnswer);
         }
 
         nextWord();
