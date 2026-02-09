@@ -1,4 +1,41 @@
-# Handoff: Socket.IO Boilerplate Refactor (2026-02-09)
+# Handoff: Extract Inline CSS to lobby.css (2026-02-09)
+
+## What Changed
+
+Extracted ~620 lines of inline CSS from `public/index.html` into a dedicated `public/lobby.css` file for better maintainability and consistency with the rest of the codebase.
+
+### Files Modified
+
+**New file:**
+- `public/lobby.css` — All CSS rules from the inline `<style>` block (618 lines)
+
+**Updated file:**
+- `public/index.html` — Replaced `<style>...</style>` block with `<link rel="stylesheet" href="/lobby.css">` tag
+
+## What Didn't Change
+
+- **No CSS rule modifications** — All CSS rules moved as-is, zero changes to styling
+- **No behavioral changes** — Page looks and functions identically
+- **No JavaScript changes** — All scripts remain unchanged
+- `public/index.html` reduced from 875 to 255 lines
+
+## How to Verify
+
+1. **Tests:** `npm test` — All 160 tests still pass
+2. **Manual:** Visit `/` — lobby page should load with identical Nintendo DS pixel-style theme
+3. **Check styles:** Verify avatar bar, game cards, pictochat, soundboard, and stock ticker all render correctly
+4. **Network:** Check browser DevTools to confirm `/lobby.css` loads successfully (HTTP 200 or 302 if behind auth)
+
+## Notes
+
+- This is a pure structural refactor for maintainability
+- The CSS file is served by Express static middleware from the `public/` directory
+- All other pages (`shop.html`, `contacts.html`, etc.) remain unchanged and use their own CSS
+- Follows the pattern established by other pages that use external CSS files
+
+---
+
+# Previous Handoff: Socket.IO Boilerplate Refactor (2026-02-09)
 
 ## What Changed
 
