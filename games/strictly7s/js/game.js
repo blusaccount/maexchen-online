@@ -60,12 +60,15 @@
     const spinBtn = document.getElementById('spin-btn');
     const betButtons = Array.prototype.slice.call(document.querySelectorAll('.bet-btn'));
     const soundToggle = document.getElementById('sound-toggle');
+    const historyList = document.getElementById('history-list');
 
     let selectedBet = null;
     let isSpinning = false;
     let audioEnabled = true;
     let audioCtx = null;
     let pendingResultTimer = null;
+    let currentBalance = null;
+    let spinHistory = [];
 
     function setStatus(text, kind) {
         statusEl.textContent = text;
@@ -74,8 +77,70 @@
 
     function setBalance(value) {
         if (typeof value === 'number') {
+            currentBalance = value;
             balanceEl.textContent = String(value);
+            updateBetButtons();
         }
+    }
+
+    function updateBetButtons() {
+        if (currentBalance === null) return;
+        
+        betButtons.forEach((btn) => {
+            const betValue = Number(btn.getAttribute('data-bet'));
+            if (betValue > currentBalance) {
+                btn.classList.add('insufficient');
+            } else {
+                btn.classList.remove('insufficient');
+            }
+        });
+
+        // Deselect current bet if insufficient
+        if (selectedBet !== null && selectedBet > currentBalance) {
+            selectedBet = null;
+            betButtons.forEach((b) => b.classList.remove('active'));
+            spinBtn.disabled = true;
+            setStatus('Insufficient balance. Choose a lower bet.', 'loss');
+        }
+    }
+
+    function addToHistory(reels, payout, bet, winType) {
+        const reelEmojis = reels.map((id) => symbolById[id] || '?');
+        const entry = { reels: reelEmojis, payout, bet, winType };
+        
+        spinHistory.unshift(entry);
+        if (spinHistory.length > 5) {
+            spinHistory = spinHistory.slice(0, 5);
+        }
+        
+        renderHistory();
+    }
+
+    function renderHistory() {
+        historyList.innerHTML = '';
+        
+        spinHistory.forEach((entry) => {
+            const row = document.createElement('div');
+            row.className = 'history-row';
+            
+            const reelsDiv = document.createElement('div');
+            reelsDiv.className = 'history-reels';
+            reelsDiv.textContent = entry.reels.join(' ');
+            
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'history-result';
+            if (entry.payout > 0) {
+                resultDiv.textContent = `+${entry.payout}`;
+                resultDiv.classList.add('win');
+            } else {
+                resultDiv.textContent = `−${entry.bet}`;
+                resultDiv.classList.add('loss');
+            }
+            
+            row.appendChild(reelsDiv);
+            row.appendChild(resultDiv);
+            historyList.appendChild(row);
+        });
     }
 
     function buildReelStrip(reel) {
@@ -201,6 +266,33 @@
         }
     }
 
+    function playWinAnimation(isJackpot) {
+        const animClass = isJackpot ? 'jackpot-flash' : 'win-flash';
+        reels.forEach((reel) => {
+            reel.frame.classList.add(animClass);
+        });
+        
+        // Remove animation class after it completes
+        const duration = isJackpot ? 2000 : 1200; // 5 iterations * 0.4s or 3 iterations * 0.4s
+        setTimeout(() => {
+            reels.forEach((reel) => {
+                reel.frame.classList.remove(animClass);
+            });
+        }, duration);
+    }
+
+    function playLossAnimation() {
+        reels.forEach((reel) => {
+            reel.frame.classList.add('loss-dim');
+        });
+        
+        setTimeout(() => {
+            reels.forEach((reel) => {
+                reel.frame.classList.remove('loss-dim');
+            });
+        }, 600);
+    }
+
     function ensureAudioContext() {
         if (!audioCtx) {
             const AudioCtor = window.AudioContext || window.webkitAudioContext;
@@ -311,15 +403,22 @@
             setTimeout(() => {
                 setSpinningState(false);
                 setBalance(result.balance);
+                
+                // Add to history
+                addToHistory(result.reels, result.payout, result.bet, result.winType);
+                
+                // Play animations and sounds
+                if (result.multiplier > 0) {
+                    const isJackpot = result.reels[0] === 'SEVEN' && result.winType === 'three-kind';
+                    playWinAnimation(isJackpot);
+                    setStatus(formatWinMessage(result), 'win');
+                    playWinSound(result.multiplier);
+                } else {
+                    playLossAnimation();
+                    setStatus('No win this time.', 'loss');
+                    playLoseSound();
+                }
             }, 420);
-
-            if (result.multiplier > 0) {
-                setStatus(formatWinMessage(result), 'win');
-                playWinSound(result.multiplier);
-            } else {
-                setStatus('No win this time.', 'loss');
-                playLoseSound();
-            }
         }, 450);
     });
 

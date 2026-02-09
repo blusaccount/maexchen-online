@@ -159,6 +159,47 @@
             100% { transform: translateY(0); }
         }
 
+        /* Win animations */
+        .reel-frame.win-flash {
+            animation: winPulse 0.4s ease 3;
+        }
+
+        @keyframes winPulse {
+            0%, 100% {
+                box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.6);
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(124, 255, 139, 0.6), inset 0 0 20px rgba(124, 255, 139, 0.3);
+                border-color: var(--slot-win);
+            }
+        }
+
+        /* Jackpot animation (3x SEVEN) */
+        .reel-frame.jackpot-flash {
+            animation: jackpotPulse 0.4s ease 5;
+        }
+
+        @keyframes jackpotPulse {
+            0%, 100% {
+                box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.6);
+            }
+            50% {
+                box-shadow: 0 0 30px rgba(255, 204, 51, 0.8), inset 0 0 30px rgba(255, 204, 51, 0.4);
+                border-color: var(--slot-accent);
+            }
+        }
+
+        /* Loss animation */
+        .reel-frame.loss-dim {
+            animation: lossFade 0.6s ease;
+        }
+
+        @keyframes lossFade {
+            0% { filter: brightness(1); }
+            50% { filter: brightness(0.5); }
+            100% { filter: brightness(1); }
+        }
+
         .controls {
             display: grid;
             grid-template-columns: 1fr;
@@ -185,6 +226,11 @@
             border-color: var(--slot-accent);
             color: var(--slot-accent);
             box-shadow: 0 0 0 2px rgba(255, 204, 51, 0.2);
+        }
+
+        .bet-btn.insufficient {
+            opacity: 0.4;
+            pointer-events: none;
         }
 
         .spin-row {
@@ -245,6 +291,50 @@
         .payout-line {
             display: flex;
             justify-content: space-between;
+        }
+
+        .spin-history {
+            border-top: 2px dashed #2c2c2c;
+            margin-top: 12px;
+            padding-top: 12px;
+            font-size: 8px;
+            color: var(--slot-dim);
+        }
+
+        .spin-history h2 {
+            font-size: 10px;
+            color: var(--slot-ink);
+            margin-bottom: 8px;
+        }
+
+        .history-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 0;
+            border-bottom: 1px solid #1a1a1a;
+        }
+
+        .history-row:last-child {
+            border-bottom: none;
+        }
+
+        .history-reels {
+            display: flex;
+            gap: 4px;
+            font-size: 10px;
+        }
+
+        .history-result {
+            margin-left: auto;
+        }
+
+        .history-result.win {
+            color: var(--slot-win);
+        }
+
+        .history-result.loss {
+            color: var(--slot-loss);
         }
 
         .footer {
@@ -315,13 +405,18 @@
 
                     <div class="payouts">
                         <h2>Payouts (center line)</h2>
-                        <div class="payout-line"><span>7️⃣ 7️⃣ 7️⃣</span><span>84x</span></div>
-                        <div class="payout-line"><span>🟫🟫🟫</span><span>34x</span></div>
-                        <div class="payout-line"><span>💎💎💎</span><span>25x</span></div>
-                        <div class="payout-line"><span>🔔🔔🔔</span><span>17x</span></div>
-                        <div class="payout-line"><span>🍒🍒🍒</span><span>13x</span></div>
-                        <div class="payout-line"><span>🍋🍋🍋</span><span>8x</span></div>
+                        <div class="payout-line"><span>7️⃣ 7️⃣ 7️⃣</span><span>148x</span></div>
+                        <div class="payout-line"><span>🟫🟫🟫</span><span>53x</span></div>
+                        <div class="payout-line"><span>💎💎💎</span><span>31x</span></div>
+                        <div class="payout-line"><span>🔔🔔🔔</span><span>18x</span></div>
+                        <div class="payout-line"><span>🍒🍒🍒</span><span>10x</span></div>
+                        <div class="payout-line"><span>🍋🍋🍋</span><span>7x</span></div>
                         <div class="payout-line"><span>Two 🍒 (any)</span><span>2x</span></div>
+                    </div>
+
+                    <div class="spin-history" id="spin-history">
+                        <h2>Recent Spins</h2>
+                        <div id="history-list"></div>
                     </div>
             </div>
         </div>
