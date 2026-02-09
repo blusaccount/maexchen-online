@@ -1,15 +1,3 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Strictly7s</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/shared/css/theme.css">
-    <link rel="stylesheet" href="strictly7s.css">
-    <style>
         :root {
             --slot-bg: #0f0f0f;
             --slot-panel: #1a1a1a;
@@ -31,9 +19,9 @@
         }
 
         .page {
-            width: min(1400px, 95vw);
-            margin: 20px auto 48px;
-            padding: 24px;
+            width: min(980px, 92vw);
+            margin: 28px auto 48px;
+            padding: 16px;
             border: 3px solid var(--slot-border);
             background: linear-gradient(180deg, #141414 0%, #0a0a0a 100%);
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
@@ -60,17 +48,11 @@
         }
 
         .title {
-            font-size: 24px;
-            letter-spacing: 3px;
+            font-size: 18px;
+            letter-spacing: 2px;
             text-transform: uppercase;
             color: var(--slot-accent);
-            text-shadow: 0 2px 0 #000, 0 0 20px rgba(255, 204, 51, 0.5);
-            animation: titlePulse 2s ease-in-out infinite;
-        }
-        
-        @keyframes titlePulse {
-            0%, 100% { text-shadow: 0 2px 0 #000, 0 0 20px rgba(255, 204, 51, 0.5); }
-            50% { text-shadow: 0 2px 0 #000, 0 0 30px rgba(255, 204, 51, 0.8); }
+            text-shadow: 0 2px 0 #000;
         }
 
         .balance {
@@ -81,22 +63,20 @@
         .machine {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 24px;
+            gap: 16px;
             background: var(--slot-panel);
             border: 3px solid var(--slot-border);
-            padding: 24px;
-            box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
+            padding: 16px;
         }
 
         .reels {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 20px;
-            padding: 24px;
+            gap: 12px;
+            padding: 12px;
             background: #0d0d0d;
-            border: 3px solid #2b2b2b;
+            border: 2px solid #2b2b2b;
             position: relative;
-            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.8);
         }
 
         .payline {
@@ -104,17 +84,10 @@
             left: 10px;
             right: 10px;
             top: 50%;
-            height: 4px;
+            height: 3px;
             background: linear-gradient(90deg, transparent 0%, var(--slot-accent) 12%, var(--slot-accent) 88%, transparent 100%);
-            opacity: 0.6;
+            opacity: 0.5;
             transform: translateY(-50%);
-            box-shadow: 0 0 10px rgba(255, 204, 51, 0.5);
-            animation: paylinePulse 2s ease-in-out infinite;
-        }
-        
-        @keyframes paylinePulse {
-            0%, 100% { opacity: 0.4; }
-            50% { opacity: 0.7; }
         }
 
         .reel {
@@ -138,9 +111,11 @@
         }
 
         .reel-window {
-            height: 160px;
+            height: 96px;
             overflow: hidden;
-            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .reel-strip {
@@ -148,39 +123,29 @@
             flex-direction: column;
             align-items: center;
             will-change: transform;
-            position: relative;
         }
 
         .reel-item {
-            height: 160px;
+            height: 96px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 56px;
+            font-size: 28px;
             width: 100%;
             color: var(--slot-ink);
-            text-shadow: 0 3px 0 #000, 0 0 20px rgba(255, 204, 51, 0.3);
+            text-shadow: 0 2px 0 #000;
         }
 
         .reel-frame.spinning .reel-window {
-            animation: reelFlicker 0.1s steps(2) infinite, reelGlow 0.3s ease-in-out infinite alternate;
-            filter: brightness(1.4) blur(0.8px);
-        }
-        
-        .reel-frame.spinning {
-            box-shadow: 0 0 30px rgba(255, 204, 51, 0.6), inset 0 0 20px rgba(255, 204, 51, 0.3);
-            border-color: var(--slot-accent);
+            animation: reelFlicker 0.12s steps(2) infinite;
+            filter: brightness(1.3) blur(0.6px);
+            text-shadow: 0 0 8px rgba(255, 204, 51, 0.6);
         }
 
         @keyframes reelFlicker {
             0% { transform: translateY(0); }
             50% { transform: translateY(-4px); }
             100% { transform: translateY(0); }
-        }
-        
-        @keyframes reelGlow {
-            0% { box-shadow: 0 0 20px rgba(255, 204, 51, 0.4), inset 0 0 15px rgba(255, 204, 51, 0.2); }
-            100% { box-shadow: 0 0 40px rgba(255, 204, 51, 0.7), inset 0 0 25px rgba(255, 204, 51, 0.4); }
         }
 
         /* Win animations */
@@ -191,12 +156,10 @@
         @keyframes winPulse {
             0%, 100% {
                 box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.6);
-                transform: scale(1);
             }
             50% {
-                box-shadow: 0 0 30px rgba(124, 255, 139, 0.8), inset 0 0 25px rgba(124, 255, 139, 0.4);
+                box-shadow: 0 0 20px rgba(124, 255, 139, 0.6), inset 0 0 20px rgba(124, 255, 139, 0.3);
                 border-color: var(--slot-win);
-                transform: scale(1.05);
             }
         }
 
@@ -208,12 +171,10 @@
         @keyframes jackpotPulse {
             0%, 100% {
                 box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.6);
-                transform: scale(1);
             }
             50% {
-                box-shadow: 0 0 50px rgba(255, 204, 51, 1), inset 0 0 40px rgba(255, 204, 51, 0.6);
+                box-shadow: 0 0 30px rgba(255, 204, 51, 0.8), inset 0 0 30px rgba(255, 204, 51, 0.4);
                 border-color: var(--slot-accent);
-                transform: scale(1.08);
             }
         }
 
@@ -272,22 +233,10 @@
             border: 3px solid var(--slot-accent);
             background: linear-gradient(180deg, #ffdd66 0%, #d79a00 100%);
             color: #1a1200;
-            padding: 14px 24px;
-            font-size: 14px;
+            padding: 10px 16px;
+            font-size: 12px;
             text-transform: uppercase;
             cursor: pointer;
-            box-shadow: 0 4px 10px rgba(255, 204, 51, 0.4);
-            transition: all 0.2s ease;
-        }
-        
-        .spin-btn:not(:disabled):hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(255, 204, 51, 0.6);
-        }
-        
-        .spin-btn:not(:disabled):active {
-            transform: translateY(0);
-            box-shadow: 0 2px 5px rgba(255, 204, 51, 0.4);
         }
 
         .spin-btn:disabled {
@@ -384,88 +333,9 @@
             text-align: center;
         }
 
-        @media (min-width: 1100px) {
+        @media (min-width: 900px) {
             .machine {
-                grid-template-columns: 1.5fr 1fr;
+                grid-template-columns: 1.1fr 0.9fr;
                 align-items: start;
             }
         }
-    </style>
-</head>
-<body>
-    <div class="page">
-        <div class="header">
-            <a class="back-link" href="/">MENU</a>
-            <div class="title">Strictly7s</div>
-            <div class="balance">Balance: <span id="balance-display">...</span> SC</div>
-        </div>
-
-        <div class="machine">
-            <div>
-                <div class="reels">
-                    <div class="payline"></div>
-                    <div class="reel-frame" id="reel-frame-1">
-                        <div class="reel-window">
-                            <div class="reel-strip" id="reel-1"></div>
-                        </div>
-                    </div>
-                    <div class="reel-frame" id="reel-frame-2">
-                        <div class="reel-window">
-                            <div class="reel-strip" id="reel-2"></div>
-                        </div>
-                    </div>
-                    <div class="reel-frame" id="reel-frame-3">
-                        <div class="reel-window">
-                            <div class="reel-strip" id="reel-3"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="controls">
-                <div>
-                    <div class="status" id="status" data-kind="info">Choose a bet and spin.</div>
-                </div>
-
-                <div>
-                    <div class="bets" id="bet-grid">
-                        <button class="bet-btn" data-bet="2">2 SC</button>
-                        <button class="bet-btn" data-bet="5">5 SC</button>
-                        <button class="bet-btn" data-bet="10">10 SC</button>
-                        <button class="bet-btn" data-bet="15">15 SC</button>
-                        <button class="bet-btn" data-bet="20">20 SC</button>
-                        <button class="bet-btn" data-bet="50">50 SC</button>
-                    </div>
-                </div>
-
-                <div class="spin-row">
-                    <button id="spin-btn" class="spin-btn" disabled>Spin</button>
-                    <button id="sound-toggle" class="sound-toggle" type="button">Sound: On</button>
-                </div>
-
-                    <div class="payouts">
-                        <h2>Payouts (center line)</h2>
-                        <div class="payout-line"><span>7️⃣ 7️⃣ 7️⃣</span><span>148x</span></div>
-                        <div class="payout-line"><span>🟫🟫🟫</span><span>53x</span></div>
-                        <div class="payout-line"><span>💎💎💎</span><span>31x</span></div>
-                        <div class="payout-line"><span>🔔🔔🔔</span><span>18x</span></div>
-                        <div class="payout-line"><span>🍒🍒🍒</span><span>10x</span></div>
-                        <div class="payout-line"><span>🍋🍋🍋</span><span>7x</span></div>
-                        <div class="payout-line"><span>Two 🍒 (any)</span><span>2x</span></div>
-                    </div>
-
-                    <div class="spin-history" id="spin-history">
-                        <h2>Recent Spins</h2>
-                        <div id="history-list"></div>
-                    </div>
-            </div>
-        </div>
-
-        <div class="footer">Server-side spin. House rules apply.</div>
-    </div>
-
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="/shared/js/socket-init.js"></script>
-    <script src="/games/strictly7s/js/game.js"></script>
-</body>
-</html>

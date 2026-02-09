@@ -237,9 +237,6 @@ export function registerLolBettingHandlers(socket, io, deps) {
     } });
 
     // --- Admin Resolve LoL Bet ---
-    // NOTE: This endpoint currently has no admin permission check.
-    // Any logged-in player can resolve bets. In production, add role-based
-    // authorization (e.g., check if player.role === 'admin') before allowing resolution.
     socket.on('lol-admin-resolve-bet', async (data) => { try {
         if (!checkRateLimit(socket, 5)) {
             socket.emit('lol-bet-error', { message: 'Too many requests, please wait' });
@@ -251,6 +248,17 @@ export function registerLolBettingHandlers(socket, io, deps) {
         const player = onlinePlayers.get(socket.id);
         if (!player) {
             socket.emit('lol-bet-error', { message: 'Not logged in' });
+            return;
+        }
+
+        // Admin permission check: require ADMIN_PASSWORD env var
+        const adminPassword = process.env.ADMIN_PASSWORD;
+        if (!adminPassword) {
+            socket.emit('lol-bet-error', { message: 'Admin actions are not configured' });
+            return;
+        }
+        if (typeof data.adminPassword !== 'string' || data.adminPassword !== adminPassword) {
+            socket.emit('lol-bet-error', { message: 'Unauthorized: invalid admin credentials' });
             return;
         }
 

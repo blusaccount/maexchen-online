@@ -5,40 +5,40 @@
 (function () {
     'use strict';
 
-    var socket = io();
-    var $ = function (id) { return document.getElementById(id); };
+    const socket = io();
+    const $ = (id) => document.getElementById(id);
 
-    var balanceEl = $('balance-display');
-    var portfolioValueEl = $('portfolio-value');
-    var portfolioGainEl = $('portfolio-gain');
-    var portfolioCashEl = $('portfolio-cash');
-    var portfolioNetEl = $('portfolio-net');
-    var holdingsContainer = $('holdings-container');
-    var marketGrid = $('market-grid');
-    var tradeOverlay = $('trade-overlay');
-    var tradeTitleEl = $('trade-title');
-    var tradePriceEl = $('trade-price');
-    var tradeAmountEl = $('trade-amount');
-    var tradePreviewEl = $('trade-preview');
-    var tradeConfirmEl = $('trade-confirm');
-    var tradeCancelEl = $('trade-cancel');
-    var toastEl = $('stock-toast');
-    var searchInput = $('stock-search');
-    var searchResults = $('search-results');
+    const balanceEl = $('balance-display');
+    const portfolioValueEl = $('portfolio-value');
+    const portfolioGainEl = $('portfolio-gain');
+    const portfolioCashEl = $('portfolio-cash');
+    const portfolioNetEl = $('portfolio-net');
+    const holdingsContainer = $('holdings-container');
+    const marketGrid = $('market-grid');
+    const tradeOverlay = $('trade-overlay');
+    const tradeTitleEl = $('trade-title');
+    const tradePriceEl = $('trade-price');
+    const tradeAmountEl = $('trade-amount');
+    const tradePreviewEl = $('trade-preview');
+    const tradeConfirmEl = $('trade-confirm');
+    const tradeCancelEl = $('trade-cancel');
+    const toastEl = $('stock-toast');
+    const searchInput = $('stock-search');
+    const searchResults = $('search-results');
 
     // Category maps for filtering
-    var ETF_SYMBOLS = [
+    const ETF_SYMBOLS = [
         'URTH', 'QQQ', 'GDAXI', 'DIA', 'SPY', 'VGK', 'EEM',
         'IWM', 'VTI', 'ARKK', 'XLF', 'XLE', 'GLD', 'TLT'
     ];
-    var COMMODITY_SYMBOLS = [
+    const COMMODITY_SYMBOLS = [
         'GC=F', 'SI=F', 'PL=F', 'HG=F', 'CL=F', 'BZ=F', 'NG=F'
     ];
-    var CRYPTO_SYMBOLS = [
+    const CRYPTO_SYMBOLS = [
         'BTC-USD', 'ETH-USD', 'SOL-USD', 'BNB-USD', 'XRP-USD', 'ADA-USD', 'DOGE-USD'
     ];
 
-    var FALLBACK_QUOTES = [
+    const FALLBACK_QUOTES = [
         { symbol: 'AAPL', name: 'Apple', price: 237.50, change: 1.25, pct: 0.53, currency: 'USD' },
         { symbol: 'MSFT', name: 'Microsoft', price: 432.80, change: -0.90, pct: -0.21, currency: 'USD' },
         { symbol: 'NVDA', name: 'NVIDIA', price: 140.20, change: 3.40, pct: 2.48, currency: 'USD' },
@@ -98,26 +98,26 @@
         { symbol: 'DOGE-USD', name: 'Dogecoin', price: 0.38, change: 0.02, pct: 5.56, currency: 'USD' },
     ];
 
-    var currentBalance = 0;
-    var marketData = FALLBACK_QUOTES.slice();
-    var portfolioData = { holdings: [], totalValue: 0 };
-    var tradeSide = 'buy';
-    var tradeSymbol = '';
-    var tradeStock = null;
-    var activeCategory = 'all';
-    var searchDebounce = null;
+    let currentBalance = 0;
+    let marketData = FALLBACK_QUOTES.slice();
+    let portfolioData = { holdings: [], totalValue: 0 };
+    let tradeSide = 'buy';
+    let tradeSymbol = '';
+    let tradeStock = null;
+    let activeCategory = 'all';
+    let searchDebounce = null;
 
     // --- Register with server ---
-    function register() {
-        var name = window.StrictHotelSocket.getPlayerName();
+    const register = () => {
+        const name = window.StrictHotelSocket.getPlayerName();
         if (!name) return;
         window.StrictHotelSocket.registerPlayer(socket, 'stocks');
-    }
+    };
 
     socket.on('connect', register);
 
     // --- Balance ---
-    socket.on('balance-update', function (data) {
+    socket.on('balance-update', (data) => {
         if (data && typeof data.balance === 'number') {
             currentBalance = data.balance;
             balanceEl.textContent = data.balance.toFixed(2);
@@ -127,7 +127,7 @@
     });
 
     // --- Portfolio ---
-    socket.on('stock-portfolio', function (data) {
+    socket.on('stock-portfolio', (data) => {
         if (!data) return;
         portfolioData = data;
         renderPortfolio();
@@ -135,69 +135,69 @@
     });
 
     // --- Errors ---
-    socket.on('stock-error', function (data) {
+    socket.on('stock-error', (data) => {
         showToast(data.error || 'Error', 'error');
     });
 
     // --- Fetch market data ---
-    function fetchMarket() {
+    const fetchMarket = () => {
         fetch('/api/ticker')
-            .then(function (r) { return r.json(); })
-            .then(function (data) {
+            .then((r) => r.json())
+            .then((data) => {
                 if (Array.isArray(data) && data.length > 0) {
                     marketData = data;
                     renderMarket();
                 }
             })
-            .catch(function () { /* use fallback if already rendered */ });
-    }
+            .catch(() => { /* use fallback if already rendered */ });
+    };
 
     // --- Determine asset type ---
-    function getStockType(symbol) {
+    const getStockType = (symbol) => {
         if (COMMODITY_SYMBOLS.indexOf(symbol) >= 0) return 'COMMODITY';
         if (CRYPTO_SYMBOLS.indexOf(symbol) >= 0) return 'CRYPTO';
         if (ETF_SYMBOLS.indexOf(symbol) >= 0) return 'ETF';
         return 'STOCK';
-    }
+    };
 
     // --- Render Market Grid ---
-    function renderMarket() {
-        var filtered = marketData;
+    const renderMarket = () => {
+        let filtered = marketData;
         if (activeCategory !== 'all') {
-            var cat = activeCategory.toUpperCase();
-            filtered = marketData.filter(function (q) { return getStockType(q.symbol) === cat; });
+            const cat = activeCategory.toUpperCase();
+            filtered = marketData.filter((q) => getStockType(q.symbol) === cat);
         }
 
-        marketGrid.innerHTML = filtered.map(function (q) {
-            var up = q.change >= 0;
-            var type = getStockType(q.symbol);
-            return '<div class="stock-card" data-symbol="' + escapeAttr(q.symbol) + '">'
-                + '<span class="type-badge">' + type + '</span>'
-                + '<div class="stock-card-header">'
-                + '<div><div class="symbol">' + escapeHtml(q.symbol) + '</div>'
-                + '<div class="name">' + escapeHtml(q.name) + '</div></div>'
-                + '<div style="text-align:right"><div class="price">$' + q.price.toFixed(2) + '</div>'
-                + '<div class="change ' + (up ? 'up' : 'down') + '">'
-                + Math.abs(q.change).toFixed(2)
-                + ' (' + (up ? '+' : '') + q.pct.toFixed(2) + '%)</div></div>'
-                + '</div></div>';
+        marketGrid.innerHTML = filtered.map((q) => {
+            const up = q.change >= 0;
+            const type = getStockType(q.symbol);
+            return `<div class="stock-card" data-symbol="${escapeAttr(q.symbol)}">`
+                + `<span class="type-badge">${type}</span>`
+                + `<div class="stock-card-header">`
+                + `<div><div class="symbol">${escapeHtml(q.symbol)}</div>`
+                + `<div class="name">${escapeHtml(q.name)}</div></div>`
+                + `<div style="text-align:right"><div class="price">$${q.price.toFixed(2)}</div>`
+                + `<div class="change ${up ? 'up' : 'down'}">`
+                + `${Math.abs(q.change).toFixed(2)}`
+                + ` (${up ? '+' : ''}${q.pct.toFixed(2)}%)</div></div>`
+                + `</div></div>`;
         }).join('');
 
         // Attach click
-        var cards = marketGrid.querySelectorAll('.stock-card');
-        for (var i = 0; i < cards.length; i++) {
+        const cards = marketGrid.querySelectorAll('.stock-card');
+        for (let i = 0; i < cards.length; i++) {
             cards[i].addEventListener('click', function () {
                 openTrade(this.getAttribute('data-symbol'));
             });
         }
-    }
+    };
 
     // --- Category Tabs ---
-    var catTabs = document.querySelectorAll('.category-tab');
-    for (var ci = 0; ci < catTabs.length; ci++) {
+    const catTabs = document.querySelectorAll('.category-tab');
+    for (let ci = 0; ci < catTabs.length; ci++) {
         catTabs[ci].addEventListener('click', function () {
             activeCategory = this.getAttribute('data-cat');
-            for (var cj = 0; cj < catTabs.length; cj++) {
+            for (let cj = 0; cj < catTabs.length; cj++) {
                 catTabs[cj].classList.toggle('active', catTabs[cj] === this);
             }
             renderMarket();
@@ -205,45 +205,45 @@
     }
 
     // --- Search ---
-    searchInput.addEventListener('input', function () {
-        var query = searchInput.value.trim();
+    searchInput.addEventListener('input', () => {
+        const query = searchInput.value.trim();
         clearTimeout(searchDebounce);
         if (!query) {
             searchResults.classList.remove('active');
             searchResults.innerHTML = '';
             return;
         }
-        searchDebounce = setTimeout(function () {
-            fetch('/api/stock-search?q=' + encodeURIComponent(query))
-                .then(function (r) { return r.json(); })
-                .then(function (results) {
+        searchDebounce = setTimeout(() => {
+            fetch(`/api/stock-search?q=${encodeURIComponent(query)}`)
+                .then((r) => r.json())
+                .then((results) => {
                     if (!Array.isArray(results) || results.length === 0) {
                         searchResults.innerHTML = '<div class="search-result-item" style="color:var(--ds-text-dim);cursor:default;">No results</div>';
                         searchResults.classList.add('active');
                         return;
                     }
-                    searchResults.innerHTML = results.map(function (r) {
-                        return '<div class="search-result-item" data-symbol="' + escapeAttr(r.symbol) + '" data-name="' + escapeAttr(r.name) + '">'
-                            + '<div><span class="search-result-symbol">' + escapeHtml(r.symbol) + '</span> '
-                            + '<span class="search-result-name">' + escapeHtml(r.name) + '</span></div>'
-                            + '<span class="search-result-type">' + escapeHtml(r.type || '') + '</span>'
-                            + '</div>';
+                    searchResults.innerHTML = results.map((r) => {
+                        return `<div class="search-result-item" data-symbol="${escapeAttr(r.symbol)}" data-name="${escapeAttr(r.name)}">`
+                            + `<div><span class="search-result-symbol">${escapeHtml(r.symbol)}</span> `
+                            + `<span class="search-result-name">${escapeHtml(r.name)}</span></div>`
+                            + `<span class="search-result-type">${escapeHtml(r.type || '')}</span>`
+                            + `</div>`;
                     }).join('');
                     searchResults.classList.add('active');
 
                     // Attach click handlers
-                    var items = searchResults.querySelectorAll('.search-result-item[data-symbol]');
-                    for (var si = 0; si < items.length; si++) {
+                    const items = searchResults.querySelectorAll('.search-result-item[data-symbol]');
+                    for (let si = 0; si < items.length; si++) {
                         items[si].addEventListener('click', function () {
-                            var sym = this.getAttribute('data-symbol');
-                            var name = this.getAttribute('data-name');
+                            const sym = this.getAttribute('data-symbol');
+                            const name = this.getAttribute('data-name');
                             searchInput.value = '';
                             searchResults.classList.remove('active');
                             openSearchedTrade(sym, name);
                         });
                     }
                 })
-                .catch(function () {
+                .catch(() => {
                     searchResults.innerHTML = '<div class="search-result-item" style="color:var(--ds-text-dim);cursor:default;">Search failed</div>';
                     searchResults.classList.add('active');
                 });
@@ -251,120 +251,120 @@
     });
 
     // Close search results on click outside
-    document.addEventListener('click', function (e) {
+    document.addEventListener('click', (e) => {
         if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
             searchResults.classList.remove('active');
         }
     });
 
     // Open trade for a searched stock (fetch live quote first)
-    function openSearchedTrade(symbol, name) {
-        fetch('/api/stock-quote?symbol=' + encodeURIComponent(symbol))
-            .then(function (r) { return r.json(); })
-            .then(function (data) {
+    const openSearchedTrade = (symbol, name) => {
+        fetch(`/api/stock-quote?symbol=${encodeURIComponent(symbol)}`)
+            .then((r) => r.json())
+            .then((data) => {
                 if (data.error) {
                     showToast(data.error, 'error');
                     return;
                 }
                 // Add to market data temporarily so trade modal works
-                var existing = marketData.find(function (q) { return q.symbol === data.symbol; });
+                const existing = marketData.find((q) => q.symbol === data.symbol);
                 if (!existing) {
                     marketData.push(data);
                 }
                 openTrade(data.symbol);
             })
-            .catch(function () { showToast('Failed to fetch quote', 'error'); });
-    }
+            .catch(() => { showToast('Failed to fetch quote', 'error'); });
+    };
 
     // --- Render Portfolio Holdings ---
-    function renderPortfolio() {
-        var h = portfolioData.holdings;
+    const renderPortfolio = () => {
+        const h = portfolioData.holdings;
         portfolioValueEl.textContent = portfolioData.totalValue.toFixed(2);
 
-        var totalGain = 0;
-        for (var i = 0; i < h.length; i++) {
+        let totalGain = 0;
+        for (let i = 0; i < h.length; i++) {
             totalGain += h[i].gainLoss;
         }
         portfolioGainEl.textContent = (totalGain >= 0 ? '+' : '') + totalGain.toFixed(2);
-        portfolioGainEl.className = 'summary-value ' + (totalGain >= 0 ? 'positive' : 'negative');
+        portfolioGainEl.className = `summary-value ${totalGain >= 0 ? 'positive' : 'negative'}`;
 
         if (h.length === 0) {
             holdingsContainer.innerHTML = '<div class="no-holdings">No investments yet.</div>';
             return;
         }
 
-        var html = '<table class="holdings-table"><thead><tr>'
+        let html = '<table class="holdings-table"><thead><tr>'
             + '<th>SYMBOL</th><th>SHARES</th><th>AVG</th><th>PRICE</th>'
             + '<th>VALUE</th><th>G/L</th><th></th>'
             + '</tr></thead><tbody>';
 
-        for (var j = 0; j < h.length; j++) {
-            var p = h[j];
-            var cls = p.gainLoss >= 0 ? 'positive' : 'negative';
-            html += '<tr>'
-                + '<td class="symbol">' + escapeHtml(p.symbol) + '<br><span style="color:var(--ds-text-dim);font-size:6px">' + escapeHtml(p.name) + '</span></td>'
-                + '<td>' + p.shares.toFixed(4) + '</td>'
-                + '<td>$' + p.avgCost.toFixed(2) + '</td>'
-                + '<td>$' + p.currentPrice.toFixed(2) + '</td>'
-                + '<td>$' + p.marketValue.toFixed(2) + '</td>'
-                + '<td class="' + cls + '">' + (p.gainLoss >= 0 ? '+' : '') + p.gainLoss.toFixed(2)
-                + ' (' + (p.gainLossPct >= 0 ? '+' : '') + p.gainLossPct.toFixed(2) + '%)</td>'
-                + '<td><button class="btn-sell-row" data-symbol="' + escapeAttr(p.symbol) + '">SELL</button></td>'
-                + '</tr>';
+        for (let j = 0; j < h.length; j++) {
+            const p = h[j];
+            const cls = p.gainLoss >= 0 ? 'positive' : 'negative';
+            html += `<tr>`
+                + `<td class="symbol">${escapeHtml(p.symbol)}<br><span style="color:var(--ds-text-dim);font-size:6px">${escapeHtml(p.name)}</span></td>`
+                + `<td>${p.shares.toFixed(4)}</td>`
+                + `<td>$${p.avgCost.toFixed(2)}</td>`
+                + `<td>$${p.currentPrice.toFixed(2)}</td>`
+                + `<td>$${p.marketValue.toFixed(2)}</td>`
+                + `<td class="${cls}">${p.gainLoss >= 0 ? '+' : ''}${p.gainLoss.toFixed(2)}`
+                + ` (${p.gainLossPct >= 0 ? '+' : ''}${p.gainLossPct.toFixed(2)}%)</td>`
+                + `<td><button class="btn-sell-row" data-symbol="${escapeAttr(p.symbol)}">SELL</button></td>`
+                + `</tr>`;
         }
 
         html += '</tbody></table>';
         holdingsContainer.innerHTML = html;
 
         // Attach sell buttons
-        var btns = holdingsContainer.querySelectorAll('.btn-sell-row');
-        for (var k = 0; k < btns.length; k++) {
+        const btns = holdingsContainer.querySelectorAll('.btn-sell-row');
+        for (let k = 0; k < btns.length; k++) {
             btns[k].addEventListener('click', function (e) {
                 e.stopPropagation();
                 openTrade(this.getAttribute('data-symbol'), 'sell');
             });
         }
-    }
+    };
 
-    function updateNetWorth() {
-        var net = currentBalance + portfolioData.totalValue;
+    const updateNetWorth = () => {
+        const net = currentBalance + portfolioData.totalValue;
         portfolioNetEl.textContent = net.toFixed(2);
-    }
+    };
 
     // --- Trade Modal ---
-    function openTrade(symbol, side) {
+    const openTrade = (symbol, side) => {
         tradeSymbol = symbol;
-        tradeStock = marketData.find(function (q) { return q.symbol === symbol; });
+        tradeStock = marketData.find((q) => q.symbol === symbol);
         if (!tradeStock) return;
 
         tradeSide = side || 'buy';
-        tradeTitleEl.textContent = tradeStock.symbol + ' - ' + tradeStock.name;
-        tradePriceEl.textContent = 'Current: $' + tradeStock.price.toFixed(2);
+        tradeTitleEl.textContent = `${tradeStock.symbol} - ${tradeStock.name}`;
+        tradePriceEl.textContent = `Current: $${tradeStock.price.toFixed(2)}`;
         tradeAmountEl.value = '';
         tradePreviewEl.textContent = '';
 
         // Update tab state
-        var tabs = tradeOverlay.querySelectorAll('.trade-tab');
-        for (var i = 0; i < tabs.length; i++) {
+        const tabs = tradeOverlay.querySelectorAll('.trade-tab');
+        for (let i = 0; i < tabs.length; i++) {
             tabs[i].classList.toggle('active', tabs[i].getAttribute('data-side') === tradeSide);
         }
 
         tradeOverlay.classList.add('active');
         tradeAmountEl.focus();
-    }
+    };
 
-    function closeTrade() {
+    const closeTrade = () => {
         tradeOverlay.classList.remove('active');
         tradeSymbol = '';
         tradeStock = null;
-    }
+    };
 
     // Tab switching
-    var tabs = tradeOverlay.querySelectorAll('.trade-tab');
-    for (var i = 0; i < tabs.length; i++) {
+    const tabs = tradeOverlay.querySelectorAll('.trade-tab');
+    for (let i = 0; i < tabs.length; i++) {
         tabs[i].addEventListener('click', function () {
             tradeSide = this.getAttribute('data-side');
-            for (var j = 0; j < tabs.length; j++) {
+            for (let j = 0; j < tabs.length; j++) {
                 tabs[j].classList.toggle('active', tabs[j] === this);
             }
             updatePreview();
@@ -376,191 +376,191 @@
 
     function updatePreview() {
         if (!tradeStock) return;
-        var amount = parseFloat(tradeAmountEl.value);
+        const amount = parseFloat(tradeAmountEl.value);
         if (!amount || amount <= 0) {
             tradePreviewEl.textContent = '';
             return;
         }
-        var shares = amount / tradeStock.price;
+        const shares = amount / tradeStock.price;
         if (tradeSide === 'buy') {
-            tradePreviewEl.textContent = 'BUY ~' + shares.toFixed(4) + ' shares for ' + amount.toFixed(2) + ' SC';
+            tradePreviewEl.textContent = `BUY ~${shares.toFixed(4)} shares for ${amount.toFixed(2)} SC`;
         } else {
-            tradePreviewEl.textContent = 'SELL ~' + shares.toFixed(4) + ' shares for ' + amount.toFixed(2) + ' SC';
+            tradePreviewEl.textContent = `SELL ~${shares.toFixed(4)} shares for ${amount.toFixed(2)} SC`;
         }
     }
 
     // Confirm
-    tradeConfirmEl.addEventListener('click', function () {
+    tradeConfirmEl.addEventListener('click', () => {
         if (!tradeStock) return;
-        var amount = parseFloat(tradeAmountEl.value);
+        const amount = parseFloat(tradeAmountEl.value);
         if (!amount || amount <= 0) {
             showToast('Enter an amount', 'error');
             return;
         }
 
-        var event = tradeSide === 'buy' ? 'stock-buy' : 'stock-sell';
+        const event = tradeSide === 'buy' ? 'stock-buy' : 'stock-sell';
         socket.emit(event, { symbol: tradeSymbol, amount: amount });
 
         showToast(tradeSide === 'buy'
-            ? 'Buying ' + tradeSymbol + '...'
-            : 'Selling ' + tradeSymbol + '...', 'success');
+            ? `Buying ${tradeSymbol}...`
+            : `Selling ${tradeSymbol}...`, 'success');
         closeTrade();
     });
 
     // Cancel
     tradeCancelEl.addEventListener('click', closeTrade);
-    tradeOverlay.addEventListener('click', function (e) {
+    tradeOverlay.addEventListener('click', (e) => {
         if (e.target === tradeOverlay) closeTrade();
     });
 
     // --- Toast ---
-    var toastTimer = null;
-    function showToast(msg, type) {
+    let toastTimer = null;
+    const showToast = (msg, type) => {
         toastEl.textContent = msg;
-        toastEl.className = 'stock-toast show ' + (type || 'success');
+        toastEl.className = `stock-toast show ${type || 'success'}`;
         clearTimeout(toastTimer);
-        toastTimer = setTimeout(function () {
+        toastTimer = setTimeout(() => {
             toastEl.classList.remove('show');
         }, 3000);
-    }
+    };
 
     // --- Utilities ---
-    function escapeHtml(str) {
-        var d = document.createElement('div');
+    const escapeHtml = (str) => {
+        const d = document.createElement('div');
         d.textContent = str;
         return d.innerHTML;
-    }
+    };
 
-    function escapeAttr(str) {
-        return str.replace(/[&"'<>]/g, function (c) {
+    const escapeAttr = (str) => {
+        return str.replace(/[&"'<>]/g, (c) => {
             return { '&': '&amp;', '"': '&quot;', "'": '&#39;', '<': '&lt;', '>': '&gt;' }[c];
         });
-    }
+    };
 
-    function leaderboardAvatarHtml(player) {
+    const leaderboardAvatarHtml = (player) => {
         if (player.character && player.character.dataURL) {
-            return '<img class="leaderboard-avatar" src="' + escapeAttr(player.character.dataURL) + '" alt="' + escapeAttr(player.name) + '">';
+            return `<img class="leaderboard-avatar" src="${escapeAttr(player.character.dataURL)}" alt="${escapeAttr(player.name)}">`;
         }
         return '<span class="leaderboard-avatar-placeholder">👽</span>';
-    }
+    };
 
     // --- Leaderboard ---
-    var leaderboardContainer = $('leaderboard-container');
-    var performanceLeaderboardContainer = $('performance-leaderboard-container');
-    var refreshBtn = $('refresh-leaderboard');
-    var myName = window.StrictHotelSocket.getPlayerName();
+    const leaderboardContainer = $('leaderboard-container');
+    const performanceLeaderboardContainer = $('performance-leaderboard-container');
+    const refreshBtn = $('refresh-leaderboard');
+    const myName = window.StrictHotelSocket.getPlayerName();
 
-    socket.on('stock-leaderboard', function (data) {
+    socket.on('stock-leaderboard', (data) => {
         if (!Array.isArray(data)) return;
         renderLeaderboard(data);
     });
 
-    socket.on('stock-performance-leaderboard', function (data) {
+    socket.on('stock-performance-leaderboard', (data) => {
         if (!Array.isArray(data)) return;
         renderPerformanceLeaderboard(data);
     });
 
-    function renderLeaderboard(players) {
+    const renderLeaderboard = (players) => {
         if (players.length === 0) {
             leaderboardContainer.innerHTML = '<div class="no-holdings">No player portfolios yet.</div>';
             return;
         }
 
-        var html = '';
-        for (var i = 0; i < players.length; i++) {
-            var p = players[i];
-            var isMe = p.name === myName;
-            var holdingsHtml = '';
+        let html = '';
+        for (let i = 0; i < players.length; i++) {
+            const p = players[i];
+            const isMe = p.name === myName;
+            let holdingsHtml = '';
 
             if (p.holdings && p.holdings.length > 0) {
                 holdingsHtml = '<table class="leaderboard-detail-table"><thead><tr>'
                     + '<th>SYMBOL</th><th>SHARES</th><th>VALUE</th><th>G/L</th>'
                     + '</tr></thead><tbody>';
-                for (var j = 0; j < p.holdings.length; j++) {
-                    var h = p.holdings[j];
-                    var cls = h.gainLoss >= 0 ? 'positive' : 'negative';
-                    holdingsHtml += '<tr>'
-                        + '<td style="font-weight:700;">' + escapeHtml(h.symbol) + '</td>'
-                        + '<td>' + h.shares.toFixed(4) + '</td>'
-                        + '<td>$' + h.marketValue.toFixed(2) + '</td>'
-                        + '<td class="' + cls + '">' + (h.gainLoss >= 0 ? '+' : '') + h.gainLoss.toFixed(2) + '</td>'
-                        + '</tr>';
+                for (let j = 0; j < p.holdings.length; j++) {
+                    const h = p.holdings[j];
+                    const cls = h.gainLoss >= 0 ? 'positive' : 'negative';
+                    holdingsHtml += `<tr>`
+                        + `<td style="font-weight:700;">${escapeHtml(h.symbol)}</td>`
+                        + `<td>${h.shares.toFixed(4)}</td>`
+                        + `<td>$${h.marketValue.toFixed(2)}</td>`
+                        + `<td class="${cls}">${h.gainLoss >= 0 ? '+' : ''}${h.gainLoss.toFixed(2)}</td>`
+                        + `</tr>`;
                 }
                 holdingsHtml += '</tbody></table>';
             } else {
                 holdingsHtml = '<div style="color:var(--ds-text-dim);font-size:7px;padding:4px 0;">No holdings</div>';
             }
 
-            html += '<div class="leaderboard-card" data-idx="' + i + '">'
-                + '<div class="leaderboard-header">'
-                + '<span class="leaderboard-rank">#' + (i + 1) + '</span>'
+            html += `<div class="leaderboard-card" data-idx="${i}">`
+                + `<div class="leaderboard-header">`
+                + `<span class="leaderboard-rank">#${i + 1}</span>`
                 + leaderboardAvatarHtml(p)
-                + '<span class="leaderboard-name' + (isMe ? ' is-you' : '') + '">'
-                + escapeHtml(p.name) + (isMe ? ' (YOU)' : '') + '</span>'
-                + '<div class="leaderboard-stats">'
-                + '<div class="leaderboard-networth">$' + p.portfolioValue.toFixed(2) + '</div>'
-                + '<div class="leaderboard-breakdown">Cash: $' + p.cash.toFixed(2) + ' | Net Worth: $' + p.netWorth.toFixed(2) + '</div>'
-                + '</div>'
-                + '</div>'
-                + '<div class="leaderboard-detail">' + holdingsHtml + '</div>'
-                + '</div>';
+                + `<span class="leaderboard-name${isMe ? ' is-you' : ''}">`
+                + `${escapeHtml(p.name)}${isMe ? ' (YOU)' : ''}</span>`
+                + `<div class="leaderboard-stats">`
+                + `<div class="leaderboard-networth">$${p.portfolioValue.toFixed(2)}</div>`
+                + `<div class="leaderboard-breakdown">Cash: $${p.cash.toFixed(2)} | Net Worth: $${p.netWorth.toFixed(2)}</div>`
+                + `</div>`
+                + `</div>`
+                + `<div class="leaderboard-detail">${holdingsHtml}</div>`
+                + `</div>`;
         }
 
         leaderboardContainer.innerHTML = html;
-    }
+    };
 
-    function renderPerformanceLeaderboard(players) {
+    const renderPerformanceLeaderboard = (players) => {
         if (!performanceLeaderboardContainer) return;
         if (players.length === 0) {
             performanceLeaderboardContainer.innerHTML = '<div class="no-holdings">No active trade performance yet.</div>';
             return;
         }
 
-        var html = '';
-        for (var i = 0; i < players.length; i++) {
-            var p = players[i];
-            var isMe = p.name === myName;
-            var cls = p.openPnl >= 0 ? 'positive' : 'negative';
+        let html = '';
+        for (let i = 0; i < players.length; i++) {
+            const p = players[i];
+            const isMe = p.name === myName;
+            const cls = p.openPnl >= 0 ? 'positive' : 'negative';
 
-            html += '<div class="leaderboard-card">'
-                + '<div class="leaderboard-header">'
-                + '<span class="leaderboard-rank">#' + (i + 1) + '</span>'
+            html += `<div class="leaderboard-card">`
+                + `<div class="leaderboard-header">`
+                + `<span class="leaderboard-rank">#${i + 1}</span>`
                 + leaderboardAvatarHtml(p)
-                + '<span class="leaderboard-name' + (isMe ? ' is-you' : '') + '">'
-                + escapeHtml(p.name) + (isMe ? ' (YOU)' : '') + '</span>'
-                + '<div class="leaderboard-stats">'
-                + '<div class="leaderboard-networth ' + cls + '">'
-                + (p.performancePct >= 0 ? '+' : '') + p.performancePct.toFixed(2) + '%</div>'
-                + '<div class="leaderboard-breakdown">'
-                + 'PnL: ' + (p.openPnl >= 0 ? '+' : '') + '$' + Math.abs(p.openPnl).toFixed(2)
-                + ' | Base: $' + p.investedCapital.toFixed(2)
-                + '</div>'
-                + '</div>'
-                + '</div>'
-                + '</div>';
+                + `<span class="leaderboard-name${isMe ? ' is-you' : ''}">`
+                + `${escapeHtml(p.name)}${isMe ? ' (YOU)' : ''}</span>`
+                + `<div class="leaderboard-stats">`
+                + `<div class="leaderboard-networth ${cls}">`
+                + `${p.performancePct >= 0 ? '+' : ''}${p.performancePct.toFixed(2)}%</div>`
+                + `<div class="leaderboard-breakdown">`
+                + `PnL: ${p.openPnl >= 0 ? '+' : ''}$${Math.abs(p.openPnl).toFixed(2)}`
+                + ` | Base: $${p.investedCapital.toFixed(2)}`
+                + `</div>`
+                + `</div>`
+                + `</div>`
+                + `</div>`;
         }
 
         performanceLeaderboardContainer.innerHTML = html;
-    }
+    };
 
     // Event delegation for leaderboard card expand/collapse
-    leaderboardContainer.addEventListener('click', function (e) {
-        var card = e.target.closest('.leaderboard-card');
+    leaderboardContainer.addEventListener('click', (e) => {
+        const card = e.target.closest('.leaderboard-card');
         if (card) {
             card.classList.toggle('expanded');
         }
     });
 
-    refreshBtn.addEventListener('click', function () {
+    refreshBtn.addEventListener('click', () => {
         socket.emit('stock-get-leaderboard');
     });
 
     // --- Portfolio Performance Chart ---
-    var chartCanvas = $('portfolio-chart');
-    var chartEmpty = $('chart-empty');
-    var portfolioChart = null;
+    const chartCanvas = $('portfolio-chart');
+    const chartEmpty = $('chart-empty');
+    let portfolioChart = null;
 
-    socket.on('stock-portfolio-history', function (data) {
+    socket.on('stock-portfolio-history', (data) => {
         if (!Array.isArray(data) || data.length < 2) {
             chartCanvas.style.display = 'none';
             chartEmpty.style.display = 'block';
@@ -571,18 +571,18 @@
         renderChart(data);
     });
 
-    function renderChart(snapshots) {
-        var labels = snapshots.map(function (s) {
-            var d = new Date(s.ts);
-            return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+    const renderChart = (snapshots) => {
+        const labels = snapshots.map((s) => {
+            const d = new Date(s.ts);
+            return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
         });
-        var netWorthData = snapshots.map(function (s) { return s.netWorth; });
-        var portfolioValueData = snapshots.map(function (s) { return s.portfolioValue; });
-        var cashData = snapshots.map(function (s) { return s.cash; });
+        const netWorthData = snapshots.map((s) => s.netWorth);
+        const portfolioValueData = snapshots.map((s) => s.portfolioValue);
+        const cashData = snapshots.map((s) => s.cash);
 
-        var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        var gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
-        var textColor = isDark ? '#a0a0a0' : '#666666';
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+        const textColor = isDark ? '#a0a0a0' : '#666666';
 
         if (portfolioChart) {
             portfolioChart.data.labels = labels;
@@ -653,8 +653,8 @@
                         titleFont: { family: "'Press Start 2P', monospace", size: 7 },
                         bodyFont: { family: "'Press Start 2P', monospace", size: 7 },
                         callbacks: {
-                            label: function (ctx) {
-                                return ctx.dataset.label + ': $' + ctx.parsed.y.toFixed(2);
+                            label: (ctx) => {
+                                return `${ctx.dataset.label}: $${ctx.parsed.y.toFixed(2)}`;
                             }
                         }
                     }
@@ -672,26 +672,26 @@
                         ticks: {
                             font: { family: "'Press Start 2P', monospace", size: 6 },
                             color: textColor,
-                            callback: function (v) { return '$' + v; }
+                            callback: (v) => { return `$${v}`; }
                         },
                         grid: { color: gridColor }
                     }
                 }
             }
         });
-    }
+    };
 
     // --- Init ---
     renderMarket();
     fetchMarket();
-    setInterval(function () {
+    setInterval(() => {
         fetchMarket();
         socket.emit('stock-get-portfolio');
         socket.emit('stock-get-leaderboard');
     }, 60 * 1000);
 
-    socket.on('connect', function () {
-        setTimeout(function () {
+    socket.on('connect', () => {
+        setTimeout(() => {
             socket.emit('stock-get-portfolio');
             socket.emit('stock-get-leaderboard');
         }, 500);

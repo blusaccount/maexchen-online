@@ -6,13 +6,14 @@ This guide helps LLM agents work effectively in this repo. Keep it short, stay i
 - Server runtime: [server.js](server.js)
 - Realtime events + validation: [server/socket-handlers.js](server/socket-handlers.js)
 - Room state + helpers: [server/room-manager.js](server/room-manager.js)
+- Route modules: [server/routes/](server/routes/) (auth, stocks, turkish, nostalgiabait)
 - Shared client modules: [shared/js](shared/js)
 - Shared styles: [shared/css/theme.css](shared/css/theme.css)
 - Public pages: [public](public)
 - Game frontends: [games](games)
 
 ## Core flows (mental model)
-- Login/session gate in [server.js](server.js) protects most routes.
+- Login/session gate in [server/routes/auth.js](server/routes/auth.js) protects most routes.
 - Lobby -> room creation/join flows originate in [shared/js/lobby.js](shared/js/lobby.js).
 - Socket events are the source of truth for multiplayer behavior.
 - In-memory state lives in [server/room-manager.js](server/room-manager.js).
@@ -23,27 +24,16 @@ This guide helps LLM agents work effectively in this repo. Keep it short, stay i
 - Keep changes minimal, additive, and reversible.
 - Validate behavior manually if you touch sockets, auth, or game logic.
 
-## Tooling expectations
-- Use repo tools instead of terminal commands when possible.
-- Batch file reads and searches.
-- Avoid destructive git commands.
+## ExecPlans
+When a task is large, risky, or spans multiple files, create an ExecPlan using [PLANS.md](PLANS.md). Keep it short and update it as you work.
 
-## Best-practice prompts (agents)
-- Be explicit about scope and output shape.
-- Ask for clarification only when blocked by missing requirements.
-- Use tests or manual verification steps when behavior changes.
-- For long or risky work, create a lightweight execution plan and keep it updated.
+## Scope discipline
+- Implement exactly what the user asks.
+- Avoid adding adjacent features without confirmation.
+- Prefer existing patterns and helpers.
 
-## When to create a plan
-Create a plan if any of these are true:
-- Multi-file changes with side effects in sockets or auth
-- Behavior changes across client + server
-- Data migrations or new persistent state
-
-## Handoff discipline
-- Record what changed, why, and how to verify in [HANDOFF.md](HANDOFF.md).
-- Note any assumptions or risks.
-- Add follow-ups only when genuinely needed.
+## Handoff
+Record changes and verification notes in [HANDOFF.md](HANDOFF.md).
 
 ## Safety and reliability
 - Validate untrusted inputs on the server.
