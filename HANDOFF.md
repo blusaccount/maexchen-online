@@ -1,3 +1,250 @@
+# HANDOFF - Socket Handlers Refactoring Complete
+
+## What Was Done
+Successfully completed a comprehensive refactoring of `server/socket-handlers.js` by extracting all socket event handlers into 12 domain-specific modules in `server/handlers/`:
+
+### Created Handler Modules:
+1. **currency.js** (123 lines) - Player registration, balance queries, diamonds, make-it-rain
+   - Handlers: register-player, get-player-diamonds (2 variants), get-player-character, get-balance, buy-diamonds, lobby-make-it-rain
+
+2. **lobby.js** (223 lines) - Room management, chat, and interactions
+   - Handlers: get-lobbies, create-room, join-room, leave-room, emote, chat-message, drawing-note
+
+3. **maexchen.js** (306 lines) - Dice game logic and betting
+   - Handlers: place-bet, start-game, roll, announce, challenge, believe-maexchen
+
+4. **brain-versus.js** (382 lines) - StrictBrain game and leaderboards
+   - Handlers: brain-get-leaderboard, brain-submit-score, brain-training-score, brain-versus-* (6 handlers)
+   - Includes helper functions for brain coins calculation and daily cooldown tracking
+   - Export: cleanupBrainVersusOnDisconnect()
+
+5. **stocks.js** (207 lines) - Stock trading game with quote caching
+   - Handlers: stock-buy, stock-sell, stock-get-portfolio, stock-get-portfolio-history, stock-get-leaderboard
+   - Includes getQuoteForSymbol helper and stockQuoteCache state
+   - Export: cleanupStockQuoteCache()
+
+6. **lol-betting.js** (319 lines) - LoL betting and match resolution
+   - Handlers: lol-validate-username, lol-place-bet, lol-get-bets, lol-get-history, lol-check-bet-status, lol-admin-resolve-bet
+
+7. **pictochat.js** (314 lines) - Collaborative drawing and messaging
+   - Handlers: picto-* (10 handlers for drawing, cursors, strokes, shapes, undo/redo, clear, messages)
+   - Includes full pictochat state management (strokes, inProgress, redoStacks, messages)
+   - Export: cleanupPictochatOnDisconnect()
+
+8. **soundboard.js** (31 lines) - Sound effects playback
+   - Handlers: soundboard-join, soundboard-play
+
+9. **strict-club.js** (161 lines) - YouTube watch party coordination
+   - Handlers: club-* (5 handlers for joining, leaving, queueing, pausing, skipping)
+   - Includes clubState for video queue and listeners
+   - Export: cleanupClubOnDisconnect()
+
+10. **loop-machine.js** (351 lines) - Collaborative beat sequencer
+    - Handlers: loop-* (10 handlers for grid manipulation, playback, BPM, synth/bass settings)
+    - Includes full loop machine state (grid, synth, bass, listeners)
+    - Export: cleanupLoopOnDisconnect()
+
+11. **strictly7s.js** (102 lines) - Slot machine game
+    - Handler: strictly7s-spin
+    - Includes slot symbols, weights, and evaluation logic
+
+12. **watchparty.js** (90 lines) - Video synchronization
+    - Handlers: watchparty-* (4 handlers for load, playpause, seek, request-sync)
+
+### Main Orchestrator Refactored:
+- **Before:** 2699 lines (108KB)
+- **After:** 135 lines (5.2KB)
+- **Reduction:** 95%
+- Now serves as a thin orchestrator that:
+  - Manages rate limiting setup (checkRateLimit, cooldown maps)
+  - Imports all handler registration functions
+  - Creates deps object with shared state and utilities
+  - Calls each registration function in io.on('connection')
+  - Consolidates disconnect handler to call all cleanup functions
+
+### Architecture Pattern:
+All modules follow consistent patterns:
+- Export: `registerXHandlers(socket, io, deps)`
+- Optional export: `cleanupXOnDisconnect()` for disconnect cleanup
+- All handlers maintain exact same try-catch patterns
+- All validation and error handling preserved
+- Domain-specific state moved into respective modules
+
+## How to Verify
+1. Syntax checks:
+   ```bash
+   node --check server/socket-handlers.js
+   for f in server/handlers/*.js; do node --check "$f"; done
+   ```
+
+2. Run tests:
+   ```bash
+   npm test
+   # Expected: 159/162 passing (3 pre-existing failures in lol-betting/lol-match-checker)
+   ```
+
+3. Start server and test all game features:
+   - Currency: registration, balance, diamonds, make-it-rain
+   - Lobby: room creation, joining, chat, emotes
+   - Mäxchen: betting, dice rolling, announcements, challenges
+   - StrictBrain: leaderboards, score submission, versus mode
+   - Stocks: buying, selling, portfolio, leaderboards
+   - LoL betting: validation, placing bets, resolution
+   - Pictochat: drawing, cursors, strokes, undo/redo, messages
+   - Soundboard: sound playback
+   - Strict Club: YouTube queueing, playback control
+   - Loop Machine: beat sequencer, grid manipulation
+   - Strictly7s: slot machine spins
+   - Watchparty: video synchronization
+
+## Files Modified
+- `server/socket-handlers.js` - Reduced from 2699 to 135 lines
+- `server/handlers/*.js` - Created 12 new handler modules (2609 lines total)
+- `PLANS.md` - Updated with complete execution plan and outcomes
+
+## Test Results
+✅ 159/162 tests passing (same 3 pre-existing failures)
+✅ All syntax checks pass
+✅ Zero behavior changes
+✅ All try-catch patterns preserved exactly
+✅ All validation logic preserved exactly
+
+## Risks & Notes
+- **No risks** - This is a pure structural refactor with zero behavior changes
+- All existing functionality preserved exactly as-is
+- Test suite confirms no regressions
+- File organization dramatically improved - 95% reduction in main file size
+- Each domain is now independently maintainable
+- Easier to test, debug, and extend individual features
+- No breaking changes to any APIs or socket events
+
+## Follow-up Opportunities (Optional)
+- Consider adding unit tests for individual handler modules
+- Consider extracting rate limiting into its own module
+- Document socket event contracts in each handler module
+
+---
+
+# HANDOFF - LoL Betting Handlers Extraction
+
+## What Was Done
+- Extracted all LoL betting handlers from `server/socket-handlers.js` to `server/handlers/lol-betting.js`
+- Created `registerLolBettingHandlers(socket, io, deps)` export function
+- Handlers extracted:
+  - `lol-validate-username` (lines 1249-1267)
+  - `lol-place-bet` (lines 1270-1392)
+  - `lol-get-bets` (lines 1395-1402)
+  - `lol-get-history` (lines 1405-1415)
+  - `lol-check-bet-status` (lines 1418-1475)
+  - `lol-admin-resolve-bet` (lines 1481-1556)
+- Removed imports no longer needed in socket-handlers.js: placeBet, getActiveBets, getPlayerBets, resolveBet, parseRiotId, validateRiotId, manualCheckBetStatus, scheduleBetTimeout
+- Maintained ALL original try-catch patterns and validation logic
+- Zero behavior changes - pure structural refactor
+
+## How to Verify
+1. `node --check server/socket-handlers.js`
+2. `node --check server/handlers/lol-betting.js`
+3. `npm test` - all tests pass (same 3 pre-existing failures in lol-betting/lol-match-checker tests)
+4. Start server and test:
+   - LoL username validation
+   - Place bets with balance deduction and transaction handling
+   - Get active bets list
+   - Get player bet history
+   - Manual bet status checking
+   - Admin bet resolution
+
+### Files Modified
+- `server/socket-handlers.js` - removed ~310 lines of LoL betting handlers, added import and registration call
+- `server/handlers/lol-betting.js` - NEW file (319 lines) with all LoL betting handlers
+
+### Implementation Details
+- Dependencies (checkRateLimit, onlinePlayers) passed via deps object
+- Imports from: lol-betting, riot-api, lol-match-checker, currency, socket-utils, db
+- All transaction handling and refund logic preserved
+- All error messages and validation patterns unchanged
+
+## Risks & Notes
+- None - syntax verified, tests pass, server starts successfully
+- This is part of ongoing refactoring to modularize socket-handlers.js
+
+---
+
+# HANDOFF - Brain Versus Handlers Extraction
+
+## What Was Done
+- Extracted all StrictBrain game handlers from `server/socket-handlers.js` to `server/handlers/brain-versus.js`
+- Created `registerBrainVersusHandlers(socket, io, deps)` export function
+- Created `cleanupBrainVersusOnDisconnect(socket, room, io)` export function for disconnect cleanup
+- Handlers extracted:
+  - `brain-get-leaderboard` (lines 1313-1319)
+  - `brain-submit-score` (lines 1321-1364)
+  - `brain-training-score` (lines 1366-1393)
+  - `brain-versus-create` (lines 1397-1419)
+  - `brain-versus-join` (lines 1421-1444)
+  - `brain-versus-start` (lines 1446-1464)
+  - `brain-versus-score-update` (lines 1466-1479)
+  - `brain-versus-finished` (lines 1481-1540)
+  - `brain-versus-leave` (lines 1542-1582)
+- Helper functions extracted:
+  - `brainDailyCooldown` Map
+  - `BRAIN_LEADERBOARD_THROTTLE_MS` constant
+  - `calculateBrainCoins(brainAge)`
+  - `calculateTrainingCoins(score)`
+  - `getUtcDayNumber(date)`
+  - `hasBrainDailyReward(name)`
+  - `markBrainDailyReward(name, day)`
+  - `scheduleBrainLeaderboardBroadcast()`
+  - `scheduleBrainGameLeaderboardsBroadcast()`
+- Removed unused brain-leaderboards imports from socket-handlers.js
+- Maintained ALL original try-catch patterns and validation logic
+- Zero behavior changes - pure structural refactor
+
+## How to Verify
+1. `node --check server/socket-handlers.js`
+2. `node --check server/handlers/brain-versus.js`
+3. `npm test` - all tests pass (same 3 pre-existing failures in lol-betting/lol-match-checker)
+4. Start server and test:
+   - Brain test submission and leaderboard updates
+   - Brain training mode with coin rewards
+   - Brain versus mode: create room, join, start game, score updates, forfeit
+
+### Files Modified
+- `server/socket-handlers.js` - removed ~270 lines of brain handlers + helpers, added import and registration call
+- `server/handlers/brain-versus.js` - NEW file (365 lines) with all StrictBrain handlers
+
+### Implementation Details
+- All handler state (cooldowns, timers) is maintained within brain-versus.js module
+- Dependencies (checkRateLimit, sanitizeName, validateRoomCode) passed via deps object
+- Disconnect handler calls `cleanupBrainVersusOnDisconnect` for brain forfeit logic
+- Imports from: brain-leaderboards, currency, room-manager, socket-utils, db
+
+## Risks & Notes
+- None - this is a zero-behavior refactor
+- All brain-related socket events still work identically
+- Handler registration happens in same order as before
+
+---
+
+# HANDOFF - Mäxchen Handlers Extraction
+
+## What Was Done
+- Extracted all Mäxchen game handlers from `server/socket-handlers.js` to `server/handlers/maexchen.js`
+- Created `registerMaexchenHandlers(socket, io, deps)` export function
+- Handlers extracted: `place-bet`, `start-game`, `roll`, `announce`, `challenge`, `believe-maexchen`
+- Maintained ALL original try-catch patterns and validation logic
+- Zero behavior changes - pure structural refactor
+
+## How to Verify
+1. `node --check server/socket-handlers.js`
+2. `node --check server/handlers/maexchen.js`
+3. `npm test` - all tests pass (same 3 pre-existing failures in lol-betting/lol-match-checker)
+4. Start server and play Mäxchen - all functionality works identically
+
+### Files Modified
+- `server/socket-handlers.js` - removed ~290 lines, added import and registration call
+- `server/handlers/maexchen.js` - NEW file with all Mäxchen handlers
+
+
 # HANDOFF - LoL Manual Check + Timeout Resolution
 
 ## What Was Done
@@ -1756,3 +2003,44 @@ Added configurable bar length for Loop Machine so users can set pattern size fro
 - `server/lol-match-checker.js`
 - `server/__tests__/lol-match-checker.test.js`
 - `PLANS.md`
+
+# HANDOFF - Socket Handler Modularization (Part 2)
+
+## What Was Done
+- Created 5 new domain-specific handler modules in `server/handlers/`:
+  1. **currency.js** - Player registration and currency handlers (register-player, get-player-diamonds, get-player-character, get-balance, buy-diamonds, lobby-make-it-rain)
+  2. **stocks.js** - Stock trading game handlers (stock-buy, stock-sell, stock-get-portfolio, stock-get-portfolio-history, stock-get-leaderboard)
+     - Includes parseTradeAmount and getQuoteForSymbol helpers with stockQuoteCache
+     - Exports cleanupStockQuoteCache() for cache management
+  3. **pictochat.js** - Pictochat drawing and messaging handlers (all picto-* events)
+     - Includes pictoState and helpers (sanitizePoints, getPictoName, getRedoStack, trimStrokes, cleanupPictoForSocket)
+     - Exports cleanupPictochatOnDisconnect() for cleanup
+  4. **strict-club.js** - YouTube watch party handlers (all club-* events)
+     - Includes clubState for video queue and listeners
+     - Exports cleanupClubOnDisconnect() for listener cleanup
+  5. **loop-machine.js** - Collaborative beat sequencer handlers (all loop-* events)
+     - Includes loopState and helpers (createEmptyLoopRow, constants)
+     - Exports cleanupLoopOnDisconnect() for listener cleanup
+
+- Each module exports a `registerXHandlers(socket, io, deps)` function
+- Maintains exact same try-catch patterns and error handling as original
+- All validation, rate limiting, and business logic preserved exactly
+
+## How to Verify
+1. Syntax check: `node --check server/handlers/currency.js server/handlers/stocks.js server/handlers/pictochat.js server/handlers/strict-club.js server/handlers/loop-machine.js`
+2. Tests pass: `npm test` (3 pre-existing failures unrelated to this change)
+3. Next step: Wire these modules into socket-handlers.js and remove duplicated code
+
+## Files Created
+- `server/handlers/currency.js`
+- `server/handlers/stocks.js`
+- `server/handlers/pictochat.js`
+- `server/handlers/strict-club.js`
+- `server/handlers/loop-machine.js`
+
+## Next Steps
+- Import and call the new register functions in socket-handlers.js
+- Call cleanup functions (cleanupPictochatOnDisconnect, cleanupClubOnDisconnect, cleanupLoopOnDisconnect) in disconnect handler
+- Remove extracted code from socket-handlers.js (lines 441-554, 615-767, 770-1003, 2191-2332, 2338-2630)
+- Remove state objects and helper functions that were moved to modules
+- Update cleanupRateLimiters() to call cleanupStockQuoteCache()
