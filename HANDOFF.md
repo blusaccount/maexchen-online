@@ -1,4 +1,35 @@
-# Handoff: Persistent Character Portraits (2026-02-09)
+# Handoff: Fix Character Portraits in Stock Leaderboard and Contacts (2026-02-09)
+
+## What Changed
+
+### Bug: Character portraits not showing in stock market leaderboard
+
+Players who navigated to the stock game page registered without character data because `creator.js` was not loaded on that page. The `getCharacterData()` fallback in `socket-init.js` read raw pixel grid arrays from localStorage instead of proper `{ pixels, dataURL }` objects. The server's `validateCharacter()` turned these arrays into empty objects `{}`, which then overwrote valid character data in the database.
+
+### Files Modified
+
+- `games/stocks/index.html` — Added `<script src="/shared/js/creator.js">` so the Creator API is available when registering from the stocks page
+- `server/socket-utils.js` — `validateCharacter()` now returns `null` for character objects that have neither `pixels` nor `dataURL`, preventing empty objects from overwriting valid DB data
+- `shared/js/socket-init.js` — `getCharacterData()` fallback now detects raw pixel arrays from localStorage and wraps them into proper `{ pixels, dataURL }` character objects with a canvas-rendered data URL
+- `server/__tests__/socket-utils.test.js` — Updated test for invalid dataURL (now returns `null` instead of empty object); added test for missing pixels+dataURL rejection
+
+## What Didn't Change
+
+- Character creator logic, pixel rendering, localStorage format
+- Stock game trading/portfolio logic
+- Leaderboard server-side data fetching (already included character data)
+- Contacts app rendering (already rendered character portraits)
+- Database schema
+
+## How to Verify
+
+1. `npm test` — All 207 tests pass
+2. Create a character in the lobby, navigate to the stock game, and refresh the leaderboard — your portrait appears
+3. Open the contacts app — all online players show their character portraits regardless of which page they are on
+4. Players without characters still show the 👽 placeholder
+
+---
+
 
 ## What Changed
 
