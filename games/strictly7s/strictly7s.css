@@ -111,11 +111,9 @@
         }
 
         .reel-window {
-            height: 96px;
+            height: 160px;
             overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            position: relative;
         }
 
         .reel-strip {
@@ -126,14 +124,14 @@
         }
 
         .reel-item {
-            height: 96px;
+            height: 160px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 28px;
+            font-size: 56px;
             width: 100%;
             color: var(--slot-ink);
-            text-shadow: 0 2px 0 #000;
+            text-shadow: 0 3px 0 #000, 0 0 20px rgba(255, 204, 51, 0.3);
         }
 
         .reel-frame.spinning .reel-window {
