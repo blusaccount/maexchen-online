@@ -1,3 +1,40 @@
+# Handoff: Reduce Slot Machine RTP to Prevent Excessive Payouts (2026-02-09)
+
+## What Changed
+
+### Issue: Slot machine odds too favorable to players
+
+The Strictly7s slot machine had a 92.31% RTP (Return to Player), which is significantly higher than standard slot machines (typically 85-90%). Users reported making excessive money on the slot machine, which was causing game balance issues.
+
+**Root cause:** Multipliers were too generous across all symbol combinations.
+
+**Fix:** Reduced payout multipliers to achieve an 89.78% RTP (10.22% house edge), which is within the standard range for slot machines while still maintaining an engaging gameplay experience.
+
+### Files Modified
+
+- `server/handlers/strictly7s.js` — Reduced multipliers: SEVEN (148→140), BAR (53→50), DIAMOND (31→29), BELL (18→17), CHERRY (10→9), LEMON (7, unchanged); updated RTP documentation with new expected values
+- `games/strictly7s/js/game.js` — Updated win sound thresholds to match new multipliers
+- `games/strictly7s/index.html` — Updated payout table display to show new multipliers
+- `server/__tests__/strictly7s.test.js` — Updated RTP test expectations from 91-95% to 87-92%
+
+## What Didn't Change
+
+- Symbol weights (probability distribution remains the same)
+- Game mechanics and spin logic
+- Bet amounts and cooldown
+- Two-cherry partial win (still 2x)
+- Client-side UI/UX (besides payout numbers)
+- Database schema
+
+## How to Verify
+
+1. `npm test` — All 207 tests pass (including RTP simulation showing 89.48% over 1M spins)
+2. Visit `/games/strictly7s/` — Payout table shows updated multipliers (140x, 50x, 29x, 17x, 9x, 7x, 2x)
+3. Play several rounds — Payouts are approximately 10% lower on average compared to before
+4. Monitor player balances over time — Should see reduced winnings from slot machine
+
+---
+
 # Handoff: Fix Character Portraits in Stock Leaderboard and Contacts (2026-02-09)
 
 ## What Changed
