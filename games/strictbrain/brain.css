@@ -233,6 +233,42 @@ body {
 .math-feedback.correct { color: var(--ds-positive); }
 .math-feedback.wrong { color: var(--ds-negative); }
 
+/* ===== Game Submit Button ===== */
+.game-submit-btn {
+    display: block;
+    margin: 12px auto 0;
+    padding: 12px 24px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    background: var(--ds-accent);
+    color: var(--ds-surface);
+    border: 2px solid var(--ds-border);
+    cursor: pointer;
+    transition: all 0.15s;
+    min-width: 140px;
+}
+
+.game-submit-btn:hover {
+    background: var(--ds-border);
+    color: var(--ds-surface);
+    box-shadow: 3px 3px 0 var(--ds-text-dim);
+}
+
+.game-submit-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+}
+
+/* Mobile optimization for submit button */
+@media (max-width: 640px) {
+    .game-submit-btn {
+        padding: 14px 28px;
+        font-size: 11px;
+        min-width: 160px;
+        touch-action: manipulation;
+    }
+}
+
 /* ===== Stroop Game ===== */
 .stroop-word {
     text-align: center;
