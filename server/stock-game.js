@@ -41,7 +41,8 @@ function toPerformanceEntry(player) {
         investedCapital,
         portfolioValue: player.portfolioValue,
         openPnl,
-        performancePct
+        performancePct,
+        holdings: player.holdings || []
     };
 }
 
