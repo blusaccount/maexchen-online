@@ -1,14 +1,16 @@
-# Handoff: Modernize games/stocks/js/game.js to ES6
+# Handoff: Deduplicate game wrappers in games/strictbrain/js/game.js
 
 ## What Changed
 
-Modernized `games/stocks/js/game.js` from ES5 to ES6 syntax:
-- `var` → `const` (preferred) or `let` (when reassigned, including loop variables)
-- `function` declarations → arrow functions, except event handlers that use `this` and `updatePreview` (needs hoisting)
-- Anonymous callbacks → arrow functions where `this` is not used
-- String concatenation → template literals where expressions are interpolated
-- Kept IIFE wrapper and all original logic/behavior intact
+Deduplicated the 10 individual game wrapper functions (5 single + 5 versus) in `games/strictbrain/js/game.js`:
+- Added `GAME_CONFIGS` map with per-game DOM element IDs for both single and versus modes
+- Added `launchGame(gameId, mode)` function that builds callbacks based on mode and calls the appropriate `run*Game()` engine
+- `startSingleGame()` now calls `launchGame(gameId, 'single')` instead of a switch over individual wrappers
+- `startVersusGame()` now calls `launchGame(gameId, 'versus')` instead of a switch over individual wrappers
+- Deleted all 10 individual wrapper functions: `startMathGame`, `startStroopGame`, `startChimpGame`, `startReactionGame`, `startScrambleGame`, `startVersusMathGame`, `startVersusStroopGame`, `startVersusChimpGame`, `startVersusReactionGame`, `startVersusScrambleGame`
+- All `run*Game()` engine functions are unchanged
+- All special cases preserved: reaction clears score display, chimp single has `stopTimerFn: stopTimer` (versus: null), chimp single prepends 'Level ' to score display
 
 ## How to Verify
 1. `npm test` — All 184 tests pass
-2. Open stock trading game in browser — market grid, search, trade modal, portfolio, leaderboard, and chart all work identically
+2. Open StrictBrain in browser — all 5 mini-games work identically in both single-player and versus modes

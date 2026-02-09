@@ -332,14 +332,7 @@
         $('game-title-label').textContent = GAME_NAMES[gameId] || gameId;
         $('game-score').textContent = '0';
         $('game-area').innerHTML = '';
-
-        switch (gameId) {
-            case 'math': startMathGame(); break;
-            case 'stroop': startStroopGame(); break;
-            case 'chimp': startChimpGame(); break;
-            case 'reaction': startReactionGame(); break;
-            case 'scramble': startScrambleGame(); break;
-        }
+        launchGame(gameId, 'single');
     }
 
     function startTimer(seconds, onTick, onEnd) {
@@ -744,78 +737,91 @@
         });
     }
 
-    // ============== 1. MATHE-BLITZ ==============
+    // ============== GAME CONFIG & LAUNCHER ==============
 
-    function startMathGame() {
-        runMathGame({
-            areaId: 'game-area',
-            problemId: 'math-problem',
-            answerId: 'math-answer',
-            feedbackId: 'math-feedback',
-            onScore: (val) => { $('game-score').textContent = val; },
-            onFinish: (normalized, raw) => onGameFinished('math', normalized, raw),
-            startTimerFn: (onEnd) => startTimer(60, null, onEnd)
-        });
-    }
+    const GAME_CONFIGS = {
+        math: {
+            single: { areaId: 'game-area', problemId: 'math-problem', answerId: 'math-answer', feedbackId: 'math-feedback' },
+            versus: { areaId: 'versus-game-area', problemId: 'v-math-problem', answerId: 'v-math-answer', feedbackId: 'v-math-feedback' }
+        },
+        stroop: {
+            single: { areaId: 'game-area', wordId: 'stroop-word', buttonsId: 'stroop-buttons', durationSec: 45 },
+            versus: { areaId: 'versus-game-area', wordId: 'v-stroop-word', buttonsId: 'v-stroop-buttons', durationSec: 45 }
+        },
+        chimp: {
+            single: { areaId: 'game-area', infoId: 'chimp-info', gridId: 'chimp-grid' },
+            versus: { areaId: 'versus-game-area', infoId: 'v-chimp-info', gridId: 'v-chimp-grid' }
+        },
+        reaction: {
+            single: { areaId: 'game-area', zoneId: 'reaction-zone', resultsId: 'reaction-results', showResults: true },
+            versus: { areaId: 'versus-game-area', zoneId: 'v-reaction-zone', resultsId: 'v-reaction-results', showResults: false }
+        },
+        scramble: {
+            single: { areaId: 'game-area', displayId: 'scramble-display', answerId: 'scramble-answer', feedbackId: 'scramble-feedback', durationSec: 60, maxScore: 12 },
+            versus: { areaId: 'versus-game-area', displayId: 'v-scramble-display', answerId: 'v-scramble-answer', feedbackId: 'v-scramble-feedback', durationSec: 60, maxScore: 12 }
+        }
+    };
 
-    // ============== 2. FARBE VS. WORT (Stroop) ==============
+    function launchGame(gameId, mode) {
+        const cfg = GAME_CONFIGS[gameId][mode];
+        const isSingle = mode === 'single';
+        const scoreElId = isSingle ? 'game-score' : 'versus-game-score';
+        const timerElId = isSingle ? 'game-timer' : 'versus-game-timer';
+        const timerFn = isSingle ? startTimer : startVersusTimer;
+        const onFinish = isSingle
+            ? (score, raw) => onGameFinished(gameId, score, raw)
+            : (score) => versusFinish(score);
+        const defaultOnScore = isSingle
+            ? (val) => { $(scoreElId).textContent = val; }
+            : (val) => { versusScoreUpdate(val); };
 
-    function startStroopGame() {
-        runStroopGame({
-            areaId: 'game-area',
-            wordId: 'stroop-word',
-            buttonsId: 'stroop-buttons',
-            onScore: (val) => { $('game-score').textContent = val; },
-            onFinish: (normalized, raw) => onGameFinished('stroop', normalized, raw),
-            durationSec: 45,
-            startTimerFn: (seconds, onTick, onEnd) => startTimer(seconds, onTick, onEnd)
-        });
-    }
-
-    // ============== 3. ZAHLEN-MEMORY (Chimp Test) ==============
-
-    function startChimpGame() {
-        runChimpGame({
-            areaId: 'game-area',
-            infoId: 'chimp-info',
-            gridId: 'chimp-grid',
-            onScore: (val) => { $('game-score').textContent = 'Level ' + val; },
-            setLives: (text) => { $('game-timer').textContent = text; },
-            onFinish: (normalized, raw) => onGameFinished('chimp', normalized, raw),
-            stopTimerFn: stopTimer,
-            scorePrefix: null
-        });
-    }
-
-    // ============== 4. REAKTIONSTEST ==============
-
-    function startReactionGame() {
-        $('game-score').textContent = '';
-        runReactionGame({
-            areaId: 'game-area',
-            zoneId: 'reaction-zone',
-            resultsId: 'reaction-results',
-            setTimerText: (text) => { $('game-timer').textContent = text; },
-            onScore: null,
-            onFinish: (sumTime, raw) => onGameFinished('reaction', sumTime, raw),
-            showResults: true
-        });
-    }
-
-    // ============== 5. WORT-SCRAMBLE ==============
-
-    function startScrambleGame() {
-        runScrambleGame({
-            areaId: 'game-area',
-            displayId: 'scramble-display',
-            answerId: 'scramble-answer',
-            feedbackId: 'scramble-feedback',
-            onScore: (val) => { $('game-score').textContent = val; },
-            onFinish: (normalized, raw) => onGameFinished('scramble', normalized, raw),
-            durationSec: 60,
-            maxScore: 12,
-            startTimerFn: (seconds, onTick, onEnd) => startTimer(seconds, onTick, onEnd)
-        });
+        switch (gameId) {
+            case 'math':
+                runMathGame({
+                    ...cfg,
+                    onScore: defaultOnScore,
+                    onFinish,
+                    startTimerFn: (onEnd) => timerFn(60, null, onEnd)
+                });
+                break;
+            case 'stroop':
+                runStroopGame({
+                    ...cfg,
+                    onScore: defaultOnScore,
+                    onFinish,
+                    startTimerFn: timerFn
+                });
+                break;
+            case 'chimp':
+                runChimpGame({
+                    ...cfg,
+                    onScore: isSingle
+                        ? (val) => { $(scoreElId).textContent = 'Level ' + val; }
+                        : defaultOnScore,
+                    setLives: (text) => { $(timerElId).textContent = text; },
+                    onFinish,
+                    stopTimerFn: isSingle ? stopTimer : null,
+                    scorePrefix: null
+                });
+                break;
+            case 'reaction':
+                $(scoreElId).textContent = '';
+                runReactionGame({
+                    ...cfg,
+                    setTimerText: (text) => { $(timerElId).textContent = text; },
+                    onScore: isSingle ? null : defaultOnScore,
+                    onFinish
+                });
+                break;
+            case 'scramble':
+                runScrambleGame({
+                    ...cfg,
+                    onScore: defaultOnScore,
+                    onFinish,
+                    startTimerFn: timerFn
+                });
+                break;
+        }
     }
 
     // ============== COIN REWARDS ==============
@@ -1093,13 +1099,7 @@
     // ============== VERSUS GAME ENGINE ==============
 
     function startVersusGame(gameId) {
-        switch (gameId) {
-            case 'math': startVersusMathGame(); break;
-            case 'stroop': startVersusStroopGame(); break;
-            case 'chimp': startVersusChimpGame(); break;
-            case 'reaction': startVersusReactionGame(); break;
-            case 'scramble': startVersusScrambleGame(); break;
-        }
+        launchGame(gameId, 'versus');
     }
 
     function startVersusTimer(seconds, onTick, onEnd) {
@@ -1129,73 +1129,5 @@
         socket.emit('brain-versus-finished', { score: normalizedScore });
     }
 
-    // ----- Versus: Math -----
-    function startVersusMathGame() {
-        runMathGame({
-            areaId: 'versus-game-area',
-            problemId: 'v-math-problem',
-            answerId: 'v-math-answer',
-            feedbackId: 'v-math-feedback',
-            onScore: (val) => { versusScoreUpdate(val); },
-            onFinish: (normalized) => versusFinish(normalized),
-            startTimerFn: (onEnd) => startVersusTimer(60, null, onEnd)
-        });
-    }
-
-    // ----- Versus: Stroop -----
-    function startVersusStroopGame() {
-        runStroopGame({
-            areaId: 'versus-game-area',
-            wordId: 'v-stroop-word',
-            buttonsId: 'v-stroop-buttons',
-            onScore: (val) => { versusScoreUpdate(val); },
-            onFinish: (normalized) => versusFinish(normalized),
-            durationSec: 45,
-            startTimerFn: (seconds, onTick, onEnd) => startVersusTimer(seconds, onTick, onEnd)
-        });
-    }
-
-    // ----- Versus: Chimp -----
-    function startVersusChimpGame() {
-        runChimpGame({
-            areaId: 'versus-game-area',
-            infoId: 'v-chimp-info',
-            gridId: 'v-chimp-grid',
-            onScore: (val) => { versusScoreUpdate(val); },
-            setLives: (text) => { $('versus-game-timer').textContent = text; },
-            onFinish: (normalized) => versusFinish(normalized),
-            stopTimerFn: null,
-            scorePrefix: null
-        });
-    }
-
-    // ----- Versus: Reaction -----
-    function startVersusReactionGame() {
-        $('versus-game-score').textContent = '';
-        runReactionGame({
-            areaId: 'versus-game-area',
-            zoneId: 'v-reaction-zone',
-            resultsId: 'v-reaction-results',
-            setTimerText: (text) => { $('versus-game-timer').textContent = text; },
-            onScore: (sumMs) => { versusScoreUpdate(sumMs); },
-            onFinish: (sumTime, raw) => versusFinish(sumTime),
-            showResults: false
-        });
-    }
-
-    // ----- Versus: Scramble -----
-    function startVersusScrambleGame() {
-        runScrambleGame({
-            areaId: 'versus-game-area',
-            displayId: 'v-scramble-display',
-            answerId: 'v-scramble-answer',
-            feedbackId: 'v-scramble-feedback',
-            onScore: (val) => { versusScoreUpdate(val); },
-            onFinish: (normalized) => versusFinish(normalized),
-            durationSec: 60,
-            maxScore: 12,
-            startTimerFn: (seconds, onTick, onEnd) => startVersusTimer(seconds, onTick, onEnd)
-        });
-    }
 
 })();
