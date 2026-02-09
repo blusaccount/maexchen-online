@@ -330,6 +330,11 @@
 
     // Get character data for network transfer
     function getCharacter() {
+        // Load from localStorage if pixels are empty
+        const isEmpty = pixels.every(row => row.every(cell => cell === null));
+        if (isEmpty) {
+            loadSavedCharacter();
+        }
         return {
             pixels: pixels,
             dataURL: renderToDataURL(64)
