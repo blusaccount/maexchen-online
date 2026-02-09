@@ -121,8 +121,8 @@
     socket.on('balance-update', (data) => {
         if (data && typeof data.balance === 'number') {
             currentBalance = data.balance;
-            balanceEl.textContent = data.balance.toFixed(2);
-            portfolioCashEl.textContent = data.balance.toFixed(2);
+            balanceEl.textContent = formatNumber(data.balance);
+            portfolioCashEl.textContent = formatNumber(data.balance);
             updateNetWorth();
         }
     });
@@ -207,10 +207,10 @@
                 + `<div class="stock-card-header">`
                 + `<div><div class="symbol">${escapeHtml(q.symbol)}</div>`
                 + `<div class="name">${escapeHtml(q.name)}</div></div>`
-                + `<div style="text-align:right"><div class="price">$${q.price.toFixed(2)}</div>`
+                + `<div style="text-align:right"><div class="price">$${formatNumber(q.price)}</div>`
                 + `<div class="change ${up ? 'up' : 'down'}">`
-                + `${Math.abs(q.change).toFixed(2)}`
-                + ` (${up ? '+' : ''}${q.pct.toFixed(2)}%)</div></div>`
+                + `${formatNumber(Math.abs(q.change))}`
+                + ` (${up ? '+' : ''}${formatNumber(q.pct)}%)</div></div>`
                 + `</div></div>`;
         }).join('');
 
@@ -310,13 +310,13 @@
     // --- Render Portfolio Holdings ---
     const renderPortfolio = () => {
         const h = portfolioData.holdings;
-        portfolioValueEl.textContent = portfolioData.totalValue.toFixed(2);
+        portfolioValueEl.textContent = formatNumber(portfolioData.totalValue);
 
         let totalGain = 0;
         for (let i = 0; i < h.length; i++) {
             totalGain += h[i].gainLoss;
         }
-        portfolioGainEl.textContent = (totalGain >= 0 ? '+' : '') + totalGain.toFixed(2);
+        portfolioGainEl.textContent = (totalGain >= 0 ? '+' : '') + formatNumber(totalGain);
         portfolioGainEl.className = `summary-value ${totalGain >= 0 ? 'positive' : 'negative'}`;
 
         if (h.length === 0) {
@@ -334,12 +334,12 @@
             const cls = p.gainLoss >= 0 ? 'positive' : 'negative';
             html += `<tr>`
                 + `<td class="symbol">${escapeHtml(p.symbol)}<br><span style="color:var(--ds-text-dim);font-size:6px">${escapeHtml(p.name)}</span></td>`
-                + `<td>${p.shares.toFixed(4)}</td>`
-                + `<td>$${p.avgCost.toFixed(2)}</td>`
-                + `<td>$${p.currentPrice.toFixed(2)}</td>`
-                + `<td>$${p.marketValue.toFixed(2)}</td>`
-                + `<td class="${cls}">${p.gainLoss >= 0 ? '+' : ''}${p.gainLoss.toFixed(2)}`
-                + ` (${p.gainLossPct >= 0 ? '+' : ''}${p.gainLossPct.toFixed(2)}%)</td>`
+                + `<td>${formatNumber(p.shares, 4)}</td>`
+                + `<td>$${formatNumber(p.avgCost)}</td>`
+                + `<td>$${formatNumber(p.currentPrice)}</td>`
+                + `<td>$${formatNumber(p.marketValue)}</td>`
+                + `<td class="${cls}">${p.gainLoss >= 0 ? '+' : ''}${formatNumber(p.gainLoss)}`
+                + ` (${p.gainLossPct >= 0 ? '+' : ''}${formatNumber(p.gainLossPct)}%)</td>`
                 + `<td><button class="btn-sell-row" data-symbol="${escapeAttr(p.symbol)}">SELL</button></td>`
                 + `</tr>`;
         }
@@ -359,7 +359,7 @@
 
     const updateNetWorth = () => {
         const net = currentBalance + portfolioData.totalValue;
-        portfolioNetEl.textContent = net.toFixed(2);
+        portfolioNetEl.textContent = formatNumber(net);
     };
 
     // --- Trade Modal ---
@@ -370,7 +370,7 @@
 
         tradeSide = side || 'buy';
         tradeTitleEl.textContent = `${tradeStock.symbol} - ${tradeStock.name}`;
-        tradePriceEl.textContent = `Current: $${tradeStock.price.toFixed(2)}`;
+        tradePriceEl.textContent = `Current: $${formatNumber(tradeStock.price)}`;
         tradeAmountEl.value = '';
         tradePreviewEl.textContent = '';
 
@@ -414,9 +414,9 @@
         }
         const shares = amount / tradeStock.price;
         if (tradeSide === 'buy') {
-            tradePreviewEl.textContent = `BUY ~${shares.toFixed(4)} shares for ${amount.toFixed(2)} SC`;
+            tradePreviewEl.textContent = `BUY ~${formatNumber(shares, 4)} shares for ${formatNumber(amount)} SC`;
         } else {
-            tradePreviewEl.textContent = `SELL ~${shares.toFixed(4)} shares for ${amount.toFixed(2)} SC`;
+            tradePreviewEl.textContent = `SELL ~${formatNumber(shares, 4)} shares for ${formatNumber(amount)} SC`;
         }
     }
 
@@ -468,6 +468,13 @@
         });
     };
 
+    const formatNumber = (num, decimals = 2) => {
+        return num.toLocaleString('en-US', {
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals
+        });
+    };
+
     const leaderboardAvatarHtml = (player) => {
         if (player.character && player.character.dataURL) {
             return `<img class="leaderboard-avatar" src="${escapeAttr(player.character.dataURL)}" alt="${escapeAttr(player.name)}">`;
@@ -512,9 +519,9 @@
                     const cls = h.gainLoss >= 0 ? 'positive' : 'negative';
                     holdingsHtml += `<tr>`
                         + `<td style="font-weight:700;">${escapeHtml(h.symbol)}</td>`
-                        + `<td>${h.shares.toFixed(4)}</td>`
-                        + `<td>$${h.marketValue.toFixed(2)}</td>`
-                        + `<td class="${cls}">${h.gainLoss >= 0 ? '+' : ''}${h.gainLoss.toFixed(2)}</td>`
+                        + `<td>${formatNumber(h.shares, 4)}</td>`
+                        + `<td>$${formatNumber(h.marketValue)}</td>`
+                        + `<td class="${cls}">${h.gainLoss >= 0 ? '+' : ''}${formatNumber(h.gainLoss)}</td>`
                         + `</tr>`;
                 }
                 holdingsHtml += '</tbody></table>';
@@ -522,15 +529,15 @@
                 holdingsHtml = '<div style="color:var(--ds-text-dim);font-size:7px;padding:4px 0;">No holdings</div>';
             }
 
-            html += `<div class="leaderboard-card" data-idx="${i}">`
+            html += `<div class="leaderboard-card">`
                 + `<div class="leaderboard-header">`
                 + `<span class="leaderboard-rank">#${i + 1}</span>`
                 + leaderboardAvatarHtml(p)
                 + `<span class="leaderboard-name${isMe ? ' is-you' : ''}">`
                 + `${escapeHtml(p.name)}${isMe ? ' (YOU)' : ''}</span>`
                 + `<div class="leaderboard-stats">`
-                + `<div class="leaderboard-networth">$${p.portfolioValue.toFixed(2)}</div>`
-                + `<div class="leaderboard-breakdown">Cash: $${p.cash.toFixed(2)} | Net Worth: $${p.netWorth.toFixed(2)}</div>`
+                + `<div class="leaderboard-networth">$${formatNumber(p.portfolioValue)}</div>`
+                + `<div class="leaderboard-breakdown">Cash: $${formatNumber(p.cash)} | Net Worth: $${formatNumber(p.netWorth)}</div>`
                 + `</div>`
                 + `</div>`
                 + `<div class="leaderboard-detail">${holdingsHtml}</div>`
@@ -553,6 +560,26 @@
             const isMe = p.name === myName;
             const cls = p.openPnl >= 0 ? 'positive' : 'negative';
 
+            let holdingsHtml = '';
+            if (p.holdings && p.holdings.length > 0) {
+                holdingsHtml = '<table class="leaderboard-detail-table"><thead><tr>'
+                    + '<th>SYMBOL</th><th>SHARES</th><th>VALUE</th><th>G/L</th>'
+                    + '</tr></thead><tbody>';
+                for (let j = 0; j < p.holdings.length; j++) {
+                    const h = p.holdings[j];
+                    const gainLossCls = h.gainLoss >= 0 ? 'positive' : 'negative';
+                    holdingsHtml += `<tr>`
+                        + `<td style="font-weight:700;">${escapeHtml(h.symbol)}</td>`
+                        + `<td>${formatNumber(h.shares, 4)}</td>`
+                        + `<td>$${formatNumber(h.marketValue)}</td>`
+                        + `<td class="${gainLossCls}">${h.gainLoss >= 0 ? '+' : ''}${formatNumber(h.gainLoss)}</td>`
+                        + `</tr>`;
+                }
+                holdingsHtml += '</tbody></table>';
+            } else {
+                holdingsHtml = '<div style="color:var(--ds-text-dim);font-size:7px;padding:4px 0;">No holdings</div>';
+            }
+
             html += `<div class="leaderboard-card">`
                 + `<div class="leaderboard-header">`
                 + `<span class="leaderboard-rank">#${i + 1}</span>`
@@ -561,13 +588,14 @@
                 + `${escapeHtml(p.name)}${isMe ? ' (YOU)' : ''}</span>`
                 + `<div class="leaderboard-stats">`
                 + `<div class="leaderboard-networth ${cls}">`
-                + `${p.performancePct >= 0 ? '+' : ''}${p.performancePct.toFixed(2)}%</div>`
+                + `${p.performancePct >= 0 ? '+' : ''}${formatNumber(p.performancePct)}%</div>`
                 + `<div class="leaderboard-breakdown">`
-                + `PnL: ${p.openPnl >= 0 ? '+' : ''}$${Math.abs(p.openPnl).toFixed(2)}`
-                + ` | Base: $${p.investedCapital.toFixed(2)}`
+                + `PnL: ${p.openPnl >= 0 ? '+' : ''}$${formatNumber(Math.abs(p.openPnl))}`
+                + ` | Base: $${formatNumber(p.investedCapital)}`
                 + `</div>`
                 + `</div>`
                 + `</div>`
+                + `<div class="leaderboard-detail">${holdingsHtml}</div>`
                 + `</div>`;
         }
 
@@ -575,12 +603,15 @@
     };
 
     // Event delegation for leaderboard card expand/collapse
-    leaderboardContainer.addEventListener('click', (e) => {
+    const toggleLeaderboardCard = (e) => {
         const card = e.target.closest('.leaderboard-card');
         if (card) {
             card.classList.toggle('expanded');
         }
-    });
+    };
+
+    leaderboardContainer.addEventListener('click', toggleLeaderboardCard);
+    performanceLeaderboardContainer.addEventListener('click', toggleLeaderboardCard);
 
     refreshBtn.addEventListener('click', () => {
         socket.emit('stock-get-leaderboard');
@@ -685,7 +716,7 @@
                         bodyFont: { family: "'Press Start 2P', monospace", size: 7 },
                         callbacks: {
                             label: (ctx) => {
-                                return `${ctx.dataset.label}: $${ctx.parsed.y.toFixed(2)}`;
+                                return `${ctx.dataset.label}: $${formatNumber(ctx.parsed.y)}`;
                             }
                         }
                     }

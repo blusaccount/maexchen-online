@@ -557,13 +557,14 @@ body {
 }
 .leaderboard-stats {
     text-align: right;
-    font-size: 8px;
+    font-size: 9px;
 }
 .leaderboard-networth {
     font-weight: 700;
+    font-size: 11px;
 }
 .leaderboard-breakdown {
-    font-size: 7px;
+    font-size: 8px;
     color: var(--ds-text-dim);
 }
 .leaderboard-detail {
@@ -577,12 +578,12 @@ body {
 .leaderboard-detail-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 7px;
+    font-size: 8px;
 }
 .leaderboard-detail-table th {
     text-align: left;
     color: var(--ds-text-dim);
-    font-size: 6px;
+    font-size: 7px;
     letter-spacing: 1px;
     padding: 4px 6px;
     border-bottom: 1px solid var(--ds-divider);
