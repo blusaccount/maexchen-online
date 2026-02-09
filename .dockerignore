@@ -8,3 +8,9 @@ coverage
 .env
 yt-dlp
 yt-dlp.exe
+userinput
+HANDOFF.md
+PLANS.md
+AGENTS.md
+LLM_AGENT_GUIDE.md
+docs
