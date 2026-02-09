@@ -21,7 +21,8 @@
     // Make It Rain constants
     const RAIN_AUDIO_PATH = '/userinput/winscreen.mp3';
     const RAIN_DURATION_MS = 20000;
-    const COIN_SPAWN_INTERVAL_MS = 300;
+    const COIN_SPAWN_INTERVAL_MS = 80;
+    const MONEY_EMOJIS = ['💵', '💴', '💶', '💷', '💸', '💰', '💳', '🪙', '🤑', '💲', '💵', '💴', '💶', '💷', '💸'];
 
     window.StrictHotelLobby = window.StrictHotelLobby || {};
     window.StrictHotelLobby.socket = socket;
@@ -184,7 +185,7 @@
     const createFallingCoin = (container) => {
         const coin = document.createElement('div');
         coin.className = 'falling-coin';
-        coin.textContent = '🪙';
+        coin.textContent = MONEY_EMOJIS[Math.floor(Math.random() * MONEY_EMOJIS.length)];
         coin.style.left = `${Math.random() * 100}vw`;
         coin.style.animationDuration = `${2 + Math.random() * 2}s`;
         coin.style.animationDelay = `${Math.random() * 0.5}s`;
