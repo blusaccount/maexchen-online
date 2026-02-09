@@ -23,6 +23,9 @@ const loopState = {
         synth:   [...EMPTY_GRID_ROW],
         pluck:   [...EMPTY_GRID_ROW],
         pad:     [...EMPTY_GRID_ROW],
+        '808kick':  [...EMPTY_GRID_ROW],
+        '808hat':   [...EMPTY_GRID_ROW],
+        '808snap':  [...EMPTY_GRID_ROW],
     },
     bpm: 120,
     bars: LOOP_DEFAULT_BARS,
@@ -101,7 +104,7 @@ export function registerLoopMachineHandlers(socket, io, { checkRateLimit, online
         const { instrument, step } = data;
 
         // Validate instrument
-        const validInstruments = ['kick', 'snare', 'hihat', 'clap', 'tom', 'ride', 'cowbell', 'bass', 'synth', 'pluck', 'pad'];
+        const validInstruments = ['kick', 'snare', 'hihat', 'clap', 'tom', 'ride', 'cowbell', 'bass', 'synth', 'pluck', 'pad', '808kick', '808hat', '808snap'];
         if (!validInstruments.includes(instrument)) return;
 
         // Validate step

@@ -1,3 +1,41 @@
+# Handoff: Add 808/Trap Instruments to Loop Machine (2026-02-09)
+
+## What Changed
+
+### Feature: 808 / Trap Rap instruments for the Loop Machine
+
+Added three new TR-808-style instruments to the step sequencer, focused on trap rap production:
+
+- **808 KICK** - Deep sub-bass kick with long sustaining tail (sine wave 55Hz→30Hz, 0.8s decay)
+- **808 HAT** - Open hi-hat for trap-style rapid patterns (dual-filtered noise, 0.4s decay)
+- **808 SNAP** - Rimshot/snap percussion (bandpass noise + tonal click body)
+
+The new instruments appear in a visually distinct "trap section" at the bottom of the sequencer grid with red labels and red active cells.
+
+### Files Modified
+
+- `server/handlers/loop-machine.js` - Added `808kick`, `808hat`, `808snap` to grid state and `validInstruments` array
+- `games/loop-machine/js/game.js` - Added `play808Kick()`, `play808Hat()`, `play808Snap()` synthesis functions; updated state grid, instrumentPlayers map, and renderGrid instruments array
+- `games/loop-machine/index.html` - Added 3 new grid rows with trap-section styling (red labels, red active cells, visual separator)
+- `server/__tests__/loop-machine.test.js` - **New**: 7 tests covering 808 instrument sync, toggle, clear, resize, and validation
+
+## What Didn't Change
+
+- Existing 11 instruments (kick, snare, hihat, clap, tom, ride, cowbell, bass, synth, pluck, pad)
+- Synth Lab and Bass Lab controls
+- Socket event names and protocol
+- BPM, bars, master volume logic
+- Database schema
+
+## How to Verify
+
+1. `npm test` - All 214 tests pass (207 previous + 7 new)
+2. Visit `/games/loop-machine/` - Three new rows appear at the bottom: 808 KICK, 808 HAT, 808 SNAP
+3. Toggle cells in the 808 rows and press PLAY - hear deep sub-bass kick, open hat, and snap sounds
+4. The 808 rows have red labels and red active cells to distinguish them from the standard instruments
+
+---
+
 # Handoff: Reduce Slot Machine RTP to Prevent Excessive Payouts (2026-02-09)
 
 ## What Changed

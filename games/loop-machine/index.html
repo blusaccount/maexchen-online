@@ -401,6 +401,26 @@
             text-align: right;
         }
 
+        /* ===== 808 / Trap Section ===== */
+        .trap-row {
+            border-top: 2px solid var(--ds-border);
+            padding-top: 4px;
+            margin-top: 4px;
+        }
+
+        .trap-row:first-of-type {
+            margin-top: 8px;
+        }
+
+        .trap-label {
+            color: #ff4444;
+        }
+
+        .trap-row .grid-cell.active {
+            background: #ff4444;
+            border-color: #ff4444;
+        }
+
         /* ===== Mobile ===== */
         @media (max-width: 768px) {
             .loop-title {
@@ -517,6 +537,27 @@
                     <div class="grid-row">
                         <div class="instrument-label">PAD</div>
                         <div class="grid-cells" data-instrument="pad">
+                            <!-- 16 cells -->
+                        </div>
+                    </div>
+                    <!-- 808 Kick -->
+                    <div class="grid-row trap-row">
+                        <div class="instrument-label trap-label">808 KICK</div>
+                        <div class="grid-cells" data-instrument="808kick">
+                            <!-- 16 cells -->
+                        </div>
+                    </div>
+                    <!-- 808 Open Hat -->
+                    <div class="grid-row trap-row">
+                        <div class="instrument-label trap-label">808 HAT</div>
+                        <div class="grid-cells" data-instrument="808hat">
+                            <!-- 16 cells -->
+                        </div>
+                    </div>
+                    <!-- 808 Snap -->
+                    <div class="grid-row trap-row">
+                        <div class="instrument-label trap-label">808 SNAP</div>
+                        <div class="grid-cells" data-instrument="808snap">
                             <!-- 16 cells -->
                         </div>
                     </div>

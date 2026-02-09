@@ -24,7 +24,10 @@ const state = {
         bass: createEmptyRow(),
         synth: createEmptyRow(),
         pluck: createEmptyRow(),
-        pad: createEmptyRow()
+        pad: createEmptyRow(),
+        '808kick': createEmptyRow(),
+        '808hat': createEmptyRow(),
+        '808snap': createEmptyRow()
     },
     bpm: 120,
     bars: DEFAULT_BARS,
@@ -413,6 +416,115 @@ function playPad() {
     osc3.stop(now + 1.0);
 }
 
+function play808Kick() {
+    if (!audioContext || !masterGainNode) return;
+    const now = audioContext.currentTime;
+
+    // Deep sub-bass 808 kick with long sustaining tail
+    const osc = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(55, now);
+    osc.frequency.exponentialRampToValueAtTime(30, now + 0.15);
+
+    // Long sustain characteristic of 808 kicks used in trap
+    gain.gain.setValueAtTime(1.0, now);
+    gain.gain.linearRampToValueAtTime(0.8, now + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.8);
+
+    osc.connect(gain);
+    gain.connect(masterGainNode);
+
+    osc.start(now);
+    osc.stop(now + 0.8);
+}
+
+function play808Hat() {
+    if (!audioContext || !masterGainNode) return;
+    const now = audioContext.currentTime;
+
+    // Open hi-hat: longer filtered noise for trap patterns
+    const bufferSize = audioContext.sampleRate * 0.4;
+    const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+    }
+
+    const noise = audioContext.createBufferSource();
+    noise.buffer = buffer;
+
+    const hpFilter = audioContext.createBiquadFilter();
+    hpFilter.type = 'highpass';
+    hpFilter.frequency.value = 8000;
+
+    const bpFilter = audioContext.createBiquadFilter();
+    bpFilter.type = 'bandpass';
+    bpFilter.frequency.value = 10000;
+    bpFilter.Q.value = 1.5;
+
+    const gain = audioContext.createGain();
+    gain.gain.setValueAtTime(0.3, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+
+    noise.connect(hpFilter);
+    hpFilter.connect(bpFilter);
+    bpFilter.connect(gain);
+    gain.connect(masterGainNode);
+
+    noise.start(now);
+    noise.stop(now + 0.4);
+}
+
+function play808Snap() {
+    if (!audioContext || !masterGainNode) return;
+    const now = audioContext.currentTime;
+
+    // Trap snap: short noise burst with resonant body
+    const bufferSize = audioContext.sampleRate * 0.12;
+    const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+    }
+
+    const noise = audioContext.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = audioContext.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 3000;
+    filter.Q.value = 3;
+
+    const noiseGain = audioContext.createGain();
+    noiseGain.gain.setValueAtTime(0.5, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+
+    noise.connect(filter);
+    filter.connect(noiseGain);
+    noiseGain.connect(masterGainNode);
+
+    // Tonal click body
+    const osc = audioContext.createOscillator();
+    const oscGain = audioContext.createGain();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(1800, now);
+    osc.frequency.exponentialRampToValueAtTime(300, now + 0.05);
+
+    oscGain.gain.setValueAtTime(0.4, now);
+    oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+
+    osc.connect(oscGain);
+    oscGain.connect(masterGainNode);
+
+    noise.start(now);
+    noise.stop(now + 0.12);
+    osc.start(now);
+    osc.stop(now + 0.08);
+}
+
 function playSynth() {
     if (!audioContext || !masterGainNode) return;
     const now = audioContext.currentTime;
@@ -458,7 +570,10 @@ const instrumentPlayers = {
     bass: playBass,
     synth: playSynth,
     pluck: playPluck,
-    pad: playPad
+    pad: playPad,
+    '808kick': play808Kick,
+    '808hat': play808Hat,
+    '808snap': play808Snap
 };
 
 // ===== Sequencer Loop =====
@@ -511,7 +626,7 @@ function updateStepHighlight(currentStep) {
 
 // ===== UI =====
 function renderGrid() {
-    const instruments = ['kick', 'snare', 'hihat', 'clap', 'tom', 'ride', 'cowbell', 'bass', 'synth', 'pluck', 'pad'];
+    const instruments = ['kick', 'snare', 'hihat', 'clap', 'tom', 'ride', 'cowbell', 'bass', 'synth', 'pluck', 'pad', '808kick', '808hat', '808snap'];
     
     instruments.forEach(instrument => {
         const container = document.querySelector(`.grid-cells[data-instrument="${instrument}"]`);
