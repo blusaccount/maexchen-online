@@ -1,3 +1,44 @@
+# Handoff: Fix LoL Betting Resolution (2026-02-09)
+
+## What Changed
+
+Fixed three bugs that prevented LoL bets from resolving correctly.
+
+### Files Modified
+
+**Server-side:**
+- `server/lol-match-checker.js`
+  - `resolveBetAndNotify` now returns the resolution result (or `null` on failure) instead of swallowing errors silently. This was the primary cause of bets appearing stuck: `manualCheckBetStatus` would tell the user the bet was resolved even when the underlying `resolveBet` call failed.
+  - `manualCheckBetStatus` now checks the return value and reports `RESOLVE_FAILED` when resolution doesn't complete.
+  - `selectResolvingMatchForBet` now picks the **oldest** match after bet placement (the player's "next game") instead of the newest. This ensures the bet resolves on the correct game.
+  - `lol-bet-resolved` socket event now includes `betOnWin` so clients can display the correct game outcome.
+
+**Client-side:**
+- `games/lol-betting/js/game.js`
+  - `showBetResolutionNotification` now correctly describes whether the LoL player won or lost their game, regardless of bet direction. Previously it always said "won their game" for winning bets and "lost their game" for losing bets, even when the bettor had bet on LOSE.
+
+**Tests:**
+- `server/__tests__/lol-match-checker.test.js`
+  - Added test for `RESOLVE_FAILED` error when `resolveBet` returns null.
+  - Added test verifying the oldest match after bet placement is selected (not the newest).
+
+## What Didn't Change
+
+- Bet placement flow, validation, and currency handling
+- Timeout-based resolution logic (`resolveBetByTimeout`)
+- Database schema
+- Riot API integration
+- Socket event names and overall contracts
+
+## How to Verify
+
+1. `npm test` — All 186 tests pass (184 original + 2 new)
+2. Place a LoL bet, wait for the player to complete a game, then click "Check Status"
+3. Verify the bet resolves on the player's first game after the bet was placed
+4. If resolution fails (e.g. DB error), verify the user sees "Failed to resolve bet" instead of a false success
+
+---
+
 # Handoff: Codebase Cleanup (2026-02-09)
 # Handoff: Strictly7s Visual Enhancement – Fix Centering Bug (2026-02-09)
 
