@@ -1,6 +1,14 @@
-# Handoff: Route Extraction Refactor
+# Handoff: Modernize public/lobby.js to ES6
 
 ## What Changed
+
+Modernized `public/lobby.js` from ES5 to ES6 syntax:
+- `var` → `const` (or `let` for `registered` which is reassigned)
+- `function` declarations → arrow functions (all standalone and callback functions)
+- String concatenation → template literals (coin styles, toast text)
+- Kept IIFE wrapper and all original logic/behavior intact
+
+## Previous Change
 
 Extracted routes from `server/index.js` (514 → 148 lines) into separate modules:
 
@@ -17,5 +25,4 @@ Extracted routes from `server/index.js` (514 → 148 lines) into separate module
 
 ## How to Verify
 1. `npm test` — All 184 tests pass
-2. Start server with `npm start` and verify all API routes respond correctly
-3. Verify login flow and auth middleware still protect routes
+2. Open lobby in browser — all functionality (avatar, name input, rain effect) works identically
