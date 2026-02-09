@@ -375,6 +375,7 @@
         let submitted = false;
 
         function nextProblem() {
+            submitted = false;
             const ops = ['+', '-', '×'];
             const op = ops[Math.floor(Math.random() * Math.min(ops.length, 1 + difficulty))];
             let a, b, answer;
@@ -398,7 +399,6 @@
             problemEl.textContent = a + ' ' + op + ' ' + b + ' = ?';
             answerEl.value = '';
             answerEl.focus();
-            submitted = false;
         }
 
         function submitAnswer() {
@@ -699,6 +699,7 @@
         let submitted = false;
 
         function nextWord() {
+            submitted = false;
             if (usedWords.length >= SCRAMBLE_WORDS.length) {
                 usedWords.length = 0;
             }
@@ -728,7 +729,6 @@
             const answerEl = $(answerId);
             const submitBtn = $(submitBtnId);
             answerEl.focus();
-            submitted = false;
 
             function submitAnswer() {
                 if (submitted) return;
