@@ -1,0 +1,886 @@
+/* ===== Nintendo DS Light-Theme ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+    --ds-bg: #e8e8e8;
+    --ds-surface: #ffffff;
+    --ds-border: #222222;
+    --ds-text: #111111;
+    --ds-text-dim: #666666;
+    --ds-highlight: #cccccc;
+    --ds-accent: #3366cc;
+    --ds-positive: #228833;
+    --ds-negative: #cc3333;
+    --ds-radius: 0px;
+}
+
+[data-theme="dark"] {
+    --ds-bg: #1a1a2e;
+    --ds-surface: #16213e;
+    --ds-border: #e0e0e0;
+    --ds-text: #eaeaea;
+    --ds-text-dim: #a0a0a0;
+    --ds-highlight: #0f3460;
+    --ds-accent: #5588ee;
+    --ds-positive: #44bb66;
+    --ds-negative: #ee5555;
+}
+
+body {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    background: var(--ds-bg);
+    color: var(--ds-text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    image-rendering: pixelated;
+    line-height: 1.8;
+}
+
+.brain-page {
+    max-width: 600px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 16px 12px 40px;
+}
+
+/* ===== DS Header ===== */
+.brain-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 3px solid var(--ds-border);
+}
+
+.brain-title {
+    font-size: 16px;
+    letter-spacing: 2px;
+    cursor: pointer;
+}
+
+.brain-title:hover { opacity: 0.7; }
+
+.brain-header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.brain-home {
+    text-decoration: none;
+    font-size: 1.5rem;
+    padding: 4px;
+}
+
+/* ===== Professor Alien ===== */
+.professor-box {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: var(--ds-surface);
+    border: 2px solid var(--ds-border);
+    padding: 12px;
+    margin-bottom: 16px;
+}
+
+.professor-alien {
+    width: 88px;
+    height: 88px;
+    object-fit: contain;
+    flex-shrink: 0;
+    border: 2px solid var(--ds-border);
+    background: var(--ds-bg);
+}
+
+.professor-speech {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--ds-text);
+}
+
+/* ===== Menu Buttons ===== */
+.menu-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.menu-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--ds-surface);
+    border: 2px solid var(--ds-border);
+    padding: 12px 16px;
+    cursor: pointer;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    color: var(--ds-text);
+    text-align: left;
+    transition: all 0.15s;
+}
+
+.menu-btn:hover {
+    background: var(--ds-border);
+    color: var(--ds-surface);
+    box-shadow: 3px 3px 0 var(--ds-text-dim);
+}
+
+.menu-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+}
+
+.menu-btn-icon {
+    font-size: 1.8rem;
+    flex-shrink: 0;
+    width: 40px;
+    text-align: center;
+}
+
+.menu-btn-info {
+    flex: 1;
+}
+
+.menu-btn-title {
+    margin-bottom: 4px;
+}
+
+.menu-btn-desc {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 13px;
+    color: var(--ds-text-dim);
+}
+
+/* ===== Screens ===== */
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* ===== Game Area ===== */
+.game-area {
+    background: var(--ds-surface);
+    border: 2px solid var(--ds-border);
+    padding: 16px;
+    min-height: 300px;
+    position: relative;
+    margin-bottom: 12px;
+}
+
+.game-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px dashed var(--ds-highlight);
+}
+
+.game-timer {
+    font-size: 14px;
+    font-family: 'Press Start 2P', monospace;
+}
+
+.game-score {
+    font-size: 12px;
+}
+
+.game-label {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 16px;
+    color: var(--ds-text-dim);
+}
+
+/* ===== Math Game ===== */
+.math-problem {
+    text-align: center;
+    font-size: 28px;
+    margin: 30px 0 20px;
+    font-family: 'Patrick Hand', cursive;
+}
+
+.math-input {
+    display: block;
+    width: 200px;
+    margin: 0 auto;
+    text-align: center;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 18px;
+    padding: 10px;
+    border: 2px solid var(--ds-border);
+    background: var(--ds-bg);
+    color: var(--ds-text);
+}
+
+.math-input:focus {
+    outline: 2px solid var(--ds-border);
+    outline-offset: 2px;
+}
+
+.math-feedback {
+    text-align: center;
+    margin-top: 12px;
+    font-family: 'Patrick Hand', cursive;
+    font-size: 18px;
+    min-height: 28px;
+}
+
+.math-feedback.correct { color: var(--ds-positive); }
+.math-feedback.wrong { color: var(--ds-negative); }
+
+/* ===== Stroop Game ===== */
+.stroop-word {
+    text-align: center;
+    font-size: 36px;
+    font-weight: bold;
+    margin: 20px 0;
+    font-family: 'Press Start 2P', monospace;
+    letter-spacing: 3px;
+}
+
+.stroop-hint {
+    text-align: center;
+    font-family: 'Patrick Hand', cursive;
+    font-size: 16px;
+    color: var(--ds-text-dim);
+    margin-bottom: 16px;
+}
+
+.stroop-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.stroop-btn {
+    padding: 14px 8px;
+    border: 2px solid var(--ds-border);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    cursor: pointer;
+    color: #fff;
+    transition: all 0.1s;
+}
+
+.stroop-btn:hover {
+    opacity: 0.85;
+    box-shadow: 3px 3px 0 var(--ds-text-dim);
+}
+
+.stroop-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+}
+
+/* ===== Chimp / Memory Game ===== */
+.chimp-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    max-width: 350px;
+    margin: 12px auto;
+}
+
+.chimp-cell {
+    aspect-ratio: 1;
+    border: 2px solid var(--ds-border);
+    background: var(--ds-surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.1s;
+    user-select: none;
+}
+
+.chimp-cell:hover { background: var(--ds-bg); }
+
+.chimp-cell.revealed {
+    background: var(--ds-border);
+    color: var(--ds-surface);
+}
+
+.chimp-cell.correct {
+    background: var(--ds-positive);
+    color: #fff;
+}
+
+.chimp-cell.wrong {
+    background: var(--ds-negative);
+    color: #fff;
+}
+
+.chimp-cell.hidden-number {
+    background: var(--ds-border);
+    color: var(--ds-border);
+}
+
+.chimp-info {
+    text-align: center;
+    margin-top: 10px;
+    font-family: 'Patrick Hand', cursive;
+    font-size: 16px;
+    color: var(--ds-text-dim);
+}
+
+/* ===== Reaction Test ===== */
+.reaction-area {
+    width: 100%;
+    min-height: 250px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-family: 'Patrick Hand', cursive;
+    font-size: 22px;
+    color: #fff;
+    border: 2px solid var(--ds-border);
+    transition: background 0.1s;
+    user-select: none;
+    text-align: center;
+    padding: 20px;
+}
+
+.reaction-area.waiting { background: #cc3333; }
+.reaction-area.ready { background: #228833; }
+.reaction-area.too-early { background: #dd6600; }
+.reaction-area.result { background: var(--ds-border); }
+
+.reaction-results {
+    text-align: center;
+    margin-top: 12px;
+    font-size: 10px;
+}
+
+/* ===== Word Scramble ===== */
+.scramble-letters {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    margin: 20px 0;
+}
+
+.scramble-letter {
+    width: 36px;
+    height: 40px;
+    border: 2px solid var(--ds-border);
+    background: var(--ds-surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Patrick Hand', cursive;
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.scramble-input {
+    display: block;
+    width: 250px;
+    margin: 0 auto;
+    text-align: center;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 14px;
+    padding: 10px;
+    border: 2px solid var(--ds-border);
+    background: var(--ds-bg);
+    color: var(--ds-text);
+    text-transform: uppercase;
+}
+
+.scramble-input:focus {
+    outline: 2px solid var(--ds-border);
+    outline-offset: 2px;
+}
+
+/* ===== Results Screen ===== */
+.results-box {
+    background: var(--ds-surface);
+    border: 2px solid var(--ds-border);
+    padding: 20px;
+    text-align: center;
+}
+
+.brain-age-display {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 60px;
+    margin: 16px 0 8px;
+    color: var(--ds-text);
+}
+
+.brain-age-label {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 20px;
+    color: var(--ds-text-dim);
+    margin-bottom: 16px;
+}
+
+.results-breakdown {
+    text-align: left;
+    margin: 16px 0;
+    padding: 12px;
+    background: var(--ds-bg);
+    border: 2px solid var(--ds-highlight);
+}
+
+.results-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px dashed var(--ds-highlight);
+    font-size: 9px;
+}
+
+.results-row:last-child { border-bottom: none; }
+
+.results-game-name {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 14px;
+}
+
+.results-game-score {
+    font-family: 'Press Start 2P', monospace;
+}
+
+.coins-earned {
+    margin-top: 16px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.coins-earned .coin-icon {
+    font-size: 1.3rem;
+}
+
+/* ===== Free Training List ===== */
+.training-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.training-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--ds-surface);
+    border: 2px solid var(--ds-border);
+    padding: 14px 16px;
+    cursor: pointer;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    color: var(--ds-text);
+    text-align: left;
+    transition: all 0.15s;
+}
+
+.training-btn:hover {
+    background: var(--ds-border);
+    color: var(--ds-surface);
+    box-shadow: 3px 3px 0 var(--ds-text-dim);
+}
+
+.training-btn-icon { font-size: 1.5rem; width: 32px; text-align: center; }
+
+/* ===== Back Button ===== */
+.btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--ds-surface);
+    border: 2px solid var(--ds-border);
+    padding: 8px 14px;
+    cursor: pointer;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    color: var(--ds-text);
+    margin-bottom: 12px;
+    transition: all 0.15s;
+}
+
+.btn-back:hover {
+    background: var(--ds-border);
+    color: var(--ds-surface);
+}
+
+/* ===== Leaderboard ===== */
+.leaderboard {
+    background: var(--ds-surface);
+    border: 2px solid var(--ds-border);
+    padding: 12px;
+    margin-top: 16px;
+}
+
+.leaderboard h3 {
+    font-size: 11px;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 2px dashed var(--ds-highlight);
+    text-align: center;
+}
+
+.lb-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 4px;
+    border-bottom: 1px dashed var(--ds-highlight);
+    font-size: 9px;
+}
+
+.lb-row:last-child { border-bottom: none; }
+
+.lb-rank { width: 24px; text-align: center; }
+.lb-name { flex: 1; margin-left: 8px; }
+
+.lb-age {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 14px;
+}
+
+/* ===== Game Leaderboard Tabs ===== */
+.game-lb-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 8px;
+    justify-content: center;
+}
+
+.game-lb-tab {
+    background: var(--ds-bg);
+    border: 2px solid var(--ds-border);
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    line-height: 1;
+    transition: all 0.15s;
+}
+
+.game-lb-tab:hover {
+    background: var(--ds-highlight);
+}
+
+.game-lb-tab.active {
+    background: var(--ds-border);
+    box-shadow: 2px 2px 0 var(--ds-text-dim);
+}
+
+.game-lb-title {
+    text-align: center;
+    font-family: 'Patrick Hand', cursive;
+    font-size: 14px;
+    color: var(--ds-text-dim);
+    margin-bottom: 8px;
+}
+
+.lb-score {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 14px;
+}
+
+/* ===== Pixel Divider ===== */
+.pixel-divider {
+    height: 2px;
+    background: repeating-linear-gradient(
+        90deg,
+        var(--ds-border) 0px,
+        var(--ds-border) 4px,
+        transparent 4px,
+        transparent 8px
+    );
+    margin: 12px 0;
+}
+
+/* ===== Versus Mode ===== */
+.versus-lobby-box {
+    background: var(--ds-surface);
+    border: 2px solid var(--ds-border);
+    padding: 16px;
+    margin-bottom: 12px;
+}
+
+.versus-lobby-box h3 {
+    font-size: 11px;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.versus-code-display {
+    text-align: center;
+    font-size: 24px;
+    letter-spacing: 6px;
+    margin: 12px 0;
+    padding: 10px;
+    background: var(--ds-bg);
+    border: 2px dashed var(--ds-highlight);
+}
+
+.versus-join-form {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.versus-join-form input {
+    flex: 1;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px;
+    padding: 10px;
+    border: 2px solid var(--ds-border);
+    background: var(--ds-bg);
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+}
+
+.versus-join-form input:focus {
+    outline: 2px solid var(--ds-border);
+    outline-offset: 2px;
+}
+
+.versus-players {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    margin: 16px 0;
+    gap: 12px;
+}
+
+.versus-player-slot {
+    text-align: center;
+    padding: 12px 16px;
+    background: var(--ds-bg);
+    border: 2px solid var(--ds-highlight);
+    flex: 1;
+    min-height: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.versus-player-slot.filled {
+    border-color: var(--ds-border);
+    background: var(--ds-surface);
+}
+
+.versus-player-name {
+    font-size: 10px;
+    margin-top: 4px;
+}
+
+.versus-vs {
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--ds-negative);
+}
+
+.versus-game-select {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 12px;
+}
+
+.versus-game-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--ds-surface);
+    border: 2px solid var(--ds-border);
+    padding: 10px 14px;
+    cursor: pointer;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    color: var(--ds-text);
+    text-align: left;
+    transition: all 0.15s;
+}
+
+.versus-game-btn:hover {
+    background: var(--ds-border);
+    color: var(--ds-surface);
+    box-shadow: 2px 2px 0 var(--ds-text-dim);
+}
+
+.versus-game-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+}
+
+.versus-game-btn-icon { font-size: 1.3rem; width: 28px; text-align: center; }
+
+.versus-scoreboard {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--ds-surface);
+    border: 2px solid var(--ds-border);
+    padding: 8px 12px;
+    margin-bottom: 8px;
+}
+
+.versus-sb-player {
+    text-align: center;
+    flex: 1;
+}
+
+.versus-sb-name {
+    font-size: 8px;
+    color: var(--ds-text-dim);
+    margin-bottom: 2px;
+}
+
+.versus-sb-score {
+    font-size: 16px;
+}
+
+.versus-sb-vs {
+    font-size: 14px;
+    color: var(--ds-negative);
+    padding: 0 8px;
+}
+
+.versus-sb-player.winner .versus-sb-score {
+    color: var(--ds-positive);
+}
+
+.versus-result-banner {
+    text-align: center;
+    font-size: 18px;
+    margin: 16px 0;
+    padding: 12px;
+    border: 2px solid var(--ds-border);
+}
+
+.versus-result-banner.win { background: #d4edda; color: var(--ds-positive); }
+.versus-result-banner.lose { background: #f8d7da; color: var(--ds-negative); }
+.versus-result-banner.draw { background: #fff3cd; color: #856404; }
+
+.versus-waiting {
+    text-align: center;
+    font-family: 'Patrick Hand', cursive;
+    font-size: 18px;
+    color: var(--ds-text-dim);
+    padding: 20px;
+}
+
+/* ===== Versus Lobby List ===== */
+.versus-lobbies-section {
+    margin-top: 16px;
+}
+
+.versus-lobbies-section h3 {
+    font-size: 10px;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.versus-lobby-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.versus-no-lobbies {
+    color: var(--ds-text-dim);
+    font-size: 9px;
+    text-align: center;
+    padding: 12px;
+}
+
+.versus-lobby-card {
+    background: var(--ds-surface);
+    border: 2px solid var(--ds-highlight);
+    padding: 10px 12px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.15s;
+}
+
+.versus-lobby-card:hover {
+    border-color: var(--ds-border);
+    box-shadow: 2px 2px 0 var(--ds-text-dim);
+}
+
+.versus-lobby-card:active {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+}
+
+.versus-lobby-host {
+    font-size: 10px;
+}
+
+.versus-lobby-players {
+    font-size: 9px;
+    color: var(--ds-text-dim);
+}
+
+/* ===== Mobile ===== */
+@media (max-width: 500px) {
+    .brain-page { padding: 10px 8px 32px; }
+    .brain-title { font-size: 13px; }
+    .stroop-word { font-size: 26px; }
+    .math-problem { font-size: 22px; }
+    .chimp-grid { max-width: 280px; }
+    .chimp-cell { font-size: 13px; }
+    .brain-age-display { font-size: 48px; }
+    .versus-code-display { font-size: 18px; letter-spacing: 4px; }
+    .versus-sb-score { font-size: 13px; }
+}
+
+/* ===== Theme Toggle ===== */
+.theme-toggle {
+    position: fixed;
+    bottom: 12px;
+    right: 12px;
+    z-index: 1000;
+}
+
+.theme-toggle-btn {
+    background: var(--ds-surface);
+    border: 2px solid var(--ds-border);
+    color: var(--ds-text);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 14px;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0;
+    transition: all 0.15s;
+}
+
+.theme-toggle-btn:hover {
+    background: var(--ds-highlight);
+    box-shadow: 3px 3px 0 var(--ds-border);
+}
+
+/* Large screens */
+@media (min-width: 1024px) {
+    body {
+        font-size: 13px;
+    }
+
+    .brain-page {
+        max-width: 900px;
+    }
+}
