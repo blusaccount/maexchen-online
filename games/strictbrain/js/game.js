@@ -372,7 +372,7 @@
         const feedbackEl = $(feedbackId);
         const submitBtn = $(submitBtnId);
         let currentAnswer = 0;
-        let submitting = false;
+        let submitted = false;
 
         function nextProblem() {
             const ops = ['+', '-', '×'];
@@ -398,12 +398,12 @@
             problemEl.textContent = a + ' ' + op + ' ' + b + ' = ?';
             answerEl.value = '';
             answerEl.focus();
-            submitting = false;
+            submitted = false;
         }
 
         function submitAnswer() {
-            if (submitting) return;
-            submitting = true;
+            if (submitted) return;
+            submitted = true;
 
             const val = parseInt(answerEl.value, 10);
             if (val === currentAnswer) {
