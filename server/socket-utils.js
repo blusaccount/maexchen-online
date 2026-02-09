@@ -20,6 +20,8 @@ export function validateCharacter(character) {
     if (clean.dataURL && (typeof clean.dataURL !== 'string' || !clean.dataURL.startsWith('data:image/'))) {
         delete clean.dataURL;
     }
+    // Reject empty character objects (no pixels or dataURL)
+    if (!clean.pixels && !clean.dataURL) return null;
     return clean;
 }
 

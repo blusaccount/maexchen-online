@@ -65,7 +65,11 @@ describe('validateCharacter', () => {
 
     it('removes invalid dataURL', () => {
         const result = validateCharacter({ dataURL: 'javascript:alert(1)' });
-        expect(result.dataURL).toBeUndefined();
+        expect(result).toBeNull();
+    });
+
+    it('rejects character with no pixels and no dataURL', () => {
+        expect(validateCharacter({ evil: 'data' })).toBeNull();
     });
 });
 
