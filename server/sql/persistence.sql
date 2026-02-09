@@ -97,6 +97,9 @@ alter table lol_bets add column if not exists resolved_at timestamptz;
 -- add diamonds column for diamond shop feature
 alter table players add column if not exists diamonds integer not null default 0;
 
+-- add character_data column for persistent character portraits
+alter table players add column if not exists character_data jsonb;
+
 create index if not exists lol_bets_status_idx
   on lol_bets (status, created_at desc);
 

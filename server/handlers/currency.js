@@ -1,6 +1,7 @@
 import { sanitizeName, validateCharacter, validateGameType, emitBalanceUpdate } from '../socket-utils.js';
 import { getBalance, addBalance, deductBalance, getDiamonds, buyDiamonds } from '../currency.js';
 import { broadcastOnlinePlayers } from '../room-manager.js';
+import { saveCharacter, getCharacter } from '../character-store.js';
 
 export function registerCurrencyHandlers(socket, io, { checkRateLimit, onlinePlayers }) {
     socket.on('register-player', async (data) => { try {
@@ -14,6 +15,9 @@ export function registerCurrencyHandlers(socket, io, { checkRateLimit, onlinePla
 
         onlinePlayers.set(socket.id, { name, character, game });
         broadcastOnlinePlayers(io);
+
+        // Persist character portrait to database
+        if (character) saveCharacter(name, character);
 
         // Send currency balance to the player
         socket.emit('balance-update', { balance: await getBalance(name) });
@@ -51,15 +55,15 @@ export function registerCurrencyHandlers(socket, io, { checkRateLimit, onlinePla
             }
         }
 
-        if (found) {
-            const diamonds = await getDiamonds(found.name);
-            socket.emit('player-character', {
-                name: found.name,
-                character: found.character,
-                game: found.game,
-                diamonds
-            });
-        }
+        const character = found?.character || await getCharacter(name);
+        const game = found?.game || null;
+        const diamondCount = await getDiamonds(name);
+        socket.emit('player-character', {
+            name,
+            character,
+            game,
+            diamonds: diamondCount
+        });
     } catch (err) { console.error('get-player-character error:', err.message); } });
 
     // --- Get Currency Balance ---
