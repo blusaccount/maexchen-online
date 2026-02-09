@@ -121,7 +121,12 @@ async function selectResolvingMatchForBet(bet, matchIds, matchDetailsCache) {
         return { matchId, matchDetails };
     }
 
-    // Choose the newest match that ended after bet placement.
+    // Choose the oldest match that ended after bet placement (the player's
+    // "next game"). matchIds arrive newest-first from the API, so we scan
+    // them all and keep overwriting — the last hit is the oldest.
+    let selectedMatchId = null;
+    let selectedMatchDetails = null;
+
     for (const matchId of matchIds) {
         const matchDetails = await getCachedMatchDetails(matchId, matchDetailsCache);
         if (!matchDetails || !matchDetails.info || !matchDetails.info.participants) {
@@ -130,11 +135,12 @@ async function selectResolvingMatchForBet(bet, matchIds, matchDetailsCache) {
 
         const matchEndMs = getMatchEndTimestamp(matchDetails);
         if (matchEndMs && matchEndMs > createdAtMs) {
-            return { matchId, matchDetails };
+            selectedMatchId = matchId;
+            selectedMatchDetails = matchDetails;
         }
     }
 
-    return { matchId: null, matchDetails: null };
+    return { matchId: selectedMatchId, matchDetails: selectedMatchDetails };
 }
 
 async function refundBetAndNotify(bet, reason, matchId = null) {
@@ -169,7 +175,8 @@ async function refundBetAndNotify(bet, reason, matchId = null) {
 }
 
 /**
- * Resolve a bet and notify the player
+ * Resolve a bet and notify the player.
+ * Returns the resolution result on success, or null on failure.
  */
 async function resolveBetAndNotify(bet, didPlayerWin, matchId) {
     try {
@@ -177,7 +184,7 @@ async function resolveBetAndNotify(bet, didPlayerWin, matchId) {
         
         if (!result) {
             console.warn(`[LoL Match Checker] Failed to resolve bet ${bet.id}`);
-            return;
+            return null;
         }
 
         clearBetTimeout(bet.id);
@@ -204,6 +211,7 @@ async function resolveBetAndNotify(bet, didPlayerWin, matchId) {
                 playerName: bet.playerName,
                 lolUsername: bet.lolUsername,
                 amount: bet.amount,
+                betOnWin: bet.betOnWin,
                 wonBet,
                 payout,
                 matchId,
@@ -214,8 +222,11 @@ async function resolveBetAndNotify(bet, didPlayerWin, matchId) {
             const allBets = await getActiveBets();
             io.emit('lol-bets-update', { bets: allBets });
         }
+
+        return result;
     } catch (err) {
         console.error(`[LoL Match Checker] Error resolving bet ${bet.id}:`, err.message);
+        return null;
     }
 }
 
@@ -387,10 +398,17 @@ export async function manualCheckBetStatus(betId, playerName) {
         const didPlayerWin = participant.win === true;
         
         // Resolve the bet
-        await resolveBetAndNotify(bet, didPlayerWin, mostRecentMatchId);
+        const resolveResult = await resolveBetAndNotify(bet, didPlayerWin, mostRecentMatchId);
 
-        const wonBet = bet.betOnWin === didPlayerWin;
-        const payout = wonBet ? bet.amount * 2 : 0;
+        if (!resolveResult) {
+            return {
+                success: false,
+                error: 'RESOLVE_FAILED',
+                message: 'Failed to resolve bet. Please try again.'
+            };
+        }
+
+        const { wonBet, payout } = resolveResult;
 
         return {
             success: true,

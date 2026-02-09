@@ -249,7 +249,7 @@ socket.on('lol-bets-update', (data) => {
 
 // Bet resolved notification
 socket.on('lol-bet-resolved', (data) => {
-    const { playerName, wonBet, payout, lolUsername, matchId } = data;
+    const { playerName, wonBet, payout, lolUsername, matchId, betOnWin } = data;
     
     // Only show notification if this is our bet
     const myName = window.StrictHotelSocket.getPlayerName();
@@ -261,7 +261,8 @@ socket.on('lol-bet-resolved', (data) => {
     showBetResolutionNotification({
         wonBet,
         payout,
-        lolUsername
+        lolUsername,
+        betOnWin
     });
     
     // Refresh balance if provided
@@ -407,7 +408,7 @@ function showSuccessMessage() {
 }
 
 function showBetResolutionNotification(data) {
-    const { wonBet, payout, lolUsername } = data;
+    const { wonBet, payout, lolUsername, betOnWin } = data;
     
     const notificationDiv = document.createElement('div');
     notificationDiv.style.cssText = `
@@ -426,12 +427,15 @@ function showBetResolutionNotification(data) {
         box-shadow: 0 4px 20px rgba(0,0,0,0.5);
     `;
     
+    // Determine what actually happened in the game
+    const playerWonGame = wonBet === betOnWin;
+
     // Build message safely using textContent
     const messageDiv = document.createElement('div');
     if (wonBet) {
-        messageDiv.textContent = `🎉 You won ${payout.toFixed(0)} SC! ${lolUsername} won their game!`;
+        messageDiv.textContent = `🎉 You won ${payout.toFixed(0)} SC! ${lolUsername} ${playerWonGame ? 'won' : 'lost'} their game!`;
     } else {
-        messageDiv.textContent = `💀 You lost your bet. ${lolUsername} lost their game.`;
+        messageDiv.textContent = `💀 You lost your bet. ${lolUsername} ${playerWonGame ? 'won' : 'lost'} their game.`;
     }
     
     notificationDiv.appendChild(messageDiv);

@@ -458,4 +458,87 @@ describe('manualCheckBetStatus', () => {
         expect(result.error).toBe('API_REJECTED');
         expect(result.message).toContain('rejected');
     });
+
+    it('returns RESOLVE_FAILED when resolveBet returns null', async () => {
+        const betId = betIdCounter++;
+        const bet = {
+            id: betId,
+            playerName: 'testPlayer',
+            status: 'pending',
+            puuid: 'test-puuid',
+            betOnWin: true,
+            amount: 100,
+            lolUsername: 'TestPlayer#NA1',
+            createdAt: '2024-01-01T00:00:00.000Z'
+        };
+
+        mockGetBetById.mockResolvedValue(bet);
+        mockGetMatchHistory.mockResolvedValue(['match-1']);
+        mockGetMatchDetails.mockResolvedValue({
+            info: {
+                gameEndTimestamp: 1704067800000,
+                participants: [{ puuid: 'test-puuid', win: true }]
+            }
+        });
+        // Simulate resolution failure (e.g., DB error, bet already resolved)
+        mockResolveBet.mockResolvedValue(null);
+
+        const result = await manualCheckBetStatus(betId, 'testPlayer');
+        expect(result.success).toBe(false);
+        expect(result.error).toBe('RESOLVE_FAILED');
+        expect(result.message).toContain('try again');
+    });
+
+    it('selects the oldest match after bet placement (the next game)', async () => {
+        const betId = betIdCounter++;
+        const bet = {
+            id: betId,
+            playerName: 'testPlayer',
+            status: 'pending',
+            puuid: 'test-puuid',
+            betOnWin: true,
+            amount: 100,
+            lolUsername: 'TestPlayer#NA1',
+            createdAt: '2024-01-01T12:00:00.000Z'
+        };
+
+        mockGetBetById.mockResolvedValue(bet);
+        // newest first: match-3, match-2, match-1
+        mockGetMatchHistory.mockResolvedValue(['match-3', 'match-2', 'match-1']);
+        mockGetMatchDetails
+            // match-3: after bet, player won
+            .mockResolvedValueOnce({
+                info: {
+                    gameEndTimestamp: Date.parse('2024-01-01T15:00:00.000Z'),
+                    participants: [{ puuid: 'test-puuid', win: true }]
+                }
+            })
+            // match-2: after bet, player lost (this is the "next game")
+            .mockResolvedValueOnce({
+                info: {
+                    gameEndTimestamp: Date.parse('2024-01-01T13:00:00.000Z'),
+                    participants: [{ puuid: 'test-puuid', win: false }]
+                }
+            })
+            // match-1: before bet
+            .mockResolvedValueOnce({
+                info: {
+                    gameEndTimestamp: Date.parse('2024-01-01T10:00:00.000Z'),
+                    participants: [{ puuid: 'test-puuid', win: true }]
+                }
+            });
+        mockResolveBet.mockResolvedValue({
+            playerId: 1,
+            playerName: 'testPlayer',
+            wonBet: false,
+            payout: 0
+        });
+
+        const result = await manualCheckBetStatus(betId, 'testPlayer');
+        expect(result.success).toBe(true);
+        expect(result.resolved).toBe(true);
+        // Should resolve on match-2 (the oldest match after the bet = the next game)
+        // Match-2 has win: false, so resolveBet should be called with didPlayerWin = false
+        expect(mockResolveBet).toHaveBeenCalledWith(betId, false);
+    });
 });
