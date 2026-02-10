@@ -1,3 +1,29 @@
+# Handoff: WatchParty Keep-Alive to Prevent Server Spin-Down (2026-02-09)
+
+## What Changed
+
+### Feature: Keep-alive pings for WatchParty
+
+Added a client-side keep-alive mechanism that prevents the free-tier Render hosting instance from spinning down while users are watching videos together.
+
+**Problem:** Render free instances spin down after ~15 minutes of no incoming HTTP requests. During a WatchParty session, only WebSocket (Socket.IO) traffic flows, which Render may not count as activity, causing the server to shut down mid-video.
+
+**Solution:**
+- **Client** (`games/watchparty/js/watchparty.js`): Added a keep-alive interval that sends an HTTP `GET /health` request and a `watchparty-heartbeat` socket event every 4 minutes while the WatchParty is active. Starts on `game-started`, stops on cleanup.
+- **Server** (`server/handlers/watchparty.js`): Added `watchparty-heartbeat` socket event handler that validates the user is in a WatchParty room and responds with `watchparty-heartbeat-ack`.
+
+### Files Modified
+- `server/handlers/watchparty.js` — Added `watchparty-heartbeat` event handler
+- `games/watchparty/js/watchparty.js` — Added keep-alive start/stop/send functions
+
+### How to Verify
+1. Start a WatchParty and load a long YouTube video
+2. Open browser DevTools → Network tab
+3. Confirm periodic `GET /health` requests appear every ~4 minutes
+4. Server should remain responsive for the duration of the video
+
+---
+
 # Handoff: Add 808/Trap Instruments to Loop Machine (2026-02-09)
 
 ## What Changed

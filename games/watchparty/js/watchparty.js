@@ -10,6 +10,10 @@
     let ignorePlayerEvents = false;
     let currentVideoId = null;
     let syncIntervalId = null;
+    let keepAliveIntervalId = null;
+
+    // Interval (ms) for keep-alive pings to prevent free-tier hosting spin-down
+    const KEEP_ALIVE_INTERVAL = 4 * 60 * 1000; // 4 minutes
 
     // --- Extract YouTube Video ID from URL or ID ---
     function extractVideoId(input) {
@@ -111,6 +115,28 @@
         }
     }
 
+    // --- Keep-alive ping to prevent server spin-down on free hosting ---
+    function startKeepAlive() {
+        stopKeepAlive();
+        // Send an initial ping immediately
+        sendKeepAlive();
+        keepAliveIntervalId = setInterval(sendKeepAlive, KEEP_ALIVE_INTERVAL);
+    }
+
+    function stopKeepAlive() {
+        if (keepAliveIntervalId) {
+            clearInterval(keepAliveIntervalId);
+            keepAliveIntervalId = null;
+        }
+    }
+
+    function sendKeepAlive() {
+        // HTTP fetch keeps the hosting instance active
+        fetch('/health').catch(function () { /* ignore errors */ });
+        // Socket heartbeat keeps the WebSocket connection alive
+        socket.emit('watchparty-heartbeat');
+    }
+
     // --- Game Started (transition from waiting to game screen) ---
     socket.on('game-started', function (data) {
         isHost = state.isHost;
@@ -128,6 +154,9 @@
 
         // Start periodic sync
         startSyncInterval();
+
+        // Start keep-alive to prevent server spin-down
+        startKeepAlive();
 
         // Show player list from payload
         if (data && data.players) {
@@ -281,6 +310,7 @@
     window.MaexchenWatchParty = {
         cleanup: function () {
             stopSyncInterval();
+            stopKeepAlive();
             if (ytPlayer && ytPlayer.destroy) {
                 ytPlayer.destroy();
             }

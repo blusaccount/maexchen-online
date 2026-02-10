@@ -87,4 +87,14 @@ export function registerWatchpartyHandlers(socket, io, deps) {
             time: room.watchparty.time
         });
     } catch (err) { console.error('watchparty-request-sync error:', err.message); } });
+
+    // Keep-alive heartbeat to prevent free-tier hosting from spinning down
+    socket.on('watchparty-heartbeat', () => { try {
+        if (!checkRateLimit(socket)) return;
+
+        const room = getRoom(socket.id);
+        if (!room || room.gameType !== 'watchparty') return;
+
+        socket.emit('watchparty-heartbeat-ack');
+    } catch (err) { console.error('watchparty-heartbeat error:', err.message); } });
 }
