@@ -160,8 +160,13 @@
 
         // Show player list from payload
         if (data && data.players) {
-            renderPartyPlayers(data.players.map(function (p) {
-                return { name: p.name, character: p.character, isHost: false };
+            var hostId = state.mySocketId; // Current user is always host when game-started fires
+            renderPartyPlayers(data.players.map(function (p, index) {
+                return { 
+                    name: p.name, 
+                    character: p.character, 
+                    isHost: index === 0 // First player in list is the host
+                };
             }));
         }
 
@@ -243,7 +248,16 @@
         if (!data || !data.players) return;
         var wasHost = isHost;
         isHost = (data.hostId === state.mySocketId);
-        renderPartyPlayers(data.players);
+        
+        // Add isHost flag to players for rendering
+        var playersWithHostFlag = data.players.map(function (p) {
+            return {
+                name: p.name,
+                character: p.character,
+                isHost: p.socketId === data.hostId
+            };
+        });
+        renderPartyPlayers(playersWithHostFlag);
 
         // If we just became host, start sync interval
         if (isHost && !wasHost) {
