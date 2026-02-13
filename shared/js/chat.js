@@ -22,6 +22,10 @@
     let noteSelectedColor = 1;
     let noteIsDrawing = false;
 
+    // Store document-level handlers for cleanup
+    let documentMouseUpHandler = null;
+    let documentTouchEndHandler = null;
+
     function createEmptyNoteGrid() {
         return Array(NOTE_SIZE).fill(null).map(() => Array(NOTE_SIZE).fill(null));
     }
@@ -120,9 +124,11 @@
                 }
             });
 
-            document.addEventListener('mouseup', () => {
+            // Store handler for cleanup
+            documentMouseUpHandler = () => {
                 noteIsDrawing = false;
-            });
+            };
+            document.addEventListener('mouseup', documentMouseUpHandler);
 
             // Touch events
             grid.addEventListener('touchstart', (e) => {
@@ -144,9 +150,11 @@
                 }
             });
 
-            grid.addEventListener('touchend', () => {
+            // Store handler for cleanup
+            documentTouchEndHandler = () => {
                 noteIsDrawing = false;
-            });
+            };
+            document.addEventListener('touchend', documentTouchEndHandler);
         }
     }
 
@@ -464,6 +472,19 @@
         }
     }
 
+    // Cleanup document-level event listeners
+    function cleanup() {
+        if (documentMouseUpHandler) {
+            document.removeEventListener('mouseup', documentMouseUpHandler);
+            documentMouseUpHandler = null;
+        }
+        if (documentTouchEndHandler) {
+            document.removeEventListener('touchend', documentTouchEndHandler);
+            documentTouchEndHandler = null;
+        }
+        noteGridInitialized = false;
+    }
+
     // Escape HTML to prevent XSS
     function escapeHtml(text) {
         const div = document.createElement('div');
@@ -535,6 +556,7 @@
         addLocalMessage,
         clearMessages,
         scrollToBottom,
-        openDrawingPanel
+        openDrawingPanel,
+        cleanup
     };
 })();

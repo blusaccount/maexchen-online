@@ -17,6 +17,7 @@
 
     // Ambient sound nodes
     let droneOsc = null;
+    let droneLfo = null;
     let noiseNode = null;
     let beepInterval = null;
 
@@ -80,6 +81,11 @@
         if (!isPlaying) return;
         isPlaying = false;
 
+        if (droneLfo) {
+            droneLfo.stop();
+            droneLfo = null;
+        }
+
         if (droneOsc) {
             droneOsc.stop();
             droneOsc = null;
@@ -108,16 +114,16 @@
         droneGain.gain.value = 0.3;
 
         // Add subtle modulation
-        const lfo = ctx.createOscillator();
-        lfo.type = 'sine';
-        lfo.frequency.value = 0.1; // Very slow
+        droneLfo = ctx.createOscillator();
+        droneLfo.type = 'sine';
+        droneLfo.frequency.value = 0.1; // Very slow
 
         const lfoGain = ctx.createGain();
         lfoGain.gain.value = 5; // Subtle pitch variation
 
-        lfo.connect(lfoGain);
+        droneLfo.connect(lfoGain);
         lfoGain.connect(droneOsc.frequency);
-        lfo.start();
+        droneLfo.start();
 
         droneOsc.connect(droneGain);
         droneGain.connect(ambientGain);

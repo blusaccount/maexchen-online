@@ -288,6 +288,35 @@
         triggerCenteredReaction('leave');
     });
 
+    // --- Own Disconnect - cleanup resources ---
+    socket.on('disconnect', () => {
+        console.log('[Maexchen] Disconnected, cleaning up...');
+
+        // Stop transmissions
+        if (window.MaexchenReactions) {
+            window.MaexchenReactions.stopTransmissions();
+        }
+
+        // Stop ambient
+        if (window.MaexchenAmbient) {
+            window.MaexchenAmbient.stopAmbient();
+            window.MaexchenAmbient.stopVictory();
+        }
+
+        // Hide emote bar
+        if (window.MaexchenEmotes) {
+            window.MaexchenEmotes.hideEmoteBar();
+        }
+
+        // Hide chat
+        if (window.MaexchenChat) {
+            window.MaexchenChat.hideChat();
+        }
+
+        // Remove sidebar
+        removePlayerSidebar();
+    });
+
     // --- Game Over ---
     socket.on('game-over', ({ winnerName, players, pot }) => {
         // Stop transmissions
